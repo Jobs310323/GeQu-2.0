@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --bg-main: #050510;
+    --bg-card: rgba(20, 20, 35, 0.6);
+    --bg-input: rgba(0, 0, 0, 0.3);
+    --text-main: #E0E6ED;
+    --text-muted: #8892B0;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent-cyan: #64FFDA;
+    --accent-purple: #BD93F9;
+    --accent-pink: #FF79C6;
+}
+
+:root.light {
+    --bg-main: #F0F2F5;
+    --bg-card: rgba(255, 255, 255, 0.8);
+    --bg-input: rgba(0, 0, 0, 0.05);
+    --text-main: #1E1E24;
+    --text-muted: #555555;
+    --border: rgba(0, 0, 0, 0.1);
+    --accent-cyan: #0EA5E9;
+    --accent-purple: #8B5CF6;
+    --accent-pink: #EC4899;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: 'Inter', system-ui, sans-serif;
+    transition: background-color 0.3s ease;
+    margin: 0;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.glass-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+@keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.note-card { animation: popIn 0.3s ease-out; }
+.fire-glow { box-shadow: 0 0 15px rgba(255, 121, 198, 0.4); }
+
+input, textarea, button { color: var(--text-main); }
+input[type="range"] { accent-color: var(--accent-purple); }
+input[type="checkbox"] { accent-color: var(--accent-cyan); }
+
+.markdown-content h1 { font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem; }
+.markdown-content h2 { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; }
+.markdown-content ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.5rem; }
+.markdown-content ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.5rem; }
+.markdown-content a { color: #64FFDA; text-decoration: underline; }
+.markdown-content strong { font-weight: bold; }
