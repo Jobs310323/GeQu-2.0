@@ -223,96 +223,105 @@ export function SchulteTable({ setTestResults, achievements, setAchievements }: 
     );
 }
 
+type BreathPhase = 'idle' | 'inhale' | 'hold1' | 'exhale' | 'hold2' | 'finished';
+
 export function BreathingExercise() {
-    const [phase, setPhase] = useState<'idle' | 'inhale' | 'hold' | 'exhale' | 'finished'>('idle');
+    const [phase, setPhase] = useState<BreathPhase>('idle');
     const [timeLeft, setTimeLeft] = useState(0);
     const [cycles, setCycles] = useState(0);
-    const [targetCycles] = useState(4); // 4 цикла для полного расслабления
+    const targetCycles = 4;
+    const secondsPerSide = 4; // квадратное дыхание 4-4-4-4
 
     useEffect(() => {
         if (phase === 'idle' || phase === 'finished') return;
 
         if (timeLeft <= 0) {
-            // Переход фаз
-            if (phase === 'inhale') {
-                setPhase('hold');
-                setTimeLeft(7);
-            } else if (phase === 'hold') {
-                setPhase('exhale');
-                setTimeLeft(8);
-            } else if (phase === 'exhale') {
-                if (cycles + 1 >= targetCycles) {
-                    setPhase('finished');
-                } else {
-                    setCycles(c => c + 1);
-                    setPhase('inhale');
-                    setTimeLeft(4);
-                }
+            if (phase === 'inhale') { setPhase('hold1'); setTimeLeft(secondsPerSide); }
+            else if (phase === 'hold1') { setPhase('exhale'); setTimeLeft(secondsPerSide); }
+            else if (phase === 'exhale') { setPhase('hold2'); setTimeLeft(secondsPerSide); }
+            else if (phase === 'hold2') {
+                if (cycles + 1 >= targetCycles) { setPhase('finished'); }
+                else { setCycles(c => c + 1); setPhase('inhale'); setTimeLeft(secondsPerSide); }
             }
             return;
         }
 
         const timer = setTimeout(() => setTimeLeft(t => t - 1), 1000);
         return () => clearTimeout(timer);
-    }, [timeLeft, phase, cycles, targetCycles]);
+    }, [timeLeft, phase, cycles]);
 
-    const startBreathing = () => {
-        setCycles(0);
-        setPhase('inhale');
-        setTimeLeft(4);
+    const start = () => { setCycles(0); setPhase('inhale'); setTimeLeft(secondsPerSide); };
+
+    // The indicator travels one side of the square per phase (clockwise from the
+    // bottom-left corner). `to` is the corner it animates toward this phase.
+    const SIDE = 260;                       // square side in px
+    const corners = {
+        bl: { left: 0, top: SIDE },
+        tl: { left: 0, top: 0 },
+        tr: { left: SIDE, top: 0 },
+        br: { left: SIDE, top: SIDE },
     };
-
-    // Настройки анимации в зависимости от фазы
-    const circleConfig = {
-        inhale: { scale: 1.5, color: 'bg-cyan-400', text: 'Вдох', duration: 4000 },
-        hold: { scale: 1.5, color: 'bg-blue-400', text: 'Задержи', duration: 7000 },
-        exhale: { scale: 1, color: 'bg-indigo-700', text: 'Выдох', duration: 8000 },
-        idle: { scale: 1, color: 'bg-gray-600', text: 'Готов?', duration: 0 },
-        finished: { scale: 1, color: 'bg-green-500', text: 'Молодец!', duration: 0 }
+    const config: Record<BreathPhase, { to: keyof typeof corners; label: string; accent: string }> = {
+        idle:     { to: 'bl', label: 'Готов?',   accent: 'var(--text-muted)' },
+        inhale:   { to: 'tl', label: 'Вдох',     accent: 'var(--accent-cyan)' },
+        hold1:    { to: 'tr', label: 'Задержи',  accent: 'var(--accent-purple)' },
+        exhale:   { to: 'br', label: 'Выдох',    accent: 'var(--accent-pink)' },
+        hold2:    { to: 'bl', label: 'Задержи',  accent: 'var(--accent-purple)' },
+        finished: { to: 'bl', label: 'Готово!',  accent: '#22c55e' },
     };
+    const active = config[phase];
+    const dot = corners[active.to];
+    const moving = phase !== 'idle' && phase !== 'finished';
+    // Which side is currently lit (the one the dot travels along).
+    const litSide = phase; // 'inhale'|'hold1'|'exhale'|'hold2'
 
-    const current = circleConfig[phase];
+    const sideStyle = (name: BreathPhase, on: boolean) => ({
+        background: litSide === name && on ? active.accent : 'var(--border)',
+        boxShadow: litSide === name && on ? `0 0 12px ${active.accent}` : 'none',
+        transition: 'background 0.3s ease, box-shadow 0.3s ease',
+    });
 
     return (
         <div className="glass-card p-8 rounded-2xl flex flex-col items-center justify-center min-h-[60vh]">
-            <h3 className="text-2xl font-bold text-white mb-2">Дыхание 4-7-8</h3>
-            <p className="text-gray-400 mb-8 text-sm">Техника для снятия тревожности и улучшения сна. Цикл: {cycles}/{targetCycles}</p>
-            
-            {/* Контейнер для дыхания */}
-            <div className="relative flex items-center justify-center w-72 h-72 mb-10">
-                {/* Внешний статичный круг */}
-                <div className="absolute w-64 h-64 rounded-full border border-[var(--border)] opacity-20"></div>
-                
-                {/* Анимированный круг */}
-                <div 
-                    className={`w-48 h-48 rounded-full ${current.color} flex flex-col items-center justify-center shadow-lg transition-all ease-in-out`}
-                    style={{ 
-                        transform: `scale(${current.scale})`,
-                        transitionDuration: `${current.duration}ms` 
-                    }}
-                >
-                    <span className="text-2xl font-bold text-white">{current.text}</span>
-                    {phase !== 'idle' && phase !== 'finished' && (
-                        <span className="text-5xl font-bold text-white/80 mt-1">{timeLeft}</span>
-                    )}
+            <h3 className="text-2xl font-bold text-white mb-2">Квадратное дыхание (4-4-4-4)</h3>
+            <p className="text-gray-400 mb-10 text-sm text-center">Веди дыхание по сторонам квадрата: вдох, задержка, выдох, задержка. Цикл: {cycles}/{targetCycles}</p>
+
+            <div className="relative mb-10" style={{ width: SIDE, height: SIDE }}>
+                {/* Square edges (light up on the active side) */}
+                <div className="absolute rounded-full" style={{ left: 0, top: 0, width: 4, height: SIDE, transform: 'translateX(-2px)', ...sideStyle('inhale', moving) }} />
+                <div className="absolute rounded-full" style={{ left: 0, top: 0, width: SIDE, height: 4, transform: 'translateY(-2px)', ...sideStyle('hold1', moving) }} />
+                <div className="absolute rounded-full" style={{ left: SIDE, top: 0, width: 4, height: SIDE, transform: 'translateX(-2px)', ...sideStyle('exhale', moving) }} />
+                <div className="absolute rounded-full" style={{ left: 0, top: SIDE, width: SIDE, height: 4, transform: 'translateY(-2px)', ...sideStyle('hold2', moving) }} />
+
+                {/* Center label + countdown */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-2xl font-bold" style={{ color: active.accent }}>{active.label}</span>
+                    {moving && <span className="text-6xl font-bold text-white/80 mt-1 tabular-nums">{timeLeft}</span>}
                 </div>
+
+                {/* Travelling indicator */}
+                <div
+                    className={moving ? 'breath-dot' : ''}
+                    style={{
+                        position: 'absolute',
+                        width: 22, height: 22, borderRadius: '9999px',
+                        background: active.accent,
+                        left: dot.left, top: dot.top,
+                        transform: 'translate(-50%, -50%)',
+                        transition: moving ? `left ${secondsPerSide}s linear, top ${secondsPerSide}s linear` : 'none',
+                    }}
+                />
             </div>
 
             {phase === 'finished' ? (
                 <div className="text-center">
-                    <p className="text-gray-300 mb-4">Сессия завершена. Вы молодец!</p>
-                    <button onClick={startBreathing} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">
-                        Начать заново
-                    </button>
+                    <p className="text-gray-300 mb-4">Сессия завершена. Ты молодец! 🌿</p>
+                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Начать заново</button>
                 </div>
             ) : phase === 'idle' ? (
-                <button onClick={startBreathing} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">
-                    Начать дыхание
-                </button>
+                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Начать дыхание</button>
             ) : (
-                <button onClick={() => setPhase('finished')} className="text-gray-500 hover:text-red-400 text-sm underline">
-                    Прервать сессию
-                </button>
+                <button onClick={() => setPhase('finished')} className="text-gray-500 hover:text-red-400 text-sm underline">Прервать сессию</button>
             )}
         </div>
     );
@@ -395,16 +404,28 @@ export function StroopTest({ setTestResults }: any) {
     );
 }
 
-export function ReactionTest({ setTestResults }: any) {
-    const [state, setState] = useState('idle');
+export function ReactionTest({ setTestResults, achievements, setAchievements }: any) {
+    const [state, setState] = useState<'idle' | 'waiting' | 'ready' | 'result' | 'tooSoon'>('idle');
     const [time, setTime] = useState(0);
+    const [best, setBest] = useState<number | null>(null);
+    const [toast, setToast] = useState('');
     const startTime = useRef(0);
     const timerRef = useRef<any>(null);
+
+    useEffect(() => () => clearTimeout(timerRef.current), []);
+
+    const addAchievement = (name: string) => {
+        if (Array.isArray(achievements) && !achievements.includes(name)) {
+            setAchievements((prev: any[]) => [...prev, name]);
+            setToast(`🏆 Ачивка: «${name}»!`);
+            setTimeout(() => setToast(''), 4000);
+        }
+    };
 
     const startTest = () => {
         setState('waiting');
         setTime(0);
-        const delay = Math.random() * 3000 + 2000; 
+        const delay = Math.random() * 3000 + 2000;
         timerRef.current = setTimeout(() => {
             setState('ready');
             startTime.current = Date.now();
@@ -418,30 +439,58 @@ export function ReactionTest({ setTestResults }: any) {
             clearTimeout(timerRef.current);
             setState('tooSoon');
         } else if (state === 'ready') {
-            const reactionTime = Date.now() - startTime.current;
-            setTime(reactionTime);
+            const rt = Date.now() - startTime.current;
+            setTime(rt);
             setState('result');
-            saveResult(setTestResults, 'reaction', reactionTime);
+            saveResult(setTestResults, 'reaction', rt);
+            if (best === null || rt < best) setBest(rt);
+            if (rt < 200) addAchievement('Сверхреакция (<200 мс)');
+            else if (rt < 250) addAchievement('Молния (<250 мс)');
+            else if (rt < 300) addAchievement('Быстрая рука (<300 мс)');
         }
     };
 
-    const bgClass = state === 'ready' ? 'bg-green-500' : state === 'waiting' ? 'bg-red-500' : 'bg-[var(--bg-card)]';
-    const text = state === 'idle' ? 'Нажмите, чтобы начать' : 
-                 state === 'waiting' ? 'Ждите зеленого...' : 
-                 state === 'ready' ? 'КЛИК!' : 
-                 state === 'tooSoon' ? 'Рано! Вы кликнули до зеленого цвета.' : `${time} мс`;
+    const rating = time < 200 ? 'Невероятно! ⚡' : time < 250 ? 'Молниеносно' : time < 300 ? 'Отлично' : time < 400 ? 'Хорошо' : 'Есть куда расти';
+
+    const bgClass = state === 'ready' ? 'bg-green-500' : state === 'waiting' ? 'bg-red-500/90' : state === 'tooSoon' ? 'bg-orange-500/80' : 'bg-[var(--bg-card)]';
 
     return (
         <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
-            <p className="text-gray-400 mb-6 text-center">Дождитесь зеленого цвета и кликните как можно быстрее.</p>
-            <div onClick={handleClick} className={`w-full max-w-md h-64 flex items-center justify-center rounded-2xl cursor-pointer border-2 border-[var(--border)] transition-colors ${bgClass}`}>
-                <span className="text-3xl font-bold text-white text-center px-4">{text}</span>
+            <p className="text-gray-400 mb-4 text-center">Дождись зелёного цвета и кликни как можно быстрее.</p>
+            {best !== null && <div className="text-sm text-gray-400 mb-4">Лучший результат за сессию: <span className="text-cyan-400 font-bold">{best} мс</span></div>}
+
+            <div onClick={handleClick} className={`relative w-full max-w-md h-64 flex items-center justify-center rounded-2xl cursor-pointer border-2 border-[var(--border)] overflow-hidden transition-colors duration-150 ${bgClass}`}>
+                {/* waiting: pulsing dots */}
+                {state === 'waiting' && (
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="flex gap-2">
+                            {[0, 1, 2].map(i => (
+                                <span key={i} className="w-3 h-3 rounded-full bg-white/80 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
+                            ))}
+                        </div>
+                        <span className="text-2xl font-bold text-white">Ждите зелёного…</span>
+                    </div>
+                )}
+                {state === 'ready' && (
+                    <span key="go" style={{ animation: 'popIn 0.15s ease-out' }} className="text-5xl font-extrabold text-white">КЛИК!</span>
+                )}
+                {state === 'idle' && <span className="text-3xl font-bold text-white text-center px-4">Нажмите, чтобы начать</span>}
+                {state === 'tooSoon' && <span className="text-2xl font-bold text-white text-center px-4">Рано! Дождись зелёного 🙂</span>}
+                {state === 'result' && (
+                    <div key={time} className="text-center" style={{ animation: 'popIn 0.25s ease-out' }}>
+                        <div className="text-6xl font-extrabold text-white tabular-nums">{time}<span className="text-2xl"> мс</span></div>
+                        <div className="text-lg text-white/90 mt-2">{rating}</div>
+                    </div>
+                )}
             </div>
+
             {state === 'result' && (
                 <button onClick={startTest} className="mt-8 bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">
-                    Попробовать еще раз
+                    Попробовать ещё раз
                 </button>
             )}
+
+            {toast && <div className="mt-6 bg-green-400/10 border border-green-400 text-green-400 px-6 py-3 rounded-lg text-sm">{toast}</div>}
         </div>
     );
 }
@@ -618,34 +667,35 @@ export function DigitSpanTest({ setTestResults }: any) {
 }
 
 export function GoNoGoTest({ setTestResults }: any) {
-    const [phase, setPhase] = useState('idle');
+    const [phase, setPhase] = useState<'idle' | 'playing' | 'gameover'>('idle');
     const [score, setScore] = useState(0);
     const [time, setTime] = useState(30);
-    const [stimulus, setStimulus] = useState('none');
-    const timerRef = useRef<any>(null);
+    const [stimulus, setStimulus] = useState<'none' | 'go' | 'nogo' | 'error'>('none');
+    const scoreRef = useRef(0);
     const stimulusRef = useRef<any>(null);
 
-    const startGame = () => {
-        setScore(0);
-        setTime(30);
-        setPhase('playing');
-        nextStimulus();
-    };
+    // Keep a ref of the score so the countdown effect can read the final value
+    // without depending on `score` (which would tear down the stimulus loop).
+    useEffect(() => { scoreRef.current = score; }, [score]);
 
     const nextStimulus = () => {
         setStimulus('none');
         const delay = Math.random() * 1000 + 800;
         stimulusRef.current = setTimeout(() => {
-            const type = Math.random() < 0.75 ? 'go' : 'nogo';
+            const type = Math.random() < 0.72 ? 'go' : 'nogo';
             setStimulus(type);
-            
             stimulusRef.current = setTimeout(() => {
-                if (type === 'go') {
-                    setScore(s => s - 1); // Пропустил зеленый
-                }
+                if (type === 'go') setScore(s => s - 1); // прозевал зелёный
                 nextStimulus();
-            }, 1200);
+            }, 1100);
         }, delay);
+    };
+
+    const startGame = () => {
+        setScore(0);
+        setTime(30);
+        setStimulus('none');
+        setPhase('playing');
     };
 
     const handleClick = () => {
@@ -655,45 +705,48 @@ export function GoNoGoTest({ setTestResults }: any) {
             clearTimeout(stimulusRef.current);
             nextStimulus();
         } else if (stimulus === 'nogo') {
-            setScore(s => s - 2); // Нажал красный
+            setScore(s => s - 2); // нажал на красный
             setStimulus('error');
             clearTimeout(stimulusRef.current);
             setTimeout(() => nextStimulus(), 500);
         }
     };
 
+    // Stimulus loop — keyed on phase only, so score changes (and StrictMode's
+    // double-invoke) can't cancel the pending circle.
     useEffect(() => {
-        if (phase === 'playing') {
-            timerRef.current = setInterval(() => {
-                setTime(t => {
-                    if (t <= 1) {
-                        clearInterval(timerRef.current);
-                        clearTimeout(stimulusRef.current);
-                        setPhase('gameover');
-                        setStimulus('none');
-                        saveResult(setTestResults, 'gonogo', score);
-                        return 0;
-                    }
-                    return t - 1;
-                });
-            }, 1000);
-        }
-        return () => {
-            clearInterval(timerRef.current);
-            clearTimeout(stimulusRef.current);
-        };
-    }, [phase, score, setTestResults]);
+        if (phase !== 'playing') return;
+        nextStimulus();
+        return () => clearTimeout(stimulusRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [phase]);
 
-    // Классы для круга в центре
-    const circleClass = stimulus === 'go' ? 'bg-green-500' : 
-                        stimulus === 'nogo' ? 'bg-red-500' : 
-                        stimulus === 'error' ? 'bg-red-700 border-4 border-red-300' :
-                        'bg-transparent';
+    // Countdown — keyed on phase only. The updater stays pure (just decrements);
+    // ending the game is handled by the separate effect below.
+    useEffect(() => {
+        if (phase !== 'playing') return;
+        const id = setInterval(() => setTime(t => (t <= 1 ? 0 : t - 1)), 1000);
+        return () => clearInterval(id);
+    }, [phase]);
+
+    // Game over when the clock hits zero (no state updates inside an updater).
+    useEffect(() => {
+        if (phase === 'playing' && time <= 0) {
+            clearTimeout(stimulusRef.current);
+            setStimulus('none');
+            saveResult(setTestResults, 'gonogo', scoreRef.current);
+            setPhase('gameover');
+        }
+    }, [time, phase, setTestResults]);
+
+    const circleClass = stimulus === 'go' ? 'bg-green-500 shadow-lg shadow-green-500/40' :
+                        stimulus === 'nogo' ? 'bg-red-500 shadow-lg shadow-red-500/40' :
+                        stimulus === 'error' ? 'bg-red-700 border-4 border-red-300' : '';
 
     return (
         <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
-            <p className="text-gray-400 mb-6 text-center">Кликайте только на <span className="text-green-400 font-bold">зеленый</span> круг. При <span className="text-red-400 font-bold">красном</span> не нажимайте ничего!</p>
-            
+            <p className="text-gray-400 mb-6 text-center">Кликайте только на <span className="text-green-400 font-bold">зелёный</span> круг. При <span className="text-red-400 font-bold">красном</span> — не нажимайте ничего!</p>
+
             {phase === 'playing' && (
                 <div className="flex gap-8 mb-8 text-2xl">
                     <div>Очки: <span className="text-cyan-400 font-bold">{score}</span></div>
@@ -701,17 +754,17 @@ export function GoNoGoTest({ setTestResults }: any) {
                 </div>
             )}
 
-            <div onClick={handleClick} className={`w-full max-w-md h-64 flex items-center justify-center rounded-2xl cursor-pointer border-2 border-[var(--border)] bg-[var(--bg-card)] transition-colors duration-150 ${phase !== 'playing' ? 'cursor-default' : ''}`}>
-                {phase === 'idle' && <span className="text-3xl font-bold text-white">Нажмите "Старт"</span>}
+            <div onClick={handleClick} className={`w-full max-w-md h-64 flex items-center justify-center rounded-2xl border-2 border-[var(--border)] bg-[var(--bg-card)] transition-colors duration-150 ${phase === 'playing' ? 'cursor-pointer' : 'cursor-default'}`}>
+                {phase === 'idle' && <span className="text-3xl font-bold text-white">Нажмите «Старт»</span>}
                 {phase === 'gameover' && (
                     <div className="text-center">
                         <div className="text-5xl font-bold text-cyan-400 mb-2">{score}</div>
                         <div className="text-xl text-gray-300">Ваш результат</div>
                     </div>
                 )}
-                {phase === 'playing' && stimulus === 'none' && <span className="text-3xl font-bold text-white opacity-0">...</span>}
                 {phase === 'playing' && (stimulus === 'go' || stimulus === 'nogo' || stimulus === 'error') && (
-                    <div className={`w-40 h-40 rounded-full transition-all duration-100 flex items-center justify-center ${circleClass}`}>
+                    <div key={stimulus + time} style={{ animation: 'popIn 0.15s ease-out' }}
+                        className={`w-40 h-40 rounded-full flex items-center justify-center ${circleClass}`}>
                         {stimulus === 'error' && <span className="text-3xl font-bold text-white">ОЙ!</span>}
                     </div>
                 )}

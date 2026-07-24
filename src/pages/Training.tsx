@@ -28,7 +28,7 @@ export function Training({ setTestResults, achievements, setAchievements }: any)
             </div>
             {tab === 'schulte' && <SchulteTable setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />}
             {tab === 'stroop' && <StroopTest setTestResults={setTestResults} />}
-            {tab === 'reaction' && <ReactionTest setTestResults={setTestResults} />}
+            {tab === 'reaction' && <ReactionTest setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />}
             {tab === 'trail' && <TrailMakingTest setTestResults={setTestResults} />}
             {tab === 'digitspan' && <DigitSpanTest setTestResults={setTestResults} />}
             {tab === 'gonogo' && <GoNoGoTest setTestResults={setTestResults} />}

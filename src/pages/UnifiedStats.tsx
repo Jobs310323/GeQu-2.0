@@ -1,6 +1,11 @@
 export function UnifiedStats({ logs, testResults, gymData }: any) {
     const last7Logs = logs.slice(-7);
-    const avg = (key: string) => last7Logs.length ? (last7Logs.reduce((a: number, b: any) => a + b[key], 0) / last7Logs.length).toFixed(1) : '—';
+    // Only average entries that actually carry a finite number — older logs may
+    // predate a field (e.g. mood), which otherwise poisoned the sum into NaN.
+    const avg = (key: string) => {
+        const nums = last7Logs.map((l: any) => Number(l[key])).filter((n: number) => Number.isFinite(n));
+        return nums.length ? (nums.reduce((a: number, b: number) => a + b, 0) / nums.length).toFixed(1) : '—';
+    };
 
     const totalTonnage = gymData.history.reduce((acc: number, w: any) => {
         return acc + w.exercises.reduce((exAcc: number, ex: any) => 

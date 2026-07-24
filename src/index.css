@@ -47,6 +47,17 @@ body {
 .note-card { animation: popIn 0.3s ease-out; }
 .fire-glow { box-shadow: 0 0 15px rgba(255, 121, 198, 0.4); }
 
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.anim-fade-in { animation: fadeInUp 0.35s ease-out both; }
+
+/* Card hover lift (used by Notes) */
+.lift { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+.lift:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+
+/* Box-breathing indicator glow */
+@keyframes breathGlow { 0%,100% { box-shadow: 0 0 12px 2px var(--accent-cyan); } 50% { box-shadow: 0 0 22px 8px var(--accent-cyan); } }
+.breath-dot { animation: breathGlow 2s ease-in-out infinite; }
+
 input, textarea, button { color: var(--text-main); }
 input[type="range"] { accent-color: var(--accent-purple); }
 input[type="checkbox"] { accent-color: var(--accent-cyan); }
