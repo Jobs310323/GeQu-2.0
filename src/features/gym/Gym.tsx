@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { streamClaude } from '../../lib/ai';
+import { marked } from 'marked';
 
 export function GymApp({ gymData, setGymData, logs }: any) {
     const [view, setView] = useState('home');
@@ -534,102 +536,117 @@ export function GymPRs({ gymData }: any) {
     );
 }
 
-export function GymAI({ gymData, logs }: any) {
-    const activeProgram = gymData.programs.find((p: any) => p.id === gymData.activeProgramId);
-    if (!activeProgram) return <div className="glass-card p-8 text-center text-gray-400">Нет активной программы.</div>;
+const GYM_COACH_SYSTEM = `Ты — тёплый, поддерживающий персональный фитнес-тренер в приложении GeQu (пользователь — человек с СДВГ, ему важна ясность и мотивация).
+Тебе дают данные в JSON: упражнения активной программы, последние и предыдущие рабочие подходы (вес × повторы), целевой диапазон повторений и качество сна в дни тренировок (0–10).
+Задача: дать короткий живой разбор прогресса и конкретную рекомендацию на следующую тренировку по каждому упражнению — увеличить вес, оставить тот же, или сделать разгрузку (deload). Где уместно, связывай спад результатов с плохим сном.
+Пиши по-русски, дружелюбно и по делу, без воды и общих фраз. Формат — Markdown: **название упражнения** жирным, затем 1–2 коротких предложения с рекомендацией. В конце добавь одну ободряющую строчку. Не выдумывай данные, которых нет в JSON.`;
 
-    const exNames = new Set();
+function buildGymContext(activeProgram: any, gymData: any, logs: any): any[] {
+    const exNames = new Set<string>();
     activeProgram.days.forEach((d: any) => d.exercises.forEach((e: any) => exNames.add(e.name)));
 
-    const getHistory = (name: string) => {
-        return gymData.history.filter((w: any) => w.exercises.some((e: any) => e.name === name)).map((w: any) => ({
-            date: w.date,
-            sets: w.exercises.find((e: any) => e.name === name).sets.filter((s:any) => s.done)
-        }));
-    };
+    const getHistory = (name: string) =>
+        gymData.history
+            .filter((w: any) => w.exercises.some((e: any) => e.name === name))
+            .map((w: any) => ({
+                date: w.date,
+                sets: w.exercises.find((e: any) => e.name === name).sets.filter((s: any) => s.done),
+            }));
 
-    const getDayLog = (dateStr: string) => {
-        return logs.find((l: any) => l.date.split('T')[0] === dateStr.split('T')[0]);
-    };
+    const getDayLog = (dateStr: string) =>
+        logs.find((l: any) => l.date.split('T')[0] === dateStr.split('T')[0]);
 
-    const recommendations: any[] = [];
-
-    exNames.forEach((name: any) => {
+    const items: any[] = [];
+    exNames.forEach((name) => {
         const history = getHistory(name);
-        if (history.length === 0) return;
-
-        const last = history[history.length - 1];
-        if(last.sets.length === 0) return;
-
-        const lastMaxWeight = Math.max(...last.sets.map((s: any) => s.weight));
-        const lastTotalReps = last.sets.reduce((sum: number, s: any) => sum + s.reps, 0);
+        if (history.length === 0 || history[history.length - 1].sets.length === 0) return;
 
         let targetReps = 10;
         activeProgram.days.forEach((d: any) => d.exercises.forEach((e: any) => {
             if (e.name === name) {
-                const repRange = e.reps.split('-');
+                const repRange = String(e.reps).split('-');
                 targetReps = repRange.length > 1 ? parseInt(repRange[1]) : parseInt(repRange[0]);
             }
         }));
 
-        const allSetsHitTarget = last.sets.every((s: any) => s.reps >= targetReps);
-        const dayLog = getDayLog(last.date);
+        const summarize = (entry: any) => ({
+            date: entry.date.split('T')[0],
+            sets: entry.sets.map((s: any) => ({ weight: s.weight, reps: s.reps })),
+            sleep: getDayLog(entry.date)?.sleep ?? null,
+        });
 
-        if (allSetsHitTarget && history.length >= 1) {
-            recommendations.push({
-                name,
-                text: `Вы успешно выполнили все подходы (${lastTotalReps} повт.). Рекомендуется увеличить рабочий вес до ${lastMaxWeight + 2.5} кг.`,
-                status: 'up'
-            });
-        } else if (history.length >= 2) {
-            const prev = history[history.length - 2];
-            if(prev.sets.length === 0) return;
-            const prevMaxWeight = Math.max(...prev.sets.map((s: any) => s.weight));
-            
-            if (lastMaxWeight < prevMaxWeight) {
-                let extraText = "";
-                if (dayLog && dayLog.sleep < 5) {
-                    extraText = ` В день тренировки ваш сон был низким (${dayLog.sleep}/10), что, вероятно, снизило силу.`;
-                }
-                recommendations.push({
-                    name,
-                    text: `Наблюдается снижение результата (было ${prevMaxWeight} кг, стало ${lastMaxWeight} кг).${extraText} Рекомендуется провести легкую тренировку (deload).`,
-                    status: 'down'
-                });
-            } else {
-                recommendations.push({
-                    name,
-                    text: `Не все подходы достигли целевого диапазона повторений (${targetReps}). Рекомендуется сохранить текущий вес (${lastMaxWeight} кг).`,
-                    status: 'stay'
-                });
-            }
-        } else {
-            recommendations.push({
-                name,
-                text: `Недостаточно данных для анализа. Продолжайте выполнять упражнение с текущим весом (${lastMaxWeight} кг).`,
-                status: 'stay'
-            });
-        }
+        const last = history[history.length - 1];
+        const prev = history.length >= 2 ? history[history.length - 2] : null;
+
+        items.push({
+            exercise: name,
+            targetReps,
+            last: summarize(last),
+            previous: prev && prev.sets.length ? summarize(prev) : null,
+        });
     });
+    return items;
+}
 
-    if (recommendations.length === 0) return <div className="glass-card p-8 text-center text-gray-400">Выполните тренировки, чтобы получить рекомендации.</div>;
+export function GymAI({ gymData, logs }: any) {
+    const [output, setOutput] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const activeProgram = gymData.programs.find((p: any) => p.id === gymData.activeProgramId);
+    if (!activeProgram) return <div className="glass-card p-8 text-center text-gray-400">Нет активной программы.</div>;
+
+    const context = buildGymContext(activeProgram, gymData, logs);
+    if (context.length === 0) return <div className="glass-card p-8 text-center text-gray-400">Выполните тренировки, чтобы получить рекомендации.</div>;
+
+    const askCoach = async () => {
+        setLoading(true);
+        setError('');
+        setOutput('');
+        try {
+            await streamClaude({
+                system: GYM_COACH_SYSTEM,
+                maxTokens: 1200,
+                messages: [{
+                    role: 'user',
+                    content: `Вот данные по моим упражнениям (JSON):\n\n${JSON.stringify(context, null, 2)}\n\nРазбери мой прогресс и дай рекомендации на следующую тренировку.`,
+                }],
+                onToken: (chunk) => setOutput((prev) => prev + chunk),
+            });
+        } catch (e: any) {
+            setError(e?.message || 'Не удалось получить ответ от ИИ.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="space-y-4">
-            <div className="glass-card p-4 rounded-xl bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-sm">
-                ИИ-анализатор проверяет ваши последние результаты, целевые повторения и связь с качеством сна.
-            </div>
-            {recommendations.map((rec: any, i: number) => (
-                <div key={i} className="glass-card p-6 rounded-2xl flex gap-4">
-                    <div className={`text-3xl ${rec.status === 'up' ? 'text-green-400' : rec.status === 'down' ? 'text-red-400' : 'text-yellow-400'}`}>
-                        {rec.status === 'up' ? '📈' : rec.status === 'down' ? '📉' : '➡️'}
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-white mb-1">{rec.name}</h3>
-                        <p className="text-gray-300">{rec.text}</p>
-                    </div>
+            <div className="glass-card p-6 rounded-2xl flex flex-col md:flex-row md:items-center gap-4 bg-cyan-400/5 border border-cyan-400/30">
+                <div className="flex-1">
+                    <h3 className="text-lg font-bold text-cyan-400 mb-1">🤖 ИИ-тренер</h3>
+                    <p className="text-sm text-gray-400">Проанализирую твои последние результаты, целевые повторы и связь со сном, и подскажу что делать дальше.</p>
                 </div>
-            ))}
+                <button
+                    onClick={askCoach}
+                    disabled={loading}
+                    className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg disabled:opacity-50 whitespace-nowrap"
+                >
+                    {loading ? 'Думаю…' : output ? 'Обновить разбор' : 'Получить разбор'}
+                </button>
+            </div>
+
+            {error && (
+                <div className="glass-card p-4 rounded-xl border border-red-400/30 text-red-400 text-sm">{error}</div>
+            )}
+
+            {(output || loading) && (
+                <div className="glass-card p-6 rounded-2xl">
+                    {output
+                        ? <div className="text-gray-200 markdown-content" dangerouslySetInnerHTML={{ __html: marked.parse(output) as string }} />
+                        : <div className="text-gray-500 text-sm animate-pulse">Анализирую данные…</div>}
+                </div>
+            )}
         </div>
     );
 }
