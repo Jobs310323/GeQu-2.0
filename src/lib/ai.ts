@@ -1,7 +1,7 @@
-// Client-side helper for talking to the Claude proxy (netlify/functions/claude).
+// Client-side helper for talking to the AI proxy (netlify/functions/ai).
 // The API key never touches the browser — this only calls our own endpoint.
 
-const ENDPOINT = '/.netlify/functions/claude';
+const ENDPOINT = '/.netlify/functions/ai';
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -35,11 +35,11 @@ export function setAccessKey(key: string): void {
 }
 
 /**
- * Streams a Claude response. Calls `onToken` for each text chunk and resolves
- * with the full accumulated text. Throws with a human-readable message on
- * failure (offline, server error, etc.).
+ * Streams an AI response from the proxy. Calls `onToken` for each text chunk and
+ * resolves with the full accumulated text. Throws with a human-readable message
+ * on failure (offline, server error, etc.).
  */
-export async function streamClaude(opts: StreamOptions): Promise<string> {
+export async function streamAI(opts: StreamOptions): Promise<string> {
     if (!isOnline()) {
         throw new Error('Нет подключения к сети — ИИ-функции недоступны офлайн.');
     }

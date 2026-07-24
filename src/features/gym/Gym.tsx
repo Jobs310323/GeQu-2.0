@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { streamClaude } from '../../lib/ai';
+import { streamAI } from '../../lib/ai';
 import { marked } from 'marked';
 
 export function GymApp({ gymData, setGymData, logs }: any) {
@@ -604,7 +604,7 @@ export function GymAI({ gymData, logs }: any) {
         setError('');
         setOutput('');
         try {
-            await streamClaude({
+            await streamAI({
                 system: GYM_COACH_SYSTEM,
                 maxTokens: 1200,
                 messages: [{
