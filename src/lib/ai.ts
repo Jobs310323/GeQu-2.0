@@ -1,9 +1,16 @@
-// Client-side helper for talking to the AI proxy (netlify/functions/ai).
-// The API key never touches the browser — this only calls our own endpoint.
+// Client-side Groq integration (free tier). The API key is stored locally in
+// the browser (entered in Settings) and used to call Groq directly — no backend
+// and no server-side environment variables required.
+//
+// This suits a single-user personal app: the key is NOT baked into the deployed
+// bundle, it only ever lives in this browser's localStorage. Note that anyone
+// with access to this browser's devtools could read it, so use a dedicated key.
 
-const ENDPOINT = '/.netlify/functions/ai';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const MODEL = 'llama-3.3-70b-versatile';
+const KEY_STORAGE = 'gequ_groq_key';
 
-export type ChatMessage = { role: 'user' | 'assistant'; content: string };
+export type ChatMessage = { role: 'user' | 'assistant' | 'system'; content: string };
 
 export interface StreamOptions {
     system?: string;
@@ -17,65 +24,91 @@ export function isOnline(): boolean {
     return typeof navigator === 'undefined' ? true : navigator.onLine;
 }
 
-// Optional access passphrase (matches GEQU_ACCESS_KEY on the server, if set).
-export function getAccessKey(): string {
+export function getGroqKey(): string {
     try {
-        return localStorage.getItem('gequ_ai_key') || '';
+        return localStorage.getItem(KEY_STORAGE) || '';
     } catch {
         return '';
     }
 }
 
-export function setAccessKey(key: string): void {
+export function setGroqKey(key: string): void {
     try {
-        localStorage.setItem('gequ_ai_key', key);
+        localStorage.setItem(KEY_STORAGE, key.trim());
     } catch {
-        // ignore
+        // ignore storage errors
     }
 }
 
+export function hasGroqKey(): boolean {
+    return getGroqKey().length > 0;
+}
+
 /**
- * Streams an AI response from the proxy. Calls `onToken` for each text chunk and
- * resolves with the full accumulated text. Throws with a human-readable message
- * on failure (offline, server error, etc.).
+ * Streams a Groq chat completion straight from the browser. Calls `onToken` for
+ * each text chunk and resolves with the full accumulated text. Throws with a
+ * human-readable (Russian) message on failure.
  */
 export async function streamAI(opts: StreamOptions): Promise<string> {
     if (!isOnline()) {
-        throw new Error('Нет подключения к сети — ИИ-функции недоступны офлайн.');
+        throw new Error('Нет подключения к сети — ИИ недоступен офлайн.');
+    }
+    const key = getGroqKey();
+    if (!key) {
+        throw new Error('Не задан ключ Groq. Добавь его в Настройках → раздел «ИИ (Groq)».');
     }
 
-    const res = await fetch(ENDPOINT, {
+    const messages: ChatMessage[] = [
+        ...(opts.system ? [{ role: 'system' as const, content: opts.system }] : []),
+        ...opts.messages,
+    ];
+
+    const res = await fetch(GROQ_URL, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-gequ-key': getAccessKey(),
-        },
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            system: opts.system,
-            messages: opts.messages,
-            maxTokens: opts.maxTokens,
+            model: MODEL,
+            messages,
+            max_tokens: Math.min(Math.max(opts.maxTokens || 1024, 256), 4096),
+            stream: true,
         }),
         signal: opts.signal,
     });
 
     if (!res.ok || !res.body) {
         const detail = await res.text().catch(() => '');
-        if (res.status === 401) {
-            throw new Error('Доступ закрыт: неверный ключ доступа (проверь настройки).');
-        }
-        throw new Error(detail || `Сервер вернул ошибку (${res.status}).`);
+        if (res.status === 401) throw new Error('Неверный ключ Groq — проверь его в Настройках.');
+        throw new Error(detail ? `Ошибка Groq (${res.status}): ${detail.slice(0, 200)}` : `Ошибка Groq (${res.status}).`);
     }
 
+    // Groq streams OpenAI-style SSE: lines of `data: {json}` ending with `[DONE]`.
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
+    let buffer = '';
     let full = '';
 
     for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        full += chunk;
-        opts.onToken(chunk);
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            const data = trimmed.slice(5).trim();
+            if (data === '[DONE]') return full;
+            try {
+                const json = JSON.parse(data);
+                const text = json.choices?.[0]?.delta?.content;
+                if (text) {
+                    full += text;
+                    opts.onToken(text);
+                }
+            } catch {
+                // partial/non-JSON keep-alive line — ignore
+            }
+        }
     }
 
     return full;
