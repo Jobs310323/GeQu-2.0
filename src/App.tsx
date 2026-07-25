@@ -13,6 +13,7 @@ import { Knowledge } from './pages/Knowledge';
 import { AboutAdhd } from './pages/AboutAdhd';
 import { Settings } from './pages/Settings';
 import { UnifiedStats } from './pages/UnifiedStats';
+import { Progress } from './pages/Progress';
 import { CirclesOfInfluence } from './pages/CirclesOfInfluence';
 import { GymApp } from './features/gym/Gym';
 import { DopamineRoulette } from './features/dopamine/DopamineRoulette';
@@ -73,7 +74,7 @@ function App() {
     return (
         <div className="flex h-screen overflow-hidden">
             <Sidebar page={page} setPage={setPage} theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog} setHyperfocus={setHyperfocus} kanban={kanban} setDiary={setDiary} setLogs={setLogs} />
-            <main className="flex-1 p-10 overflow-y-auto relative">
+            <main className="flex-1 p-6 overflow-y-auto relative">
                 {page === 'dashboard' && <Dashboard logs={logs} setLogs={setLogs} achievements={achievements} setHyperfocus={setHyperfocus} kanban={kanban} gymData={gymData} testResults={testResults} />}
                 {page === 'gym' && <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />}
                 {page === 'diary' && <Diary diary={diary} setDiary={setDiary} />}
@@ -84,6 +85,7 @@ function App() {
                 {page === 'kanban' && <Kanban kanban={kanban} setKanban={setKanban} />}
                 {page === 'dynamics' && <Dynamics logs={logs} testResults={testResults} gymData={gymData} />}
                 {page === 'hub' && <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />}
+                {page === 'progress' && <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} />}
                 {page === 'training' && <Training setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />}
                 {page === 'knowledge' && <Knowledge />}
                 {page === 'about' && <AboutAdhd />}
