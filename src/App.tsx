@@ -115,7 +115,7 @@ function App() {
                 {page === 'cbt' && <Cbt cbtRecords={cbtRecords} setCbtRecords={setCbtRecords} />}
                 {page === 'clinical' && <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults} />}
                 {page === 'training' && <Training setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />}
-                {page === 'knowledge' && <Knowledge />}
+                {page === 'knowledge' && <Knowledge setPage={setPage} />}
                 {page === 'about' && <AboutAdhd />}
                 {page === 'settings' && <Settings diary={diary} logs={logs} prefs={prefs} setPrefs={setPrefs} />}
             </main>

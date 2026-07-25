@@ -1,50 +1,181 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { marked } from 'marked';
+import { CATEGORIES, ARTICLES, ARTICLES_BY_CATEGORY, searchArticles, relatedTo, type Article } from '../lib/knowledge';
+import { DB } from '../lib/db';
 
-export function Knowledge() {
-    const articles = [
-        { id: 1, tag: 'Быт', title: 'Правило 2 минут', content: 'Если задача занимает меньше 2 минут (ответить на сообщение, помыть чашку) — сделай её прямо сейчас. Это предотвращает накопление микро-задач, которые перегружают рабочую память.' },
-        { id: 2, tag: 'Работа', title: 'Тайм-блокинг вместо списка дел', content: 'Людям с СДВГ сложно оценивать время. Вместо списка "что сделать", выделяй в календаре конкретные блоки времени на задачи. "С 14:00 до 15:00 я пишу отчет", а не просто "Написать отчет".' },
-        { id: 3, tag: 'Медицина', title: 'Дофамин и СДВГ', content: 'При СДВГ уровень дофамина нестабилен. Мозг ищет быструю стимуляцию (соцсети, сладкое). Заменяйте дешевый дофамин на качественный: спорт, обучение новому, сложные задачи, которые вызывают интерес.' },
-        { id: 4, tag: 'Фокус', title: 'Внешний мозг', content: 'Не держи мысли в голове. Записывай всё: в GeQu, в блокнот, на стикеры. Голова человека с СДВГ — это место для создания идей, а не для их хранения.' },
-        { id: 5, tag: 'Быт', title: 'Сенсорная перегрузка', content: 'Если чувствуешь, что закипаешь от звуков/света/мыслей — это перегрузка. Уйди в темное тихое место на 10 минут. Закрой глаза. Это не лень, это перезагрузка нервной системы.' },
-        { id: 6, tag: 'Работа', title: 'Правило 5 минут', content: 'Договоритесь с собой поработать над задачей всего 5 минут. Часто этого хватает, чтобы преодолеть барьер старта (сопротивление дофаминовой системы).' },
-        { id: 7, tag: 'Фокус', title: 'Pomodoro для СДВГ', content: 'Классический таймер 25/5 работает не для всех. Если вам нужно больше времени для разгона, попробуйте 45/15. Главное — физический таймер, который возвращает в реальность из гиперфокуса.' },
-        { id: 8, tag: 'Медицина', title: 'Эмоциональная дисрегуляция', content: 'RSD (Rejection Sensitive Dysphoria) — крайняя чувствительность к отвержению или критике. Это физиологическая особенность СДВГ. Знание этого помогает не винить себя за резкие эмоции.' }
-    ];
-    const [filter, setFilter] = useState('Все');
-    const [search, setSearch] = useState('');
-    const [openId, setOpenId] = useState<number | null>(null);
-    const tags = ['Все', 'Быт', 'Работа', 'Медицина', 'Фокус'];
+function loadSet(key: string): string[] {
+    const v = DB.get(key, []);
+    return Array.isArray(v) ? v : [];
+}
 
-    const filtered = articles.filter(a => (filter === 'Все' || a.tag === filter) && (a.title.toLowerCase().includes(search.toLowerCase()) || a.content.toLowerCase().includes(search.toLowerCase())));
+export function Knowledge({ setPage }: any) {
+    const [query, setQuery] = useState('');
+    const [category, setCategory] = useState<string | null>(null);
+    const [open, setOpen] = useState<Article | null>(null);
+    const [saved, setSaved] = useState<string[]>(() => loadSet('kbSaved'));
+    const [read, setRead] = useState<string[]>(() => loadSet('kbRead'));
+
+    const persist = (key: string, next: string[], set: (v: string[]) => void) => {
+        set(next);
+        DB.save(key, next);
+    };
+
+    const toggleSaved = (id: string) =>
+        persist('kbSaved', saved.includes(id) ? saved.filter(x => x !== id) : [...saved, id], setSaved);
+
+    const openArticle = (a: Article) => {
+        setOpen(a);
+        if (!read.includes(a.id)) persist('kbRead', [...read, a.id], setRead);
+    };
+
+    const results = useMemo(() => searchArticles(query), [query]);
+
+    // ---------- reading view ----------
+    if (open) {
+        const cat = CATEGORIES.find(c => c.id === open.category);
+        const related = relatedTo(open);
+        return (
+            <div className="max-w-3xl">
+                <button onClick={() => setOpen(null)} className="text-sm text-gray-400 hover:text-cyan-400 mb-4">
+                    ← Назад к базе знаний
+                </button>
+
+                <div className="glass-card p-8 rounded-2xl">
+                    <div className="flex flex-wrap items-center gap-3 mb-3 text-xs">
+                        <span className="px-2.5 py-1 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/30">
+                            {cat?.icon} {cat?.title}
+                        </span>
+                        <span className="text-gray-500">{open.minutes} мин чтения</span>
+                        <button onClick={() => toggleSaved(open.id)}
+                            className={`ml-auto px-3 py-1 rounded-full border transition ${
+                                saved.includes(open.id)
+                                    ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/40'
+                                    : 'border-[var(--border)] text-gray-500 hover:text-white'
+                            }`}>
+                            {saved.includes(open.id) ? '★ В закладках' : '☆ В закладки'}
+                        </button>
+                    </div>
+
+                    <h1 className="text-3xl font-bold mb-4">{open.title}</h1>
+                    <div className="text-gray-200 markdown-content leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: marked.parse(open.body) as string }} />
+
+                    {open.action && (
+                        <button onClick={() => setPage?.(open.action!.page)}
+                            className="mt-6 bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg">
+                            {open.action.label} →
+                        </button>
+                    )}
+                </div>
+
+                {related.length > 0 && (
+                    <div className="mt-6">
+                        <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">Читать дальше</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {related.map(a => (
+                                <button key={a.id} onClick={() => openArticle(a)}
+                                    className="glass-card p-4 rounded-xl text-left hover:border-cyan-400/40 border border-transparent transition">
+                                    <div className="font-bold text-sm mb-1">{a.title}</div>
+                                    <div className="text-xs text-gray-500">{a.summary}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ---------- list view ----------
+    const listed = category ? ARTICLES_BY_CATEGORY(category) : null;
+    const savedArticles = ARTICLES.filter(a => saved.includes(a.id));
+
+    const Card = ({ a }: { a: Article }) => (
+        <button onClick={() => openArticle(a)}
+            className="glass-card p-5 rounded-2xl text-left border border-transparent hover:border-cyan-400/40 transition flex flex-col">
+            <div className="flex items-start justify-between gap-2 mb-1">
+                <h3 className="font-bold flex-1">{a.title}</h3>
+                {saved.includes(a.id) && <span className="text-yellow-400 text-sm">★</span>}
+            </div>
+            <p className="text-sm text-gray-400 flex-1 mb-3">{a.summary}</p>
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+                <span>{a.minutes} мин</span>
+                {read.includes(a.id) && <span className="text-green-400">✓ прочитано</span>}
+            </div>
+        </button>
+    );
 
     return (
-        <div>
-            <h1 className="text-3xl font-bold mb-8">База знаний</h1>
-            <div className="glass-card p-6 rounded-2xl mb-6">
-                <input type="text" placeholder="Поиск по статьям..." value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-3 outline-none focus:border-cyan-400 mb-4" />
-                <div className="flex gap-2 flex-wrap">
-                    {tags.map(t => <button key={t} onClick={() => setFilter(t)} className={`px-4 py-1 rounded-full text-sm transition ${filter === t ? 'bg-purple-400 text-black font-bold' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>{t}</button>)}
-                </div>
-            </div>
-            <div className="space-y-4">
-                {filtered.map(art => (
-                    <div key={art.id} className="glass-card rounded-2xl overflow-hidden">
-                        <div onClick={() => setOpenId(openId === art.id ? null : art.id)} className="p-6 cursor-pointer flex justify-between items-center hover:bg-white/5 transition">
-                            <div>
-                                <span className="text-xs text-cyan-400 bg-cyan-400/10 px-2 py-1 rounded mr-3">{art.tag}</span>
-                                <span className="text-xl text-white">{art.title}</span>
-                            </div>
-                            <span className="text-gray-500">{openId === art.id ? '▲' : '▼'}</span>
-                        </div>
-                        {openId === art.id && (
-                            <div className="px-6 pb-6 text-gray-300 leading-relaxed border-t border-[var(--border)] pt-4">
-                                {art.content}
-                            </div>
-                        )}
+        <div className="max-w-5xl">
+            <h1 className="text-3xl font-bold mb-2">База знаний</h1>
+            <p className="text-gray-400 text-sm mb-6">
+                {ARTICLES.length} статей о том, как устроен СДВГ и что с этим делать. Каждая — на несколько минут.
+            </p>
+
+            <input
+                type="text"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="🔍 Поиск по всем статьям…"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-3 mb-6 outline-none focus:border-cyan-400 text-white"
+            />
+
+            {query.trim() ? (
+                <>
+                    <div className="text-sm text-gray-400 mb-3">
+                        {results.length === 0 ? 'Ничего не найдено' : `Найдено: ${results.length}`}
                     </div>
-                ))}
-            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {results.map(a => <Card key={a.id} a={a} />)}
+                    </div>
+                </>
+            ) : category ? (
+                <>
+                    <button onClick={() => setCategory(null)} className="text-sm text-gray-400 hover:text-cyan-400 mb-4">
+                        ← Все разделы
+                    </button>
+                    <h2 className="text-2xl font-bold mb-4">
+                        {CATEGORIES.find(c => c.id === category)?.icon} {CATEGORIES.find(c => c.id === category)?.title}
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {listed!.map(a => <Card key={a.id} a={a} />)}
+                    </div>
+                </>
+            ) : (
+                <>
+                    {savedArticles.length > 0 && (
+                        <div className="mb-8">
+                            <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">★ Закладки</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {savedArticles.map(a => <Card key={a.id} a={a} />)}
+                            </div>
+                        </div>
+                    )}
+
+                    <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">Разделы</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {CATEGORIES.map(c => {
+                            const items = ARTICLES_BY_CATEGORY(c.id);
+                            const doneCount = items.filter(a => read.includes(a.id)).length;
+                            return (
+                                <button key={c.id} onClick={() => setCategory(c.id)}
+                                    className="glass-card p-5 rounded-2xl text-left border border-transparent hover:border-cyan-400/40 transition">
+                                    <div className="text-3xl mb-2">{c.icon}</div>
+                                    <h3 className="font-bold mb-1">{c.title}</h3>
+                                    <p className="text-sm text-gray-400 mb-3">{c.blurb}</p>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 h-1 rounded-full bg-black/30 overflow-hidden">
+                                            <div className="h-full bg-cyan-400/70 transition-all"
+                                                style={{ width: `${(doneCount / items.length) * 100}%` }} />
+                                        </div>
+                                        <span className="text-xs text-gray-500 tabular-nums">{doneCount}/{items.length}</span>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </>
+            )}
         </div>
     );
 }
