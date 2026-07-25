@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { streamAI } from '../../lib/ai';
+import { ProgramImport } from './ProgramImport';
 import { marked } from 'marked';
 
 export function GymApp({ gymData, setGymData, logs }: any) {
@@ -139,6 +140,7 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) 
 
 export function GymPrograms({ gymData, setGymData }: any) {
     const [editingProgram, setEditingProgram] = useState<any>(null);
+    const [importing, setImporting] = useState(false);
 
     const createProgram = () => {
         const newProgram = { id: Date.now(), name: "Новая программа", days: [] };
@@ -161,7 +163,14 @@ export function GymPrograms({ gymData, setGymData }: any) {
 
     return (
         <div>
-            <button onClick={createProgram} className="mb-6 bg-cyan-400 text-black font-bold px-6 py-3 rounded-lg">+ Создать программу</button>
+            <div className="flex flex-wrap gap-3 mb-6">
+                <button onClick={createProgram} className="bg-cyan-400 text-black font-bold px-6 py-3 rounded-lg">+ Создать программу</button>
+                <button onClick={() => setImporting(true)}
+                    className="px-6 py-3 rounded-lg border border-purple-400/40 text-purple-400 hover:bg-purple-400/10 font-bold transition">
+                    📥 Импорт из текста
+                </button>
+            </div>
+            {importing && <ProgramImport gymData={gymData} setGymData={setGymData} onClose={() => setImporting(false)} />}
             <div className="space-y-4">
                 {gymData.programs.map((p: any) => (
                     <div key={p.id} className="glass-card p-6 rounded-2xl flex justify-between items-center">
