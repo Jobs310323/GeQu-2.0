@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { DB } from './lib/db';
 import { Sidebar } from './components/Sidebar';
+import { DraggableDice } from './components/DraggableDice';
 import { Dashboard } from './pages/Dashboard';
 import { Kanban } from './pages/Kanban';
 import { Habits } from './pages/Habits';
@@ -95,11 +96,8 @@ function App() {
             </main>
 
             {hyperfocus && <HyperfocusOverlay hyperfocus={hyperfocus} setHyperfocus={setHyperfocus} kanban={kanban} setDiary={setDiary} setLogs={setLogs} todayLog={todayLog} />}
-            {/* Плавающая кнопка рулетки */}
-            <button onClick={() => setRouletteOpen(true)}
-                    className="fixed bottom-8 left-8 w-16 h-16 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black text-3xl font-bold shadow-lg shadow-cyan-400/30 hover:scale-110 transition z-40 flex items-center justify-center">
-                🎲
-            </button>
+            {/* Плавающая кнопка рулетки — перетаскивается по экрану */}
+            <DraggableDice onClick={() => setRouletteOpen(true)} />
 
             {rouletteOpen && (
                 <DopamineRoulette

@@ -12,10 +12,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     const [toast, setToast] = useState('');
     const streak = calculateStreak(logs);
 
-    // НОВОЕ: Состояние для благодарностей и SOS
     const [gratitude, setGratitude] = useState<string[]>(['', '', '']);
-    const [sosModal, setSosModal] = useState(false);
-    const [sosGratitudes, setSosGratitudes] = useState<string[]>([]);
 
     // Состояние плиток Сканирования тела
     const todayStr = new Date().toISOString().split('T')[0];
@@ -41,20 +38,6 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     const toggleTag = (tag: string, type: 'helped' | 'hindered') => {
         if (type === 'helped') setHelped(prev => prev.includes(tag) ? prev.filter(s => s !== tag) : [...prev, tag]);
         else setHindered(prev => prev.includes(tag) ? prev.filter(s => s !== tag) : [...prev, tag]);
-    };
-
-    // НОВОЕ: Функция SOS
-    const handleSOS = () => {
-        // Собираем все благодарности из прошлых дней
-        const allGratitudes = logs.flatMap((l: any) => l.gratitude || []);
-        if (allGratitudes.length === 0) {
-            setSosGratitudes(['Ты обязательно справишься. Даже если сегодня всё валится из рук — это временно. Дыши.']);
-        } else {
-            // Перемешиваем массив и берем 3 случайных
-            const shuffled = [...allGratitudes].sort(() => 0.5 - Math.random());
-            setSosGratitudes(shuffled.slice(0, 3));
-        }
-        setSosModal(true);
     };
 
     const handleSave = () => {
@@ -88,10 +71,6 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
         <div className="max-w-3xl mx-auto">
             <div className="flex justify-between items-center mb-2">
                 <h1 className="text-3xl font-bold">Закрытие дня</h1>
-                {/* НОВОЕ: Кнопка SOS */}
-                <button onClick={handleSOS} className="px-4 py-2 rounded-xl border border-pink-400/30 text-pink-400 hover:bg-pink-400/10 transition text-sm font-bold flex items-center gap-2">
-                    🆘 Мне плохо
-                </button>
             </div>
             <p className="text-gray-400 mb-6">Подведите итоги, чтобы отпустить мысли и отдохнуть.</p>
             
@@ -202,27 +181,6 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
             <button onClick={handleSave} className="w-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold py-3 rounded-lg text-lg">Закрыть день</button>
 
             {toast && <div className="fixed bottom-8 right-8 bg-white/10 border border-cyan-400 px-6 py-3 rounded-lg text-white">{toast}</div>}
-
-            {/* НОВОЕ: Модальное окно SOS */}
-            {sosModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setSosModal(false)}>
-                    <div className="glass-card p-8 rounded-2xl max-w-lg w-full text-center border border-pink-400/30 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="text-5xl mb-4">💕</div>
-                        <h2 className="text-2xl font-bold text-pink-400 mb-2">Якоря радости</h2>
-                        <p className="text-gray-400 mb-6 text-sm">Вспомни эти моменты. Всё было не зря. Ты молодец.</p>
-                        <div className="space-y-4 mb-8">
-                            {sosGratitudes.map((g, i) => (
-                                <div key={i} className="p-4 rounded-xl bg-white/5 text-white border border-[var(--border)] text-lg">
-                                    "{g}"
-                                </div>
-                            ))}
-                        </div>
-                        <button onClick={() => setSosModal(false)} className="bg-gradient-to-r from-pink-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">
-                            Спасибо, мне лучше
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

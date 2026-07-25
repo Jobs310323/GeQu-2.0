@@ -33,6 +33,44 @@ body {
     transition: background-color 0.3s ease;
     margin: 0;
 }
+
+/* ---------------------------------------------------------------
+   Light theme readability.
+   The UI was written dark-first, so ~95 `text-white` and ~167 muted
+   grey utilities are baked into the markup. On a light background
+   those render white-on-white / near-invisible. Rather than touching
+   every component, remap the offending utilities inside .light —
+   `:root.light .text-white` (0,2,0) outranks `.text-white` (0,1,0).
+   --------------------------------------------------------------- */
+:root.light .text-white { color: var(--text-main); }
+:root.light .text-gray-200,
+:root.light .text-gray-300 { color: #2A2A32; }
+:root.light .text-gray-400 { color: #4A4A55; }
+:root.light .text-gray-500 { color: #5E5E6B; }
+:root.light .text-gray-600 { color: #6B6B78; }
+
+/* Translucent white surfaces vanish on a light page — darken them. */
+:root.light .bg-white\/5 { background-color: rgba(0, 0, 0, 0.04); }
+:root.light .bg-white\/10 { background-color: rgba(0, 0, 0, 0.07); }
+:root.light .hover\:bg-white\/5:hover { background-color: rgba(0, 0, 0, 0.05); }
+:root.light .hover\:bg-white\/10:hover { background-color: rgba(0, 0, 0, 0.08); }
+:root.light .border-white\/20 { border-color: rgba(0, 0, 0, 0.15); }
+
+/* Hovering a nav item set text to white, which disappeared on light. */
+:root.light .hover\:text-white:hover { color: var(--text-main); }
+
+/* Accent text needs more contrast against a light background. */
+:root.light .text-cyan-400 { color: #016177; }
+:root.light .text-purple-400 { color: #7A3FD4; }
+:root.light .text-pink-400 { color: #C2185B; }
+:root.light .text-green-400 { color: #15803D; }
+:root.light .text-yellow-400 { color: #A16207; }
+:root.light .text-red-400 { color: #DC2626; }
+
+/* Gradient "black text on bright button" stays correct, but plain
+   white-on-dark note cards need their body text darkened. */
+:root.light .note-card .markdown-content,
+:root.light .note-card .text-white { color: #1E1E24; }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }

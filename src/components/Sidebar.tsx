@@ -20,7 +20,6 @@ const NAV_GROUPS: NavGroup[] = [
         items: [
             { id: 'kanban', icon: '📋', label: 'Канбан' },
             { id: 'goals', icon: '🚩', label: 'Цели' },
-            { id: 'circles', icon: '⭕', label: 'Круги' },
         ],
     },
     {
@@ -28,6 +27,7 @@ const NAV_GROUPS: NavGroup[] = [
         items: [
             { id: 'gym', icon: '🏋️', label: 'Зал' },
             { id: 'training', icon: '🎯', label: 'Тренировки' },
+            { id: 'circles', icon: '⭕', label: 'Круги' },
         ],
     },
     {
@@ -42,7 +42,7 @@ const NAV_GROUPS: NavGroup[] = [
         title: 'Справка',
         items: [
             { id: 'knowledge', icon: '📚', label: 'База знаний' },
-            { id: 'about', icon: '🧠', label: 'Про СДВГ' },
+            { id: 'about', icon: 'ℹ️', label: 'Про СДВГ' },
             { id: 'settings', icon: '⚙️', label: 'Настройки' },
         ],
     },
