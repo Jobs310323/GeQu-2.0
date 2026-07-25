@@ -9,6 +9,7 @@ const NAV_GROUPS: NavGroup[] = [
         title: 'Каждый день',
         items: [
             { id: 'dashboard', icon: '⬢', label: 'Дашборд' },
+            { id: 'aiplan', icon: '🤖', label: 'ИИ-план дня' },
             { id: 'diary', icon: '📓', label: 'Дневник' },
             { id: 'notes', icon: '📌', label: 'Записки' },
             { id: 'habits', icon: '♻️', label: 'Привычки' },
