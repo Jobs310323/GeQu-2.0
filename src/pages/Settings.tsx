@@ -82,7 +82,7 @@ export function Settings({ diary, logs }: any) {
             <h1 className="text-3xl font-bold mb-8">Настройки и данные</h1>
 
             <div className="glass-card p-6 rounded-2xl mb-6 border border-purple-400/30 bg-purple-400/5">
-                <h2 className="text-xl mb-2 text-purple-400">🤖 ИИ (Groq)</h2>
+                <h2 className="text-xl mb-2 text-purple-400">✨ ИИ (Groq)</h2>
                 <p className="text-gray-400 mb-4 text-sm">
                     Бесплатный ключ берётся на <span className="text-purple-300">console.groq.com → API Keys</span>. Хранится только в этом браузере и используется для ИИ-функций (например, ИИ-тренер в Зале).
                 </p>

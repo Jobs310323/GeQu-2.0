@@ -58,7 +58,7 @@ export function Diary({ diary, setDiary }: any) {
             <div className="glass-card p-6 rounded-2xl mb-6 border border-purple-400/30 bg-purple-400/5">
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="flex-1">
-                        <h2 className="text-lg font-bold text-purple-400 mb-1">🧠 ИИ-разбор дневника</h2>
+                        <h2 className="text-lg font-bold text-purple-400 mb-1">💭 ИИ-разбор дневника</h2>
                         <p className="text-sm text-gray-400">Мягко разберу последние записи: повторяющиеся темы, настроение, сильные стороны.</p>
                     </div>
                     <button onClick={analyzeJournal} disabled={aiLoading || diary.length === 0}

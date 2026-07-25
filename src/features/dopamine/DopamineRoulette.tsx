@@ -70,12 +70,12 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
 
                 {/* Экран выбора / результата */}
                 <div className="h-32 flex items-center justify-center mb-8 bg-black/30 rounded-2xl border border-[var(--border)] p-4 overflow-hidden">
-                    {phase === 'idle' && <span className="text-5xl">🤔</span>}
+                    {phase === 'idle' && <span className="text-5xl">💭</span>}
                     {phase === 'spinning' && <span className="text-xl font-bold text-cyan-400 animate-pulse">{displayText}</span>}
                     {phase === 'result' && result && (
                         <div className="animate-fade-in">
                             <span className="block text-xs uppercase mb-2 font-bold {result.type === 'task' ? 'text-purple-400' : 'text-green-400'}">
-                                {result.type === 'task' ? '🎯 Рабочая задача' : '🧊 Легальный перерыв'}
+                                {result.type === 'task' ? '🎯 Рабочая задача' : '❄️ Легальный перерыв'}
                             </span>
                             <span className="text-lg font-bold text-white">{result.text}</span>
                         </div>

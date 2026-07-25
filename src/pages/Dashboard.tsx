@@ -24,12 +24,12 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
         { id: '💧 Вода', label: 'Вода 1.5+ л', auto: false },
         { id: '🍽 Питание', label: '3 приема без срывов', auto: false },
         { id: '📱 Без телефона', label: 'Без телефона 1ч', auto: false },
-        { id: '🧘 Дыхание', label: 'Пауза/Дыхание', auto: false },
+        { id: '🌿 Дыхание', label: 'Пауза/Дыхание', auto: false },
         { id: '📖 Чтение', label: 'Чтение 10+ стр', auto: false },
         { id: '🚶 Шаги', label: '5000+ шагов', auto: false },
         { id: '🎯 Задача', label: '1 главная задача', auto: false },
         { id: '🏋️ Зал', label: 'Тренировка', auto: todayGym },
-        { id: '🧠 Тест', label: 'Когнитивный тест', auto: todayTest },
+        { id: '🎓 Тест', label: 'Когнитивный тест', auto: todayTest },
     ];
     const [bodyScan, setBodyScan] = useState<string[]>(bodyScanItems.filter((b: any) => b.auto).map((b: any) => b.id));
 
@@ -117,7 +117,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
 
             {/* СКАНИРОВАНИЕ ТЕЛА */}
             <div className="glass-card p-6 rounded-2xl mb-6">
-                <h2 className="text-xl mb-4">🧠 Сканирование тела (Быстрый чекап)</h2>
+                <h2 className="text-xl mb-4">🔎 Сканирование тела (Быстрый чекап)</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {bodyScanItems.map(item => {
                         const isActive = bodyScan.includes(item.id);
@@ -160,7 +160,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
             </div>
 
             <div className="glass-card p-6 rounded-2xl mb-6">
-                <h2 className="text-xl mb-4">🧪 Что хочу проверить завтра?</h2>
+                <h2 className="text-xl mb-4">🔬 Что хочу проверить завтра?</h2>
                 <textarea value={testTomorrow} onChange={e => setTestTomorrow(e.target.value)} placeholder="Идея для эксперимента над собой..." className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 min-h-[80px] text-white" />
             </div>
 

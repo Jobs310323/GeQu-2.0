@@ -62,7 +62,7 @@ export function CirclesOfInfluence({ circles, setCircles }: any) {
                 {circleOrder.map(key => (
                     <div key={key} className={`glass-card p-6 rounded-2xl border ${config[key].border}`}>
                         <h2 className={`text-lg font-bold mb-4 ${config[key].text}`}>
-                            {key === 'inner' && '🔴'} {key === 'middle' && '🟡'} {key === 'outer' && '🔵'} {config[key].label}
+                            {key === 'inner' && '🔴'} {key === 'middle' && '🔶'} {key === 'outer' && '🔵'} {config[key].label}
                         </h2>
                         <div className="space-y-2">
                             {circles.filter((c: any) => c.circle === key).length === 0 && (

@@ -44,7 +44,7 @@ export function UnifiedStats({ logs, testResults, gymData }: any) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="glass-card p-6 rounded-2xl">
-                    <h3 className="text-xl font-bold text-white mb-4">🧠 Когнитивные тесты</h3>
+                    <h3 className="text-xl font-bold text-white mb-4">🎓 Когнитивные тесты</h3>
                     {Object.keys(testCounts).length === 0 ? <p className="text-gray-400">Нет данных</p> : (
                         <div className="space-y-3">
                             {Object.entries(testCounts).map(([type, count]: any) => (

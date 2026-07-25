@@ -19,7 +19,7 @@ type Plan = {
 };
 
 const KIND_ICON: Record<string, string> = {
-    task: '🎯', test: '🧠', break: '🌿', gym: '🏋️', habit: '♻️', closing: '🌙',
+    task: '🎯', test: '🎓', break: '🌿', gym: '🏋️', habit: '♻️', closing: '🌙',
 };
 
 const PLANNER_SYSTEM = `Ты — проактивный ассистент по планированию дня в приложении GeQu. Пользователь — человек с СДВГ: ему нужны короткие блоки, ясные формулировки и бережный тон.
@@ -197,7 +197,7 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
 
                     {(plan.deferred ?? []).length > 0 && (
                         <div className="glass-card p-6 rounded-2xl">
-                            <h2 className="text-xl font-bold mb-1">🟢 Перенёс на потом</h2>
+                            <h2 className="text-xl font-bold mb-1">📥 Перенёс на потом</h2>
                             <p className="text-xs text-gray-500 mb-4">Чтобы сегодня не перегружаться.</p>
                             <div className="space-y-2">
                                 {plan.deferred!.map((d, i) => {

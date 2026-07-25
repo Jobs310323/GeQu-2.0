@@ -624,7 +624,7 @@ export function GymAI({ gymData, logs }: any) {
         <div className="space-y-4">
             <div className="glass-card p-6 rounded-2xl flex flex-col md:flex-row md:items-center gap-4 bg-cyan-400/5 border border-cyan-400/30">
                 <div className="flex-1">
-                    <h3 className="text-lg font-bold text-cyan-400 mb-1">🤖 ИИ-тренер</h3>
+                    <h3 className="text-lg font-bold text-cyan-400 mb-1">✨ ИИ-тренер</h3>
                     <p className="text-sm text-gray-400">Проанализирую твои последние результаты, целевые повторы и связь со сном, и подскажу что делать дальше.</p>
                 </div>
                 <button

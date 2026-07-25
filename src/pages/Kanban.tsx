@@ -36,8 +36,8 @@ export function Kanban({ kanban, setKanban }: any) {
 
     const getPriorityLabel = (p: string) => {
         if (p === 'high') return '🔴 Срочно';
-        if (p === 'medium') return '🟡 Средне';
-        return '🟢 Низкий';
+        if (p === 'medium') return '🔶 Средне';
+        return '🔷 Низкий';
     }
 
     return (
@@ -47,8 +47,8 @@ export function Kanban({ kanban, setKanban }: any) {
                 <input type="text" value={newTask} onChange={e => setNewTask(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTask()}
                     placeholder="Новая задача..." className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-cyan-400 text-white" />
                 <select value={newPriority} onChange={e => setNewPriority(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-cyan-400 text-white">
-                    <option value="low">🟢 Низкий приоритет</option>
-                    <option value="medium">🟡 Средний приоритет</option>
+                    <option value="low">🔷 Низкий приоритет</option>
+                    <option value="medium">🔶 Средний приоритет</option>
                     <option value="high">🔴 Срочный приоритет</option>
                 </select>
                 <button onClick={addTask} className="bg-cyan-400 text-black font-bold px-6 py-2 rounded-lg">Добавить</button>

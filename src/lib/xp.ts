@@ -17,7 +17,7 @@ export const XP_RULES = [
     { key: 'habit', label: 'Выполненная привычка', icon: '♻️', xp: 5 },
     { key: 'task', label: 'Закрытая задача', icon: '✅', xp: 15 },
     { key: 'workout', label: 'Тренировка', icon: '🏋️', xp: 50 },
-    { key: 'test', label: 'Когнитивный тест', icon: '🧠', xp: 30 },
+    { key: 'test', label: 'Когнитивный тест', icon: '🎓', xp: 30 },
     { key: 'gratitude', label: 'Благодарность', icon: '💖', xp: 10 },
 ] as const;
 
@@ -133,7 +133,7 @@ export const ACHIEVEMENTS: Achievement[] = [
         progress: d => (d.gymData?.history ?? []).length,
     },
     {
-        id: 'genius', icon: '🧠', title: 'Гений', desc: '50 когнитивных тестов', goal: 50,
+        id: 'genius', icon: '🎓', title: 'Гений', desc: '50 когнитивных тестов', goal: 50,
         progress: d => (d.testResults ?? []).length,
     },
     {

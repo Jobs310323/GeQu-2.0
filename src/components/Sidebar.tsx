@@ -9,7 +9,7 @@ const NAV_GROUPS: NavGroup[] = [
         title: 'Каждый день',
         items: [
             { id: 'dashboard', icon: '⬢', label: 'Дашборд' },
-            { id: 'aiplan', icon: '🤖', label: 'ИИ-план дня' },
+            { id: 'aiplan', icon: '✨', label: 'ИИ-план дня' },
             { id: 'diary', icon: '📓', label: 'Дневник' },
             { id: 'notes', icon: '📌', label: 'Записки' },
             { id: 'habits', icon: '♻️', label: 'Привычки' },
@@ -86,7 +86,7 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog }: an
                 {NAV_GROUPS.map(group => (
                     <div key={group.title}>
                         {!collapsed && (
-                            <div className="text-[10px] uppercase tracking-wider text-gray-600 px-2 mb-1 select-none">
+                            <div className="text-[10px] uppercase tracking-wider text-gray-500 px-2 mb-1 select-none">
                                 {group.title}
                             </div>
                         )}
