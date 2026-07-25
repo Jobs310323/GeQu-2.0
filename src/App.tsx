@@ -40,8 +40,10 @@ function App() {
     const [gymData, setGymData] = useState(DB.get('gym', { programs: [], history: [], activeProgramId: null }));
     const [hyperfocus, setHyperfocus] = useState<any>(null); // Новое состояние для гиперфокуса
     const [circles, setCircles] = useState(DB.get('circles', []));
+    const [reminders, setReminders] = useState(DB.get('reminders', []));
 
     useEffect(() => { DB.save('circles', circles); }, [circles]);
+    useEffect(() => { DB.save('reminders', reminders); }, [reminders]);
     useEffect(() => { DB.save('logs', logs); }, [logs]);
     useEffect(() => { DB.save('dopamineMenu', dopamineMenu); }, [dopamineMenu]);
     useEffect(() => { DB.save('diary', diary); }, [diary]);
@@ -76,7 +78,8 @@ function App() {
 
     return (
         <div className="flex h-screen overflow-hidden">
-            <Sidebar page={page} setPage={setPage} theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog} setHyperfocus={setHyperfocus} kanban={kanban} setDiary={setDiary} setLogs={setLogs} />
+            <Sidebar page={page} setPage={setPage} theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog}
+                logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />
             <main className="flex-1 p-6 overflow-y-auto relative">
                 {page === 'dashboard' && <Dashboard logs={logs} setLogs={setLogs} achievements={achievements} setHyperfocus={setHyperfocus} kanban={kanban} gymData={gymData} testResults={testResults} />}
                 {page === 'gym' && <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />}

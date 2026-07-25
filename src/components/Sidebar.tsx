@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { SidebarCalendar } from './SidebarCalendar';
 
 type NavItem = { id: string; icon: string; label: string };
 type NavGroup = { title: string; items: NavItem[] };
@@ -56,7 +57,8 @@ const NAV_GROUPS: NavGroup[] = [
 
 const COLLAPSE_KEY = 'gequ_sidebar_collapsed';
 
-export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog }: any) {
+export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
+                         logs, diary, gymData, reminders, setReminders }: any) {
     const [collapsed, setCollapsed] = useState(() => {
         try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
     });
@@ -119,6 +121,12 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog }: an
                     </div>
                 ))}
             </nav>
+
+            {/* Calendar — needs the labels, so it stays hidden while collapsed */}
+            {!collapsed && (
+                <SidebarCalendar logs={logs} diary={diary} gymData={gymData}
+                    reminders={reminders} setReminders={setReminders} />
+            )}
 
             {/* Energy battery */}
             <div className={`mt-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] group relative ${collapsed ? 'p-2' : 'p-2.5'}`}>
