@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { calculateStreak } from '../lib/helpers';
 
-export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults }: any) {
+export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults, prefs }: any) {
     const [sleep, setSleep] = useState(5);
     const [focus, setFocus] = useState(5);
     const [mood, setMood] = useState(5);
@@ -11,6 +11,8 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     const [testTomorrow, setTestTomorrow] = useState('');
     const [toast, setToast] = useState('');
     const streak = calculateStreak(logs);
+    const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
+    const show = (id: string) => !hiddenWidgets.includes(id);
 
     const [gratitude, setGratitude] = useState<string[]>(['', '', '']);
 
@@ -74,7 +76,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
             </div>
             <p className="text-gray-400 mb-6">Подведите итоги, чтобы отпустить мысли и отдохнуть.</p>
             
-            <button onClick={startHyper} className="w-full glass-card p-6 rounded-2xl mb-6 border border-cyan-400/30 hover:bg-cyan-400/10 transition flex items-center justify-between group">
+            {show('hyperfocus') && <button onClick={startHyper} className="w-full glass-card p-6 rounded-2xl mb-6 border border-cyan-400/30 hover:bg-cyan-400/10 transition flex items-center justify-between group">
                 <div className="flex items-center gap-4">
                     <div className="text-4xl">🚀</div>
                     <div className="text-left">
@@ -83,9 +85,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     </div>
                 </div>
                 <span className="text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity text-2xl">→</span>
-            </button>
+            </button>}
 
-            <div className="glass-card p-6 rounded-2xl mb-6 flex items-center gap-6 fire-glow">
+            {show('streak') && <div className="glass-card p-6 rounded-2xl mb-6 flex items-center gap-6 fire-glow">
                 <div className="text-5xl">🔥</div>
                 <div>
                     <div className="text-4xl font-bold text-pink-400">{streak}</div>
@@ -95,9 +97,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     <div className="text-xl font-bold text-cyan-400">Ачивки</div>
                     <div className="text-gray-400 text-sm mt-1">{achievements.length === 0 ? 'Пока нет' : achievements.length} шт.</div>
                 </div>
-            </div>
+            </div>}
 
-            <div className="glass-card p-6 rounded-2xl mb-6">
+            {show('ratings') && <div className="glass-card p-6 rounded-2xl mb-6">
                 <h2 className="text-xl mb-5">📊 Оцените сегодняшний день</h2>
                 <div className="space-y-4">
                     <div>
@@ -113,10 +115,10 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         <input type="range" min="0" max="10" value={mood} onChange={e => setMood(Number(e.target.value))} className="w-full accent-cyan-400" />
                     </div>
                 </div>
-            </div>
+            </div>}
 
             {/* СКАНИРОВАНИЕ ТЕЛА */}
-            <div className="glass-card p-6 rounded-2xl mb-6">
+            {show('bodyscan') && <div className="glass-card p-6 rounded-2xl mb-6">
                 <h2 className="text-xl mb-4">🔎 Сканирование тела (Быстрый чекап)</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {bodyScanItems.map(item => {
@@ -131,9 +133,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         );
                     })}
                 </div>
-            </div>
+            </div>}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {show('tags') && <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="glass-card p-6 rounded-2xl">
                     <h2 className="text-xl mb-4">✅ Что помогло сегодня?</h2>
                     <div className="flex flex-wrap gap-2">
@@ -152,20 +154,20 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         ))}
                     </div>
                 </div>
-            </div>
+            </div>}
 
-            <div className="glass-card p-6 rounded-2xl mb-6">
+            {show('mainEvent') && <div className="glass-card p-6 rounded-2xl mb-6">
                 <h2 className="text-xl mb-4">📝 Главное событие дня</h2>
                 <textarea value={mainEvent} onChange={e => setMainEvent(e.target.value)} placeholder="Что было самым важным сегодня?" className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 min-h-[80px] text-white" />
-            </div>
+            </div>}
 
-            <div className="glass-card p-6 rounded-2xl mb-6">
+            {show('testTomorrow') && <div className="glass-card p-6 rounded-2xl mb-6">
                 <h2 className="text-xl mb-4">🔬 Что хочу проверить завтра?</h2>
                 <textarea value={testTomorrow} onChange={e => setTestTomorrow(e.target.value)} placeholder="Идея для эксперимента над собой..." className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 min-h-[80px] text-white" />
-            </div>
+            </div>}
 
             {/* НОВОЕ: Блок Благодарности */}
-            <div className="glass-card p-6 rounded-2xl mb-6 border border-pink-400/20">
+            {show('gratitude') && <div className="glass-card p-6 rounded-2xl mb-6 border border-pink-400/20">
                 <h2 className="text-xl mb-2">💖 За что благодарен сегодня?</h2>
                 <p className="text-gray-400 text-sm mb-4">Найди 3 хороших момента. В плохие дни они тебя поддержат.</p>
                 <div className="space-y-3">
@@ -176,7 +178,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                                className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-pink-400 text-white" />
                     ))}
                 </div>
-            </div>
+            </div>}
 
             <button onClick={handleSave} className="w-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold py-3 rounded-lg text-lg">Закрыть день</button>
 

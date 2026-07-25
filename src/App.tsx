@@ -17,6 +17,8 @@ import { UnifiedStats } from './pages/UnifiedStats';
 import { Progress } from './pages/Progress';
 import { AiPlan } from './pages/AiPlan';
 import { UserCard } from './pages/UserCard';
+import { CalendarPage } from './pages/CalendarPage';
+import { loadPrefs, savePrefs, type Prefs } from './lib/prefs';
 import { CirclesOfInfluence } from './pages/CirclesOfInfluence';
 import { GymApp } from './features/gym/Gym';
 import { DopamineRoulette } from './features/dopamine/DopamineRoulette';
@@ -41,6 +43,14 @@ function App() {
     const [hyperfocus, setHyperfocus] = useState<any>(null); // Новое состояние для гиперфокуса
     const [circles, setCircles] = useState(DB.get('circles', []));
     const [reminders, setReminders] = useState(DB.get('reminders', []));
+    const [prefs, setPrefs] = useState<Prefs>(() => loadPrefs());
+
+    useEffect(() => { savePrefs(prefs); }, [prefs]);
+
+    // If the active tab gets hidden from Settings, fall back to the dashboard.
+    useEffect(() => {
+        if (prefs.hiddenTabs.includes(page)) setPage('dashboard');
+    }, [prefs.hiddenTabs, page]);
 
     useEffect(() => { DB.save('circles', circles); }, [circles]);
     useEffect(() => { DB.save('reminders', reminders); }, [reminders]);
@@ -79,9 +89,10 @@ function App() {
     return (
         <div className="flex h-screen overflow-hidden">
             <Sidebar page={page} setPage={setPage} theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog}
-                logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />
+                prefs={prefs} setPrefs={setPrefs}
+                reminderCount={reminders.filter((r: any) => !r.done && r.date >= todayStr).length} />
             <main className="flex-1 p-6 overflow-y-auto relative">
-                {page === 'dashboard' && <Dashboard logs={logs} setLogs={setLogs} achievements={achievements} setHyperfocus={setHyperfocus} kanban={kanban} gymData={gymData} testResults={testResults} />}
+                {page === 'dashboard' && <Dashboard logs={logs} setLogs={setLogs} achievements={achievements} setHyperfocus={setHyperfocus} kanban={kanban} gymData={gymData} testResults={testResults} prefs={prefs} />}
                 {page === 'gym' && <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />}
                 {page === 'diary' && <Diary diary={diary} setDiary={setDiary} />}
                 {page === 'notes' && <Notes notes={notes} setNotes={setNotes} />}
@@ -92,12 +103,13 @@ function App() {
                 {page === 'dynamics' && <Dynamics logs={logs} testResults={testResults} gymData={gymData} />}
                 {page === 'hub' && <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />}
                 {page === 'progress' && <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} />}
+                {page === 'calendar' && <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />}
                 {page === 'card' && <UserCard logs={logs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData} testResults={testResults} />}
                 {page === 'aiplan' && <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />}
                 {page === 'training' && <Training setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />}
                 {page === 'knowledge' && <Knowledge />}
                 {page === 'about' && <AboutAdhd />}
-                {page === 'settings' && <Settings diary={diary} logs={logs} />}
+                {page === 'settings' && <Settings diary={diary} logs={logs} prefs={prefs} setPrefs={setPrefs} />}
             </main>
 
             {hyperfocus && <HyperfocusOverlay hyperfocus={hyperfocus} setHyperfocus={setHyperfocus} kanban={kanban} setDiary={setDiary} setLogs={setLogs} todayLog={todayLog} />}

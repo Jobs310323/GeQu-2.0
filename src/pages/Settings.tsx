@@ -1,7 +1,18 @@
 import { useState } from 'react';
 import { getGroqKey, setGroqKey } from '../lib/ai';
+import { NAV_GROUPS, LOCKED_TABS } from '../lib/nav';
+import { DASHBOARD_WIDGETS, toggleIn } from '../lib/prefs';
 
-export function Settings({ diary, logs }: any) {
+export function Settings({ diary, logs, prefs, setPrefs }: any) {
+    const hiddenTabs: string[] = prefs?.hiddenTabs ?? [];
+    const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
+
+    const toggleTab = (id: string) => {
+        if (LOCKED_TABS.has(id)) return;
+        setPrefs((p: any) => ({ ...p, hiddenTabs: toggleIn(p.hiddenTabs ?? [], id) }));
+    };
+    const toggleWidget = (id: string) =>
+        setPrefs((p: any) => ({ ...p, hiddenWidgets: toggleIn(p.hiddenWidgets ?? [], id) }));
     const [groqKey, setGroqKeyState] = useState(getGroqKey());
     const [savedMsg, setSavedMsg] = useState('');
     const saveGroqKey = () => {
@@ -80,6 +91,84 @@ export function Settings({ diary, logs }: any) {
     return (
         <div>
             <h1 className="text-3xl font-bold mb-8">Настройки и данные</h1>
+
+            {/* Which pages appear in the sidebar */}
+            <div className="glass-card p-6 rounded-2xl mb-6">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+                    <h2 className="text-xl">🧭 Разделы меню</h2>
+                    {hiddenTabs.length > 0 && (
+                        <button onClick={() => setPrefs((p: any) => ({ ...p, hiddenTabs: [] }))}
+                            className="text-xs text-cyan-400 hover:underline">
+                            Показать все ({hiddenTabs.length} скрыто)
+                        </button>
+                    )}
+                </div>
+                <p className="text-gray-400 text-sm mb-4">
+                    Убери ненужные разделы из меню — данные останутся на месте, раздел можно вернуть в любой момент.
+                </p>
+                <div className="space-y-4">
+                    {NAV_GROUPS.map(group => (
+                        <div key={group.id}>
+                            <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-2">{group.title}</div>
+                            <div className="flex flex-wrap gap-2">
+                                {group.items.map(item => {
+                                    const locked = LOCKED_TABS.has(item.id);
+                                    const visible = !hiddenTabs.includes(item.id);
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => toggleTab(item.id)}
+                                            disabled={locked}
+                                            title={locked ? 'Этот раздел нельзя скрыть' : visible ? 'Скрыть из меню' : 'Вернуть в меню'}
+                                            className={`px-3 py-1.5 rounded-lg text-sm border transition flex items-center gap-2 ${
+                                                locked ? 'border-[var(--border)] text-gray-500 cursor-not-allowed opacity-60'
+                                                    : visible ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/30'
+                                                    : 'border-[var(--border)] text-gray-500 hover:text-white line-through'
+                                            }`}
+                                        >
+                                            <span>{item.icon}</span>{item.label}
+                                            {locked && <span className="text-[10px]">🔒</span>}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Which blocks appear on the dashboard */}
+            <div className="glass-card p-6 rounded-2xl mb-6">
+                <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+                    <h2 className="text-xl">🧩 Виджеты дашборда</h2>
+                    {hiddenWidgets.length > 0 && (
+                        <button onClick={() => setPrefs((p: any) => ({ ...p, hiddenWidgets: [] }))}
+                            className="text-xs text-cyan-400 hover:underline">
+                            Показать все ({hiddenWidgets.length} скрыто)
+                        </button>
+                    )}
+                </div>
+                <p className="text-gray-400 text-sm mb-4">
+                    Оставь на «Закрытии дня» только то, что действительно заполняешь.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                    {DASHBOARD_WIDGETS.map(w => {
+                        const visible = !hiddenWidgets.includes(w.id);
+                        return (
+                            <button
+                                key={w.id}
+                                onClick={() => toggleWidget(w.id)}
+                                className={`px-3 py-1.5 rounded-lg text-sm border transition flex items-center gap-2 ${
+                                    visible ? 'bg-purple-400/10 text-purple-400 border-purple-400/30'
+                                        : 'border-[var(--border)] text-gray-500 hover:text-white line-through'
+                                }`}
+                            >
+                                <span>{w.icon}</span>{w.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
 
             <div className="glass-card p-6 rounded-2xl mb-6 border border-purple-400/30 bg-purple-400/5">
                 <h2 className="text-xl mb-2 text-purple-400">✨ ИИ (Groq)</h2>

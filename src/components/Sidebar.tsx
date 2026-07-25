@@ -1,64 +1,10 @@
 import { useState, useEffect } from 'react';
-import { SidebarCalendar } from './SidebarCalendar';
-
-type NavItem = { id: string; icon: string; label: string };
-type NavGroup = { title: string; items: NavItem[] };
-
-// Grouped navigation keeps 14 destinations scannable instead of one long list.
-const NAV_GROUPS: NavGroup[] = [
-    {
-        title: 'Обо мне',
-        items: [
-            { id: 'card', icon: '📇', label: 'Моя карточка' },
-        ],
-    },
-    {
-        title: 'Каждый день',
-        items: [
-            { id: 'dashboard', icon: '⬢', label: 'Дашборд' },
-            { id: 'aiplan', icon: '✨', label: 'ИИ-план дня' },
-            { id: 'diary', icon: '📓', label: 'Дневник' },
-            { id: 'notes', icon: '📌', label: 'Записки' },
-            { id: 'habits', icon: '♻️', label: 'Привычки' },
-        ],
-    },
-    {
-        title: 'Дела',
-        items: [
-            { id: 'kanban', icon: '📋', label: 'Канбан' },
-            { id: 'goals', icon: '🚩', label: 'Цели' },
-        ],
-    },
-    {
-        title: 'Тело и мозг',
-        items: [
-            { id: 'gym', icon: '🏋️', label: 'Зал' },
-            { id: 'training', icon: '🎯', label: 'Тренировки' },
-            { id: 'circles', icon: '⭕', label: 'Круги' },
-        ],
-    },
-    {
-        title: 'Анализ',
-        items: [
-            { id: 'progress', icon: '🏆', label: 'Прогресс' },
-            { id: 'dynamics', icon: '📈', label: 'Динамика' },
-            { id: 'hub', icon: '📊', label: 'Хаб' },
-        ],
-    },
-    {
-        title: 'Справка',
-        items: [
-            { id: 'knowledge', icon: '📚', label: 'База знаний' },
-            { id: 'about', icon: 'ℹ️', label: 'Про СДВГ' },
-            { id: 'settings', icon: '⚙️', label: 'Настройки' },
-        ],
-    },
-];
+import { NAV_GROUPS } from '../lib/nav';
 
 const COLLAPSE_KEY = 'gequ_sidebar_collapsed';
 
 export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
-                         logs, diary, gymData, reminders, setReminders }: any) {
+                          prefs, setPrefs, reminderCount }: any) {
     const [collapsed, setCollapsed] = useState(() => {
         try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
     });
@@ -67,13 +13,26 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
         try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch { /* ignore */ }
     }, [collapsed]);
 
+    const hidden: string[] = prefs?.hiddenTabs ?? [];
+    const collapsedGroups: string[] = prefs?.collapsedGroups ?? [];
+
+    const toggleGroup = (id: string) =>
+        setPrefs((p: any) => {
+            const cur: string[] = p.collapsedGroups ?? [];
+            return { ...p, collapsedGroups: cur.includes(id) ? cur.filter(g => g !== id) : [...cur, id] };
+        });
+
+    // Drop hidden entries, then drop groups that end up empty.
+    const groups = NAV_GROUPS
+        .map(g => ({ ...g, items: g.items.filter(i => !hidden.includes(i.id)) }))
+        .filter(g => g.items.length > 0);
+
     const energyColor = energy >= 7 ? 'bg-green-400' : energy >= 4 ? 'bg-yellow-400' : 'bg-red-400';
     const energyText = energy >= 7 ? 'Полный заряд!' : energy >= 4 ? 'Средний заряд' : 'На исходе';
     const energyWidth = `${(energy / 10) * 100}%`;
 
     return (
         <aside className={`${collapsed ? 'w-[68px]' : 'w-56'} shrink-0 py-4 px-3 border-r border-[var(--border)] flex flex-col backdrop-blur-md overflow-y-auto overflow-x-hidden transition-[width] duration-200`}>
-            {/* Header: logo + collapse toggle */}
             <div className="flex items-center justify-between mb-4 px-1">
                 {!collapsed && (
                     <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
@@ -89,44 +48,54 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
                 </button>
             </div>
 
-            {/* Grouped navigation */}
             <nav className="flex flex-col gap-3 flex-1">
-                {NAV_GROUPS.map(group => (
-                    <div key={group.title}>
-                        {!collapsed && (
-                            <div className="text-[10px] uppercase tracking-wider text-gray-500 px-2 mb-1 select-none">
-                                {group.title}
-                            </div>
-                        )}
-                        <div className="flex flex-col gap-0.5">
-                            {group.items.map(item => {
-                                const active = page === item.id;
-                                return (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => setPage(item.id)}
-                                        title={collapsed ? item.label : undefined}
-                                        className={`w-full text-left px-2 py-1.5 rounded-lg cursor-pointer transition flex items-center gap-2.5 text-sm border ${
-                                            active
-                                                ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20'
-                                                : 'text-gray-400 hover:bg-white/5 hover:text-white border-transparent'
-                                        } ${collapsed ? 'justify-center' : ''}`}
-                                    >
-                                        <span className="text-base leading-none">{item.icon}</span>
-                                        {!collapsed && <span className="truncate">{item.label}</span>}
-                                    </button>
-                                );
-                            })}
+                {groups.map(group => {
+                    // While the rail is icon-only there are no group headers to
+                    // click, so every group stays expanded.
+                    const isFolded = !collapsed && collapsedGroups.includes(group.id);
+                    return (
+                        <div key={group.id}>
+                            {!collapsed && (
+                                <button
+                                    onClick={() => toggleGroup(group.id)}
+                                    className="w-full flex items-center justify-between px-2 mb-1 text-[10px] uppercase tracking-wider text-gray-500 hover:text-gray-300 transition select-none"
+                                >
+                                    <span>{group.title}</span>
+                                    <span className="text-[9px]">{isFolded ? '▸' : '▾'}</span>
+                                </button>
+                            )}
+                            {!isFolded && (
+                                <div className="flex flex-col gap-0.5">
+                                    {group.items.map(item => {
+                                        const active = page === item.id;
+                                        const badge = item.id === 'calendar' ? reminderCount : 0;
+                                        return (
+                                            <button
+                                                key={item.id}
+                                                onClick={() => setPage(item.id)}
+                                                title={collapsed ? item.label : undefined}
+                                                className={`w-full text-left px-2 py-1.5 rounded-lg cursor-pointer transition flex items-center gap-2.5 text-sm border ${
+                                                    active
+                                                        ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20'
+                                                        : 'text-gray-400 hover:bg-white/5 hover:text-white border-transparent'
+                                                } ${collapsed ? 'justify-center' : ''}`}
+                                            >
+                                                <span className="text-base leading-none">{item.icon}</span>
+                                                {!collapsed && <span className="truncate flex-1">{item.label}</span>}
+                                                {!collapsed && badge > 0 && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-400 font-bold">
+                                                        {badge}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </nav>
-
-            {/* Calendar — needs the labels, so it stays hidden while collapsed */}
-            {!collapsed && (
-                <SidebarCalendar logs={logs} diary={diary} gymData={gymData}
-                    reminders={reminders} setReminders={setReminders} />
-            )}
 
             {/* Energy battery */}
             <div className={`mt-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] group relative ${collapsed ? 'p-2' : 'p-2.5'}`}>
@@ -150,7 +119,6 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
                     </>
                 )}
 
-                {/* Breakdown on hover */}
                 {todayLog && (
                     <div className="absolute left-full ml-2 bottom-0 w-48 p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
                         <p className="text-xs text-gray-400 mb-2">Разбор энергии:</p>

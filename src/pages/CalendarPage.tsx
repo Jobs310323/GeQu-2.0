@@ -1,0 +1,263 @@
+import { useState, useMemo } from 'react';
+
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+
+const KINDS: Record<string, { color: string; label: string; icon: string }> = {
+    workout:  { color: '#EA580C', label: 'Тренировка', icon: '🏋️' },
+    log:      { color: '#0284C7', label: 'День закрыт', icon: '🌙' },
+    diary:    { color: '#7C3AED', label: 'Дневник', icon: '📓' },
+    reminder: { color: '#DB2777', label: 'Напоминание', icon: '🔔' },
+};
+
+/** Local-time YYYY-MM-DD. Using toISOString here would shift evening entries. */
+const dayKey = (d: Date | string) =>
+    (typeof d === 'string' ? new Date(d) : d).toLocaleDateString('sv-SE');
+
+export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: any) {
+    const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
+    const [selected, setSelected] = useState<string>(() => dayKey(new Date()));
+    const [draft, setDraft] = useState('');
+
+    const todayKey = dayKey(new Date());
+
+    // Index each source by local day once — every cell lookup is then O(1).
+    const index = useMemo(() => {
+        const m: Record<string, Set<string>> = {};
+        const add = (k: string, kind: string) => { (m[k] ||= new Set()).add(kind); };
+        (logs ?? []).forEach((l: any) => l?.date && add(dayKey(l.date), 'log'));
+        (diary ?? []).forEach((e: any) => e?.date && add(dayKey(e.date), 'diary'));
+        (gymData?.history ?? []).forEach((w: any) => w?.date && add(dayKey(w.date), 'workout'));
+        (reminders ?? []).forEach((r: any) => r?.date && add(r.date, 'reminder'));
+        return m;
+    }, [logs, diary, gymData, reminders]);
+
+    const grid = useMemo(() => {
+        const y = cursor.getFullYear(), mo = cursor.getMonth();
+        const startOffset = (new Date(y, mo, 1).getDay() + 6) % 7; // Monday first
+        const total = new Date(y, mo + 1, 0).getDate();
+        const cells: (Date | null)[] = Array(startOffset).fill(null);
+        for (let d = 1; d <= total; d++) cells.push(new Date(y, mo, d));
+        while (cells.length % 7 !== 0) cells.push(null);
+        return cells;
+    }, [cursor]);
+
+    const dayItems = useMemo(() => ({
+        reminders: (reminders ?? []).filter((r: any) => r.date === selected),
+        workouts: (gymData?.history ?? []).filter((w: any) => dayKey(w.date) === selected),
+        diary: (diary ?? []).filter((e: any) => dayKey(e.date) === selected),
+        log: (logs ?? []).find((l: any) => dayKey(l.date) === selected) ?? null,
+    }), [selected, reminders, gymData, diary, logs]);
+
+    const upcoming = useMemo(() =>
+        (reminders ?? [])
+            .filter((r: any) => !r.done && r.date >= todayKey)
+            .sort((a: any, b: any) => a.date.localeCompare(b.date))
+            .slice(0, 8),
+        [reminders, todayKey]);
+
+    // Counts for the month currently on screen.
+    const monthStats = useMemo(() => {
+        const prefix = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+        const count = (kind: string) =>
+            Object.entries(index).filter(([k, kinds]) => k.startsWith(prefix) && kinds.has(kind)).length;
+        return { log: count('log'), workout: count('workout'), diary: count('diary'), reminder: count('reminder') };
+    }, [index, cursor]);
+
+    const addReminder = () => {
+        if (!draft.trim()) return;
+        setReminders([...(reminders ?? []), { id: Date.now(), date: selected, text: draft.trim(), done: false }]);
+        setDraft('');
+    };
+    const toggleReminder = (id: number) =>
+        setReminders((reminders ?? []).map((r: any) => (r.id === id ? { ...r, done: !r.done } : r)));
+    const removeReminder = (id: number) =>
+        setReminders((reminders ?? []).filter((r: any) => r.id !== id));
+
+    const shift = (d: number) => setCursor(c => new Date(c.getFullYear(), c.getMonth() + d, 1));
+    const goToday = () => {
+        const now = new Date();
+        setCursor(new Date(now.getFullYear(), now.getMonth(), 1));
+        setSelected(dayKey(now));
+    };
+
+    const selectedDate = new Date(selected + 'T12:00:00');
+
+    return (
+        <div className="max-w-6xl">
+            <h1 className="text-3xl font-bold mb-2">Календарь</h1>
+            <p className="text-gray-400 text-sm mb-6">
+                Тренировки, закрытые дни, записи дневника и напоминания — всё на одной сетке.
+            </p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Month grid */}
+                <div className="lg:col-span-2 glass-card p-5 rounded-2xl">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => shift(-1)}
+                                className="w-8 h-8 rounded-lg border border-[var(--border)] text-gray-400 hover:text-cyan-400 hover:border-cyan-400/40 transition">‹</button>
+                            <button onClick={() => shift(1)}
+                                className="w-8 h-8 rounded-lg border border-[var(--border)] text-gray-400 hover:text-cyan-400 hover:border-cyan-400/40 transition">›</button>
+                            <h2 className="text-xl font-bold ml-2">
+                                {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
+                            </h2>
+                        </div>
+                        <button onClick={goToday}
+                            className="text-sm px-3 py-1.5 rounded-lg border border-[var(--border)] text-gray-400 hover:text-white transition">
+                            Сегодня
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1.5 mb-1.5">
+                        {WEEKDAYS.map(w => (
+                            <div key={w} className="text-[11px] text-gray-500 text-center py-1">{w}</div>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1.5">
+                        {grid.map((d, i) => {
+                            if (!d) return <div key={i} />;
+                            const key = dayKey(d);
+                            const kinds = index[key];
+                            const isToday = key === todayKey;
+                            const isSelected = key === selected;
+                            const dayReminders = (reminders ?? []).filter((r: any) => r.date === key && !r.done);
+                            return (
+                                <button
+                                    key={i}
+                                    onClick={() => setSelected(key)}
+                                    className={`min-h-[68px] p-1.5 rounded-xl border text-left transition flex flex-col ${
+                                        isSelected ? 'bg-cyan-400/10 border-cyan-400/50'
+                                            : isToday ? 'bg-white/5 border-[var(--border)]'
+                                            : 'border-[var(--border)] hover:bg-white/5'
+                                    }`}
+                                >
+                                    <span className={`text-xs mb-1 ${
+                                        isToday ? 'text-cyan-400 font-bold' : isSelected ? 'text-cyan-400' : 'text-gray-400'
+                                    }`}>
+                                        {d.getDate()}
+                                    </span>
+
+                                    {kinds && (
+                                        <span className="flex gap-1 mb-1">
+                                            {[...kinds].map(k => (
+                                                <span key={k} className="w-1.5 h-1.5 rounded-full"
+                                                    style={{ background: KINDS[k]?.color }} title={KINDS[k]?.label} />
+                                            ))}
+                                        </span>
+                                    )}
+
+                                    {dayReminders.slice(0, 2).map((r: any) => (
+                                        <span key={r.id} className="text-[9px] text-pink-400 truncate leading-tight w-full">
+                                            {r.text}
+                                        </span>
+                                    ))}
+                                    {dayReminders.length > 2 && (
+                                        <span className="text-[9px] text-gray-500">+{dayReminders.length - 2}</span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-[var(--border)]">
+                        {Object.entries(KINDS).map(([k, v]) => (
+                            <span key={k} className="flex items-center gap-1.5 text-xs text-gray-400">
+                                <span className="w-2 h-2 rounded-full" style={{ background: v.color }} />
+                                {v.label}
+                                <span className="text-gray-600">· {(monthStats as any)[k]}</span>
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Selected day + upcoming */}
+                <div className="space-y-6">
+                    <div className="glass-card p-5 rounded-2xl">
+                        <h3 className="font-bold text-cyan-400 mb-3">
+                            {selectedDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'long' })}
+                        </h3>
+
+                        <div className="space-y-2 mb-4">
+                            {dayItems.log && (
+                                <div className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)]">
+                                    🌙 День закрыт · сон {dayItems.log.sleep}, фокус {dayItems.log.focus}, настроение {dayItems.log.mood}
+                                </div>
+                            )}
+                            {dayItems.workouts.map((w: any) => (
+                                <div key={w.id ?? w.date} className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)]">
+                                    🏋️ {w.dayName || 'Тренировка'}
+                                    <span className="text-gray-500"> · {(w.exercises ?? []).length} упр.</span>
+                                </div>
+                            ))}
+                            {dayItems.diary.map((e: any) => (
+                                <div key={e.id} className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)]">
+                                    📓 {String(e.content).slice(0, 80)}{String(e.content).length > 80 ? '…' : ''}
+                                </div>
+                            ))}
+                            {!dayItems.log && !dayItems.workouts.length && !dayItems.diary.length && (
+                                <p className="text-sm text-gray-500">В этот день ничего не отмечено.</p>
+                            )}
+                        </div>
+
+                        <div className="pt-3 border-t border-[var(--border)]">
+                            <div className="text-xs text-gray-400 mb-2">🔔 Напоминания</div>
+                            <div className="space-y-1.5 mb-3">
+                                {dayItems.reminders.map((r: any) => (
+                                    <div key={r.id} className="flex items-start gap-2 group">
+                                        <input type="checkbox" checked={r.done} onChange={() => toggleReminder(r.id)}
+                                            className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer" />
+                                        <span className={`text-sm flex-1 ${r.done ? 'line-through text-gray-600' : 'text-gray-200'}`}>
+                                            {r.text}
+                                        </span>
+                                        <button onClick={() => removeReminder(r.id)}
+                                            className="text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 transition">✕</button>
+                                    </div>
+                                ))}
+                                {dayItems.reminders.length === 0 && (
+                                    <p className="text-xs text-gray-600">Нет напоминаний на этот день.</p>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    value={draft}
+                                    onChange={e => setDraft(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && addReminder()}
+                                    placeholder="Добавить напоминание…"
+                                    className="flex-1 min-w-0 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-400"
+                                />
+                                <button onClick={addReminder}
+                                    className="px-4 rounded-lg bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold shrink-0">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="glass-card p-5 rounded-2xl">
+                        <h3 className="font-bold mb-3">Ближайшие напоминания</h3>
+                        {upcoming.length === 0 ? (
+                            <p className="text-sm text-gray-500">Всё чисто — активных напоминаний нет.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {upcoming.map((r: any) => (
+                                    <button key={r.id} onClick={() => {
+                                        setSelected(r.date);
+                                        const d = new Date(r.date + 'T12:00:00');
+                                        setCursor(new Date(d.getFullYear(), d.getMonth(), 1));
+                                    }}
+                                        className="w-full text-left flex items-baseline gap-2 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)] hover:border-pink-400/40 transition">
+                                        <span className="text-xs text-pink-400 whitespace-nowrap tabular-nums">
+                                            {new Date(r.date + 'T12:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                                        </span>
+                                        <span className="text-sm text-gray-200 truncate">{r.text}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
