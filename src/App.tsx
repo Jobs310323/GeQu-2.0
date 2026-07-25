@@ -18,6 +18,7 @@ import { Progress } from './pages/Progress';
 import { AiPlan } from './pages/AiPlan';
 import { UserCard } from './pages/UserCard';
 import { CalendarPage } from './pages/CalendarPage';
+import { ClinicalTests } from './pages/ClinicalTests';
 import { loadPrefs, savePrefs, type Prefs } from './lib/prefs';
 import { CirclesOfInfluence } from './pages/CirclesOfInfluence';
 import { GymApp } from './features/gym/Gym';
@@ -43,6 +44,7 @@ function App() {
     const [hyperfocus, setHyperfocus] = useState<any>(null); // Новое состояние для гиперфокуса
     const [circles, setCircles] = useState(DB.get('circles', []));
     const [reminders, setReminders] = useState(DB.get('reminders', []));
+    const [clinicalResults, setClinicalResults] = useState(DB.get('clinical', []));
     const [prefs, setPrefs] = useState<Prefs>(() => loadPrefs());
 
     useEffect(() => { savePrefs(prefs); }, [prefs]);
@@ -54,6 +56,7 @@ function App() {
 
     useEffect(() => { DB.save('circles', circles); }, [circles]);
     useEffect(() => { DB.save('reminders', reminders); }, [reminders]);
+    useEffect(() => { DB.save('clinical', clinicalResults); }, [clinicalResults]);
     useEffect(() => { DB.save('logs', logs); }, [logs]);
     useEffect(() => { DB.save('dopamineMenu', dopamineMenu); }, [dopamineMenu]);
     useEffect(() => { DB.save('diary', diary); }, [diary]);
@@ -106,6 +109,7 @@ function App() {
                 {page === 'calendar' && <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />}
                 {page === 'card' && <UserCard logs={logs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData} testResults={testResults} />}
                 {page === 'aiplan' && <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />}
+                {page === 'clinical' && <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults} />}
                 {page === 'training' && <Training setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />}
                 {page === 'knowledge' && <Knowledge />}
                 {page === 'about' && <AboutAdhd />}

@@ -31,6 +31,7 @@ export const NAV_GROUPS: NavGroup[] = [
             { id: 'gym', icon: '🏋️', label: 'Зал' },
             { id: 'training', icon: '🎯', label: 'Тренировки' },
             { id: 'circles', icon: '⭕', label: 'Круги' },
+            { id: 'clinical', icon: '📝', label: 'Клинические тесты' },
         ],
     },
     {
