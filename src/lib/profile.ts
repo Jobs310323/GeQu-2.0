@@ -6,9 +6,9 @@
 import { computeXp, levelFromXp, evaluateAchievements, type GameData } from './xp';
 
 /** Cognitive tests where a LOWER value is better (times/latency). */
-const LOWER_IS_BETTER = new Set(['schulte', 'reaction', 'tmt']);
+export const LOWER_IS_BETTER = new Set(['schulte', 'reaction', 'tmt']);
 
-const TEST_LABELS: Record<string, string> = {
+export const TEST_LABELS: Record<string, string> = {
     schulte: 'Таблица Шульте (сек)',
     stroop: 'Тест Струпа (очки)',
     reaction: 'Реакция (мс)',
