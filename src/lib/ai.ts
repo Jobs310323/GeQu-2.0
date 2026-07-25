@@ -70,6 +70,9 @@ export async function streamAI(opts: StreamOptions): Promise<string> {
             model: MODEL,
             messages,
             max_tokens: Math.min(Math.max(opts.maxTokens || 1024, 256), 4096),
+            // Lower temperature keeps the Russian output clean — at higher values
+            // this model occasionally bleeds stray CJK tokens into the text.
+            temperature: 0.5,
             stream: true,
         }),
         signal: opts.signal,
