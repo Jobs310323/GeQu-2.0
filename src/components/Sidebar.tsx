@@ -6,6 +6,12 @@ type NavGroup = { title: string; items: NavItem[] };
 // Grouped navigation keeps 14 destinations scannable instead of one long list.
 const NAV_GROUPS: NavGroup[] = [
     {
+        title: 'Обо мне',
+        items: [
+            { id: 'card', icon: '📇', label: 'Моя карточка' },
+        ],
+    },
+    {
         title: 'Каждый день',
         items: [
             { id: 'dashboard', icon: '⬢', label: 'Дашборд' },

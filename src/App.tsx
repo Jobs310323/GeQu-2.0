@@ -16,6 +16,7 @@ import { Settings } from './pages/Settings';
 import { UnifiedStats } from './pages/UnifiedStats';
 import { Progress } from './pages/Progress';
 import { AiPlan } from './pages/AiPlan';
+import { UserCard } from './pages/UserCard';
 import { CirclesOfInfluence } from './pages/CirclesOfInfluence';
 import { GymApp } from './features/gym/Gym';
 import { DopamineRoulette } from './features/dopamine/DopamineRoulette';
@@ -88,6 +89,7 @@ function App() {
                 {page === 'dynamics' && <Dynamics logs={logs} testResults={testResults} gymData={gymData} />}
                 {page === 'hub' && <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />}
                 {page === 'progress' && <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} />}
+                {page === 'card' && <UserCard logs={logs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData} testResults={testResults} />}
                 {page === 'aiplan' && <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />}
                 {page === 'training' && <Training setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />}
                 {page === 'knowledge' && <Knowledge />}
