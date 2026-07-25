@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getGroqKey, setGroqKey } from '../lib/ai';
 import { NAV_GROUPS, LOCKED_TABS } from '../lib/nav';
 import { DASHBOARD_WIDGETS, toggleIn } from '../lib/prefs';
+import { LayoutArranger } from '../components/LayoutArranger';
 
 export function Settings({ diary, logs, prefs, setPrefs }: any) {
     const hiddenTabs: string[] = prefs?.hiddenTabs ?? [];
@@ -91,6 +92,8 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
     return (
         <div>
             <h1 className="text-3xl font-bold mb-8">Настройки и данные</h1>
+
+            <LayoutArranger prefs={prefs} setPrefs={setPrefs} />
 
             {/* Which pages appear in the sidebar */}
             <div className="glass-card p-6 rounded-2xl mb-6">

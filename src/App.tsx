@@ -92,32 +92,43 @@ function App() {
     }
     energy = Math.max(0, Math.min(10, energy));
 
+    // Every page as a lookup, so a page can render either in the main area
+    // or embedded on the dashboard as a mini-app.
+    const PAGES: Record<string, any> = {
+        gym: <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />,
+        diary: <Diary diary={diary} setDiary={setDiary} />,
+        notes: <Notes notes={notes} setNotes={setNotes} />,
+        goals: <Goals goals={goals} setGoals={setGoals} />,
+        circles: <CirclesOfInfluence circles={circles} setCircles={setCircles} />,
+        habits: <Habits habits={habits} setHabits={setHabits} />,
+        kanban: <Kanban kanban={kanban} setKanban={setKanban} />,
+        dynamics: <Dynamics logs={logs} testResults={testResults} gymData={gymData} />,
+        hub: <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />,
+        progress: <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} />,
+        calendar: <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />,
+        card: <UserCard logs={logs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData} testResults={testResults} />,
+        aiplan: <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />,
+        cbt: <Cbt cbtRecords={cbtRecords} setCbtRecords={setCbtRecords} />,
+        clinical: <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults} />,
+        training: <Training setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />,
+        knowledge: <Knowledge setPage={setPage} />,
+        about: <AboutAdhd />,
+        settings: <Settings diary={diary} logs={logs} prefs={prefs} setPrefs={setPrefs} />,
+    };
+
+    const dashProps = { logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults, prefs };
+    const promotedWidget = (prefs.asPage ?? []).includes(page) ? page : null;
+
     return (
         <div className="flex h-screen overflow-hidden">
             <Sidebar page={page} setPage={setPage} theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog}
                 prefs={prefs} setPrefs={setPrefs}
                 reminderCount={reminders.filter((r: any) => !r.done && r.date >= todayStr).length} />
             <main className="flex-1 p-6 overflow-y-auto relative">
-                {page === 'dashboard' && <Dashboard logs={logs} setLogs={setLogs} achievements={achievements} setHyperfocus={setHyperfocus} kanban={kanban} gymData={gymData} testResults={testResults} prefs={prefs} />}
-                {page === 'gym' && <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />}
-                {page === 'diary' && <Diary diary={diary} setDiary={setDiary} />}
-                {page === 'notes' && <Notes notes={notes} setNotes={setNotes} />}
-                {page === 'goals' && <Goals goals={goals} setGoals={setGoals} />}
-                {page === 'circles' && <CirclesOfInfluence circles={circles} setCircles={setCircles} />}
-                {page === 'habits' && <Habits habits={habits} setHabits={setHabits} />}
-                {page === 'kanban' && <Kanban kanban={kanban} setKanban={setKanban} />}
-                {page === 'dynamics' && <Dynamics logs={logs} testResults={testResults} gymData={gymData} />}
-                {page === 'hub' && <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />}
-                {page === 'progress' && <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} />}
-                {page === 'calendar' && <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />}
-                {page === 'card' && <UserCard logs={logs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData} testResults={testResults} />}
-                {page === 'aiplan' && <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />}
-                {page === 'cbt' && <Cbt cbtRecords={cbtRecords} setCbtRecords={setCbtRecords} />}
-                {page === 'clinical' && <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults} />}
-                {page === 'training' && <Training setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />}
-                {page === 'knowledge' && <Knowledge setPage={setPage} />}
-                {page === 'about' && <AboutAdhd />}
-                {page === 'settings' && <Settings diary={diary} logs={logs} prefs={prefs} setPrefs={setPrefs} />}
+                {page === 'dashboard' && <Dashboard {...dashProps} renderPage={(id: string) => PAGES[id]} />}
+                {promotedWidget
+                    ? <Dashboard {...dashProps} onlyWidget={promotedWidget} />
+                    : (page !== 'dashboard' && PAGES[page]) || null}
             </main>
 
             {hyperfocus && <HyperfocusOverlay hyperfocus={hyperfocus} setHyperfocus={setHyperfocus} kanban={kanban} setDiary={setDiary} setLogs={setLogs} todayLog={todayLog} />}

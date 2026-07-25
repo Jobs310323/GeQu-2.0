@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { calculateStreak } from '../lib/helpers';
+import { DASHBOARD_WIDGETS } from '../lib/prefs';
+import { ALL_TABS } from '../lib/nav';
 
-export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults, prefs }: any) {
+const WIDGET_TITLES: Record<string, string> = Object.fromEntries(
+    DASHBOARD_WIDGETS.map(w => [w.id, w.label]));
+
+const WIDGET_PAGE_LABEL: Record<string, string> = Object.fromEntries(
+    ALL_TABS.map(t => [t.id, t.icon + ' ' + t.label]));
+
+export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults, prefs, onlyWidget, renderPage }: any) {
     const [sleep, setSleep] = useState(5);
     const [focus, setFocus] = useState(5);
     const [mood, setMood] = useState(5);
@@ -12,7 +20,12 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     const [toast, setToast] = useState('');
     const streak = calculateStreak(logs);
     const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
-    const show = (id: string) => !hiddenWidgets.includes(id);
+    const asPage: string[] = prefs?.asPage ?? [];
+    const asWidget: string[] = prefs?.asWidget ?? [];
+    // In single-widget mode this component *is* the promoted page, so it shows
+    // only that block. Otherwise: everything visible and not moved to the menu.
+    const show = (id: string) =>
+        onlyWidget ? id === onlyWidget : !hiddenWidgets.includes(id) && !asPage.includes(id);
 
     const [gratitude, setGratitude] = useState<string[]>(['', '', '']);
 
@@ -72,9 +85,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     return (
         <div className="max-w-3xl mx-auto">
             <div className="flex justify-between items-center mb-2">
-                <h1 className="text-3xl font-bold">Закрытие дня</h1>
+                <h1 className="text-3xl font-bold">{onlyWidget ? (WIDGET_TITLES[onlyWidget] ?? 'Закрытие дня') : 'Закрытие дня'}</h1>
             </div>
-            <p className="text-gray-400 mb-6">Подведите итоги, чтобы отпустить мысли и отдохнуть.</p>
+            {!onlyWidget && <p className="text-gray-400 mb-6">Подведите итоги, чтобы отпустить мысли и отдохнуть.</p>}
             
             {show('hyperfocus') && <button onClick={startHyper} className="w-full glass-card p-6 rounded-2xl mb-6 border border-cyan-400/30 hover:bg-cyan-400/10 transition flex items-center justify-between group">
                 <div className="flex items-center gap-4">
@@ -181,6 +194,20 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
             </div>}
 
             <button onClick={handleSave} className="w-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold py-3 rounded-lg text-lg">Закрыть день</button>
+
+            {/* Pages the user dragged onto the dashboard render here as mini-apps. */}
+            {!onlyWidget && renderPage && asWidget.map((id: string) => {
+                const el = renderPage(id);
+                if (!el) return null;
+                return (
+                    <div key={id} className="glass-card rounded-2xl mt-6 overflow-hidden border border-purple-400/25">
+                        <div className="px-4 py-2 text-xs uppercase tracking-wider text-purple-400 border-b border-[var(--border)] bg-purple-400/5">
+                            {WIDGET_PAGE_LABEL[id] ?? id}
+                        </div>
+                        <div className="p-4 max-h-[520px] overflow-y-auto">{el}</div>
+                    </div>
+                );
+            })}
 
             {toast && <div className="fixed bottom-8 right-8 bg-white/10 border border-cyan-400 px-6 py-3 rounded-lg text-white">{toast}</div>}
         </div>

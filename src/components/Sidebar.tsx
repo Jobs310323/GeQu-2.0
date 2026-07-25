@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NAV_GROUPS } from '../lib/nav';
+import { DASHBOARD_WIDGETS } from '../lib/prefs';
 
 const COLLAPSE_KEY = 'gequ_sidebar_collapsed';
 
@@ -22,9 +23,23 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
             return { ...p, collapsedGroups: cur.includes(id) ? cur.filter(g => g !== id) : [...cur, id] };
         });
 
-    // Drop hidden entries, then drop groups that end up empty.
+    const asWidget: string[] = prefs?.asWidget ?? [];
+    const asPage: string[] = prefs?.asPage ?? [];
+
+    // Drop hidden entries and pages moved to the dashboard, then drop groups
+    // that end up empty. Widgets promoted from the dashboard join "Каждый день".
+    const promoted = DASHBOARD_WIDGETS
+        .filter(w => asPage.includes(w.id))
+        .map(w => ({ id: w.id, icon: w.icon, label: w.label }));
+
     const groups = NAV_GROUPS
-        .map(g => ({ ...g, items: g.items.filter(i => !hidden.includes(i.id)) }))
+        .map(g => ({
+            ...g,
+            items: [
+                ...g.items.filter(i => !hidden.includes(i.id) && !asWidget.includes(i.id)),
+                ...(g.id === 'daily' ? promoted : []),
+            ],
+        }))
         .filter(g => g.items.length > 0);
 
     const energyColor = energy >= 7 ? 'bg-green-400' : energy >= 4 ? 'bg-yellow-400' : 'bg-red-400';
