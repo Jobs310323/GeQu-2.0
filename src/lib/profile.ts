@@ -16,6 +16,9 @@ export const TEST_LABELS: Record<string, string> = {
     digitspan: 'Память на числа (уровень)',
     gonogo: 'Go/No-Go (очки)',
     nback: 'N-Back (% точности)',
+    corsi: 'Тест Корси (длина)',
+    arithmetic: 'Устный счёт (очки)',
+    switching: 'Переключение (очки)',
 };
 
 export type TestSummary = {

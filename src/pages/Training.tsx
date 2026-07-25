@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NBackTest, SchulteTable, BreathingExercise, StroopTest, ReactionTest, TrailMakingTest, DigitSpanTest, GoNoGoTest, PomodoroTimer } from '../features/training/tests';
+import { NBackTest, SchulteTable, CorsiTest, ArithmeticTest, SwitchingTest, BreathingExercise, StroopTest, ReactionTest, TrailMakingTest, DigitSpanTest, GoNoGoTest, PomodoroTimer } from '../features/training/tests';
 
 export function Training({ setTestResults, achievements, setAchievements }: any) {
     const [tab, setTab] = useState('schulte');
@@ -10,7 +10,10 @@ export function Training({ setTestResults, achievements, setAchievements }: any)
         { id: 'trail', label: 'Соединения' },
         { id: 'digitspan', label: 'Память на числа' },
         { id: 'gonogo', label: 'Go/No-Go' },
-        { id: 'nback', label: 'N-Back' }, // <--- Добавили вкладку
+        { id: 'nback', label: 'N-Back' },
+        { id: 'corsi', label: 'Корси' },
+        { id: 'arithmetic', label: 'Счёт' },
+        { id: 'switching', label: 'Переключение' }, // <--- Добавили вкладку
         { id: 'breathing', label: 'Дыхание' },
         { id: 'pomodoro', label: 'Pomodoro' },
     ];
@@ -33,6 +36,9 @@ export function Training({ setTestResults, achievements, setAchievements }: any)
             {tab === 'digitspan' && <DigitSpanTest setTestResults={setTestResults} />}
             {tab === 'gonogo' && <GoNoGoTest setTestResults={setTestResults} />}
             {tab === 'nback' && <NBackTest setTestResults={setTestResults} />} {/* <--- Добавили рендер */}
+            {tab === 'corsi' && <CorsiTest setTestResults={setTestResults} />}
+            {tab === 'arithmetic' && <ArithmeticTest setTestResults={setTestResults} />}
+            {tab === 'switching' && <SwitchingTest setTestResults={setTestResults} />}
             {tab === 'breathing' && <BreathingExercise />}
             {tab === 'pomodoro' && <PomodoroTimer />}
         </div>

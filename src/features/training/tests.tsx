@@ -817,3 +817,275 @@ export function PomodoroTimer() {
         </div>
     );
 }
+
+/**
+ * Corsi block-tapping — visuospatial working memory. Complements Digit Span,
+ * which is verbal: the two often diverge sharply in ADHD.
+ */
+export function CorsiTest({ setTestResults }: any) {
+    const [phase, setPhase] = useState<'idle' | 'showing' | 'input' | 'over'>('idle');
+    const [sequence, setSequence] = useState<number[]>([]);
+    const [entered, setEntered] = useState<number[]>([]);
+    const [lit, setLit] = useState<number | null>(null);
+    const [span, setSpan] = useState(2);
+    const [best, setBest] = useState(0);
+    const timers = useRef<any[]>([]);
+
+    const clearTimers = () => { timers.current.forEach(clearTimeout); timers.current = []; };
+    useEffect(() => clearTimers, []);
+
+    const playSequence = (seq: number[]) => {
+        setPhase('showing');
+        setEntered([]);
+        clearTimers();
+        seq.forEach((cell, i) => {
+            timers.current.push(setTimeout(() => setLit(cell), i * 800));
+            timers.current.push(setTimeout(() => setLit(null), i * 800 + 500));
+        });
+        timers.current.push(setTimeout(() => setPhase('input'), seq.length * 800));
+    };
+
+    const startRound = (length: number) => {
+        const seq: number[] = [];
+        while (seq.length < length) {
+            const n = Math.floor(Math.random() * 9);
+            if (seq[seq.length - 1] !== n) seq.push(n); // never flash the same cell twice running
+        }
+        setSequence(seq);
+        setSpan(length);
+        playSequence(seq);
+    };
+
+    const start = () => { setBest(0); startRound(2); };
+
+    const tap = (cell: number) => {
+        if (phase !== 'input') return;
+        const next = [...entered, cell];
+        setEntered(next);
+
+        if (sequence[next.length - 1] !== cell) {          // a wrong tap ends the run
+            const reached = Math.max(span - 1, 0);
+            setBest(reached);
+            saveResult(setTestResults, 'corsi', reached);
+            setPhase('over');
+            return;
+        }
+        if (next.length === sequence.length) {              // whole sequence repeated
+            setBest(span);
+            timers.current.push(setTimeout(() => startRound(span + 1), 700));
+        }
+    };
+
+    return (
+        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+            <p className="text-gray-400 mb-2 text-center">Запомни порядок вспышек и повтори его, нажимая на квадраты.</p>
+            <div className="flex gap-6 mb-6 text-sm">
+                <span className="text-gray-400">Длина: <b className="text-cyan-400">{span}</b></span>
+                <span className="text-gray-400">Лучшее: <b className="text-purple-400">{best}</b></span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 w-72 h-72 mb-6">
+                {Array.from({ length: 9 }).map((_, i) => (
+                    <button key={i} onClick={() => tap(i)} disabled={phase !== 'input'}
+                        className={`rounded-xl border transition-all duration-100 ${
+                            lit === i ? 'bg-cyan-400 border-cyan-400 scale-95 shadow-lg shadow-cyan-400/50'
+                                : entered.includes(i) && phase === 'input' ? 'bg-purple-400/30 border-purple-400'
+                                : 'bg-[var(--bg-input)] border-[var(--border)]'
+                        } ${phase === 'input' ? 'cursor-pointer hover:border-cyan-400/60' : 'cursor-default'}`} />
+                ))}
+            </div>
+
+            {phase === 'idle' && (
+                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Начать</button>
+            )}
+            {phase === 'showing' && <p className="text-cyan-400 text-sm animate-pulse">Смотри внимательно…</p>}
+            {phase === 'input' && <p className="text-gray-400 text-sm">Повтори: {entered.length} / {sequence.length}</p>}
+            {phase === 'over' && (
+                <div className="text-center">
+                    <div className="text-4xl font-bold text-cyan-400 mb-1">{best}</div>
+                    <p className="text-gray-400 mb-4 text-sm">Максимальная длина последовательности</p>
+                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Ещё раз</button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/** Mental arithmetic against the clock — processing speed under mild pressure. */
+export function ArithmeticTest({ setTestResults }: any) {
+    const [playing, setPlaying] = useState(false);
+    const [time, setTime] = useState(60);
+    const [score, setScore] = useState(0);
+    const [task, setTask] = useState<{ text: string; answer: number } | null>(null);
+    const [input, setInput] = useState('');
+    const [flash, setFlash] = useState<'ok' | 'bad' | null>(null);
+    const scoreRef = useRef(0);
+
+    useEffect(() => { scoreRef.current = score; }, [score]);
+
+    const makeTask = () => {
+        const ops = ['+', '−', '×'];
+        const op = ops[Math.floor(Math.random() * ops.length)];
+        let a: number, b: number, answer: number;
+        if (op === '×') { a = 2 + Math.floor(Math.random() * 11); b = 2 + Math.floor(Math.random() * 11); answer = a * b; }
+        else if (op === '+') { a = 10 + Math.floor(Math.random() * 80); b = 10 + Math.floor(Math.random() * 80); answer = a + b; }
+        else { a = 20 + Math.floor(Math.random() * 80); b = 5 + Math.floor(Math.random() * 40); answer = a - b; }
+        setTask({ text: `${a} ${op} ${b}`, answer });
+    };
+
+    const start = () => { setScore(0); setTime(60); setInput(''); setPlaying(true); makeTask(); };
+
+    useEffect(() => {
+        if (!playing) return;
+        const id = setInterval(() => setTime(t => (t <= 1 ? 0 : t - 1)), 1000);
+        return () => clearInterval(id);
+    }, [playing]);
+
+    // Ending lives in its own effect, so no state update happens inside the timer updater.
+    useEffect(() => {
+        if (playing && time <= 0) {
+            setPlaying(false);
+            saveResult(setTestResults, 'arithmetic', scoreRef.current);
+        }
+    }, [time, playing, setTestResults]);
+
+    const submit = (e: any) => {
+        e.preventDefault();
+        if (!playing || !task || input === '') return;
+        const correct = Number(input) === task.answer;
+        setScore(s => (correct ? s + 1 : Math.max(0, s - 1)));
+        setFlash(correct ? 'ok' : 'bad');
+        setTimeout(() => setFlash(null), 250);
+        setInput('');
+        makeTask();
+    };
+
+    return (
+        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+            <p className="text-gray-400 mb-6 text-center">Считай в уме как можно быстрее. За ошибку —1 балл.</p>
+
+            {!playing && time === 60 && (
+                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Начать (60 сек)</button>
+            )}
+
+            {playing && task && (
+                <>
+                    <div className="flex gap-8 mb-6 text-xl">
+                        <span>Очки: <b className="text-cyan-400">{score}</b></span>
+                        <span>Время: <b className="text-pink-400">{time}s</b></span>
+                    </div>
+                    <div className={`text-6xl font-extrabold mb-6 transition-colors ${
+                        flash === 'ok' ? 'text-green-400' : flash === 'bad' ? 'text-red-400' : 'text-white'
+                    }`}>
+                        {task.text}
+                    </div>
+                    <form onSubmit={submit}>
+                        <input autoFocus type="number" value={input} onChange={e => setInput(e.target.value)}
+                            className="bg-[var(--bg-input)] border-2 border-[var(--border)] rounded-xl px-6 py-3 text-3xl text-center w-48 outline-none focus:border-cyan-400 text-white" />
+                    </form>
+                    <p className="text-xs text-gray-500 mt-3">Enter — ответить</p>
+                </>
+            )}
+
+            {!playing && time === 0 && (
+                <div className="text-center">
+                    <div className="text-5xl font-bold text-cyan-400 mb-2">{score}</div>
+                    <p className="text-gray-400 mb-6">Правильных ответов за минуту</p>
+                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Играть снова</button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/**
+ * Task switching — the rule flips between "is the number even?" and "is the
+ * colour warm?", which makes the cost of switching sets visible.
+ */
+export function SwitchingTest({ setTestResults }: any) {
+    const [playing, setPlaying] = useState(false);
+    const [time, setTime] = useState(45);
+    const [score, setScore] = useState(0);
+    const [rule, setRule] = useState<'parity' | 'colour'>('parity');
+    const [card, setCard] = useState<{ n: number; warm: boolean } | null>(null);
+    const [flash, setFlash] = useState<'ok' | 'bad' | null>(null);
+    const scoreRef = useRef(0);
+
+    useEffect(() => { scoreRef.current = score; }, [score]);
+
+    const nextCard = () => {
+        setCard({ n: 1 + Math.floor(Math.random() * 9), warm: Math.random() < 0.5 });
+        // Flip the rule on roughly a third of trials — that is where the cost shows.
+        if (Math.random() < 0.35) setRule(r => (r === 'parity' ? 'colour' : 'parity'));
+    };
+
+    const start = () => { setScore(0); setTime(45); setRule('parity'); setPlaying(true); nextCard(); };
+
+    useEffect(() => {
+        if (!playing) return;
+        const id = setInterval(() => setTime(t => (t <= 1 ? 0 : t - 1)), 1000);
+        return () => clearInterval(id);
+    }, [playing]);
+
+    useEffect(() => {
+        if (playing && time <= 0) {
+            setPlaying(false);
+            saveResult(setTestResults, 'switching', scoreRef.current);
+        }
+    }, [time, playing, setTestResults]);
+
+    const answer = (yes: boolean) => {
+        if (!playing || !card) return;
+        const truth = rule === 'parity' ? card.n % 2 === 0 : card.warm;
+        const correct = yes === truth;
+        setScore(s => (correct ? s + 1 : Math.max(0, s - 1)));
+        setFlash(correct ? 'ok' : 'bad');
+        setTimeout(() => setFlash(null), 200);
+        nextCard();
+    };
+
+    return (
+        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+            <p className="text-gray-400 mb-6 text-center">Правило меняется на ходу — следи за подсказкой сверху.</p>
+
+            {!playing && time === 45 && (
+                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Начать (45 сек)</button>
+            )}
+
+            {playing && card && (
+                <>
+                    <div className="flex gap-8 mb-4 text-lg">
+                        <span>Очки: <b className="text-cyan-400">{score}</b></span>
+                        <span>Время: <b className="text-pink-400">{time}s</b></span>
+                    </div>
+
+                    <div key={rule} style={{ animation: 'popIn 0.2s ease-out' }}
+                        className="mb-6 px-5 py-2 rounded-xl bg-purple-400/15 border border-purple-400/40 text-purple-400 font-bold">
+                        {rule === 'parity' ? 'Правило: число ЧЁТНОЕ?' : 'Правило: цвет ТЁПЛЫЙ?'}
+                    </div>
+
+                    <div className={`w-40 h-40 rounded-2xl flex items-center justify-center text-7xl font-extrabold mb-8 ${
+                        flash === 'ok' ? 'ring-4 ring-green-400' : flash === 'bad' ? 'ring-4 ring-red-400' : ''
+                    }`} style={{ background: card.warm ? '#EA580C' : '#0284C7', color: '#fff' }}>
+                        {card.n}
+                    </div>
+
+                    <div className="flex gap-4">
+                        <button onClick={() => answer(true)}
+                            className="px-10 py-3 rounded-xl border border-green-400/50 text-green-400 hover:bg-green-400/10 font-bold transition">Да</button>
+                        <button onClick={() => answer(false)}
+                            className="px-10 py-3 rounded-xl border border-red-400/50 text-red-400 hover:bg-red-400/10 font-bold transition">Нет</button>
+                    </div>
+                </>
+            )}
+
+            {!playing && time === 0 && (
+                <div className="text-center">
+                    <div className="text-5xl font-bold text-cyan-400 mb-2">{score}</div>
+                    <p className="text-gray-400 mb-6">Очков за 45 секунд</p>
+                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Играть снова</button>
+                </div>
+            )}
+        </div>
+    );
+}
