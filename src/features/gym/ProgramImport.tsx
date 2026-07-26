@@ -29,7 +29,9 @@ function normalize(parsed: ParsedProgram) {
         days: (Array.isArray(parsed?.days) ? parsed.days : []).map((d, di) => ({
             id: now + di + 1,
             name: String(d?.name || `День ${di + 1}`).slice(0, 60),
-            exercises: (Array.isArray(d?.exercises) ? d.exercises : []).map(e => ({
+            exercises: (Array.isArray(d?.exercises) ? d.exercises : []).map((e, ei) => ({
+                // ProgramEditor keys exercises by id, so imported ones need one too.
+                id: now + (di + 1) * 1000 + ei,
                 name: String(e?.name || 'Упражнение').slice(0, 80),
                 muscle: String(e?.muscle || '—').slice(0, 30),
                 sets: Math.min(Math.max(parseInt(String(e?.sets)) || 3, 1), 12),
