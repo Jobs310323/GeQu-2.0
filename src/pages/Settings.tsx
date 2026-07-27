@@ -98,7 +98,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
             {/* Which pages appear in the sidebar */}
             <div className="glass-card p-6 rounded-2xl mb-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-                    <h2 className="text-xl">🧭 Разделы меню</h2>
+                    <h2 className="text-xl">📑 Разделы меню</h2>
                     {hiddenTabs.length > 0 && (
                         <button onClick={() => setPrefs((p: any) => ({ ...p, hiddenTabs: [] }))}
                             className="text-xs text-cyan-400 hover:underline">
@@ -143,7 +143,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
             {/* Which blocks appear on the dashboard */}
             <div className="glass-card p-6 rounded-2xl mb-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-                    <h2 className="text-xl">🧩 Виджеты дашборда</h2>
+                    <h2 className="text-xl">⬢ Виджеты дашборда</h2>
                     {hiddenWidgets.length > 0 && (
                         <button onClick={() => setPrefs((p: any) => ({ ...p, hiddenWidgets: [] }))}
                             className="text-xs text-cyan-400 hover:underline">

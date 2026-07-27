@@ -102,7 +102,7 @@ export const PRACTICES: Practice[] = [
         ],
     },
     {
-        id: 'decatastrophe', title: 'Декатастрофизация', icon: '🪜',
+        id: 'decatastrophe', title: 'Декатастрофизация', icon: '⚖️',
         why: 'Тревога показывает только худший исход и прячет то, что с ним можно справиться.',
         steps: [
             'Запиши худшее, что может случиться.',
@@ -122,7 +122,7 @@ export const PRACTICES: Practice[] = [
         ],
     },
     {
-        id: 'selfcompassion', title: 'Разговор как с другом', icon: '🤝',
+        id: 'selfcompassion', title: 'Разговор как с другом', icon: '💬',
         why: 'Внутренний критик редко ускоряет — чаще парализует.',
         steps: [
             'Запиши, что говоришь себе сейчас.',

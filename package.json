@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:emoji": "node scripts/check-emoji.mjs"
   },
   "dependencies": {
     "chart.js": "^4.5.1",

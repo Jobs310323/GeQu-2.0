@@ -116,7 +116,7 @@ export function LayoutArranger({ prefs, setPrefs }: any) {
     return (
         <div className="glass-card p-6 rounded-2xl mb-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-                <h2 className="text-xl">🧲 Раскладка интерфейса</h2>
+                <h2 className="text-xl">🔀 Раскладка интерфейса</h2>
                 {movedCount > 0 && (
                     <button onClick={() => setPrefs((p: any) => ({ ...p, asWidget: [], asPage: [] }))}
                         className="text-xs text-cyan-400 hover:underline">
@@ -130,7 +130,7 @@ export function LayoutArranger({ prefs, setPrefs }: any) {
             </p>
 
             <div className="flex flex-col md:flex-row gap-4">
-                <DropZone title="🧭 Меню" hint="Разделы в боковой панели"
+                <DropZone title="📑 Меню" hint="Разделы в боковой панели"
                     active={over === 'menu'}
                     onEnter={() => setOver('menu')}
                     onLeave={() => setOver(o => (o === 'menu' ? null : o))}

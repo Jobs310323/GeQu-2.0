@@ -5,7 +5,7 @@
 export type Category = { id: string; title: string; icon: string; blurb: string };
 
 export const CATEGORIES: Category[] = [
-    { id: 'basics', title: 'Как это устроено', icon: '🧩', blurb: 'Что происходит в голове и почему «просто соберись» не работает' },
+    { id: 'basics', title: 'Как это устроено', icon: '🔬', blurb: 'Что происходит в голове и почему «просто соберись» не работает' },
     { id: 'focus', title: 'Фокус и старт', icon: '🎯', blurb: 'Как начинать и не терять нить' },
     { id: 'time', title: 'Время и планы', icon: '⏳', blurb: 'Планирование, которое переживает контакт с реальностью' },
     { id: 'emotions', title: 'Эмоции', icon: '🌊', blurb: 'Импульсивность, чувствительность к критике, выгорание' },
