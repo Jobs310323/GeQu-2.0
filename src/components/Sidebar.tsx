@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { NAV_GROUPS } from '../lib/nav';
 import { DASHBOARD_WIDGETS } from '../lib/prefs';
+import { Logo, LogoMark } from './Logo';
 
 const COLLAPSE_KEY = 'gequ_sidebar_collapsed';
 
@@ -49,11 +50,7 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
     return (
         <aside className={`${collapsed ? 'w-[68px]' : 'w-56'} shrink-0 py-4 px-3 border-r border-[var(--border)] flex flex-col backdrop-blur-md overflow-y-auto overflow-x-hidden transition-[width] duration-200`}>
             <div className="flex items-center justify-between mb-4 px-1">
-                {!collapsed && (
-                    <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                        GeQu
-                    </span>
-                )}
+                {collapsed ? <LogoMark size={24} className="mx-auto" /> : <Logo />}
                 <button
                     onClick={() => setCollapsed((c: boolean) => !c)}
                     title={collapsed ? 'Развернуть меню' : 'Свернуть меню'}

@@ -341,6 +341,22 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
         setActiveWorkout({ ...activeWorkout, exercises: newExercises });
     };
 
+    // A programmed set count is a plan, not a limit — an extra set should be
+    // recordable without editing the program.
+    const addSet = () => {
+        const newExercises = [...activeWorkout.exercises];
+        const sets = newExercises[activeExIdx].sets;
+        const last = sets[sets.length - 1];
+        sets.push({ weight: last?.weight ?? 0, reps: last?.reps ?? 0, done: false });
+        setActiveWorkout({ ...activeWorkout, exercises: newExercises });
+    };
+
+    const removeSet = (setIdx: number) => {
+        const newExercises = [...activeWorkout.exercises];
+        newExercises[activeExIdx].sets = newExercises[activeExIdx].sets.filter((_: any, i: number) => i !== setIdx);
+        setActiveWorkout({ ...activeWorkout, exercises: newExercises });
+    };
+
     return (
         <div className="max-w-2xl mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -368,8 +384,9 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
                 <div className="grid grid-cols-12 gap-2 text-xs text-gray-400 mb-2 px-2">
                     <div className="col-span-1 text-center">#</div>
                     <div className="col-span-4 text-center">Вес (кг)</div>
-                    <div className="col-span-4 text-center">Повторения</div>
-                    <div className="col-span-3 text-center">Готово</div>
+                    <div className="col-span-3 text-center">Повторения</div>
+                    <div className="col-span-2 text-center">Готово</div>
+                    <div className="col-span-2"></div>
                 </div>
 
                 <div className="space-y-3">
@@ -381,15 +398,27 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
                                 <input type="number" value={set.weight} onChange={e => updateSet(idx, 'weight', parseFloat(e.target.value) || 0)} className="w-full bg-transparent border border-[var(--border)] rounded-md p-2 text-center text-white" />
                                 <button onClick={() => changeWeight(idx, 2.5)} className="bg-green-500/20 text-green-400 w-8 h-8 rounded-md font-bold">+</button>
                             </div>
-                            <div className="col-span-4">
+                            <div className="col-span-3">
                                 <input type="number" value={set.reps} onChange={e => updateSet(idx, 'reps', parseInt(e.target.value) || 0)} className="w-full bg-transparent border border-[var(--border)] rounded-md p-2 text-center text-white" />
                             </div>
-                            <div className="col-span-3 flex justify-center">
+                            <div className="col-span-2 flex justify-center">
                                 <button onClick={() => toggleDone(idx)} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center ${set.done ? 'bg-green-400 border-green-400 text-black' : 'border-gray-500 text-transparent'}`}>✓</button>
+                            </div>
+                            <div className="col-span-2 flex justify-center">
+                                <button onClick={() => removeSet(idx)} disabled={exercise.sets.length <= 1}
+                                    title={exercise.sets.length <= 1 ? 'Последний подход нельзя убрать' : 'Убрать подход'}
+                                    className="text-gray-600 hover:text-red-400 disabled:opacity-20 disabled:hover:text-gray-600 text-sm px-2">
+                                    ✕
+                                </button>
                             </div>
                         </div>
                     ))}
                 </div>
+
+                <button onClick={addSet}
+                    className="mt-3 w-full py-2.5 rounded-lg border border-dashed border-[var(--border)] text-gray-400 hover:text-cyan-400 hover:border-cyan-400/50 transition text-sm">
+                    + Добавить подход
+                </button>
             </div>
 
             <div className="flex justify-between mt-6">
