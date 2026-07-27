@@ -8,7 +8,8 @@ const files = [];
 (function walk(dir) {
     for (const f of fs.readdirSync(dir)) {
         const p = path.join(dir, f);
-        fs.statSync(p).isDirectory() ? walk(p) : /\.(tsx?|css|html)$/.test(f) && files.push(p);
+        if (fs.statSync(p).isDirectory()) walk(p);
+        else if (/\.(tsx?|css|html)$/.test(f)) files.push(p);
     }
 })('src');
 

@@ -10,7 +10,7 @@ export function GymApp({ gymData, setGymData, logs }: any) {
 
     const activeProgram = gymData.programs.find((p: any) => p.id === gymData.activeProgramId);
 
-    const startWorkout = (day: any) => {
+    const startWorkout = (day: any, dateISO?: string) => {
         const lastHistory = [...gymData.history].reverse().find((h: any) => h.dayId === day.id);
         const exercises = day.exercises.map((ex: any) => {
             const lastEx = lastHistory?.exercises.find((e: any) => e.name === ex.name);
@@ -26,7 +26,9 @@ export function GymApp({ gymData, setGymData, logs }: any) {
             id: Date.now(),
             dayId: day.id,
             dayName: day.name,
-            date: new Date().toISOString(),
+            // Back-dated sessions keep the chosen day but a midday timestamp,
+            // so they land on the right day in every local-time view.
+            date: dateISO ?? new Date().toISOString(),
             exercises,
             startTime: Date.now(),
             endTime: null
@@ -101,12 +103,38 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) 
     }
 
     const lastWorkout = gymData.history[gymData.history.length - 1];
-    const todayDay = activeProgram.days[0]; 
+    const days = activeProgram.days ?? [];
+
+    // Suggest the day that follows the last one performed, rather than always
+    // the first — that matches how a split is actually run.
+    const suggestedIndex = (() => {
+        if (!days.length) return 0;
+        const lastForProgram = [...gymData.history].reverse()
+            .find((h: any) => days.some((d: any) => d.id === h.dayId));
+        if (!lastForProgram) return 0;
+        const i = days.findIndex((d: any) => d.id === lastForProgram.dayId);
+        return i === -1 ? 0 : (i + 1) % days.length;
+    })();
+
+    const [dayId, setDayId] = useState<number | null>(days[suggestedIndex]?.id ?? null);
+    const [date, setDate] = useState(() => new Date().toLocaleDateString('sv-SE')); // local YYYY-MM-DD
+
+    const selectedDay = days.find((d: any) => d.id === dayId) ?? days[suggestedIndex];
+    const todayKey = new Date().toLocaleDateString('sv-SE');
+    const isToday = date === todayKey;
+    const isFuture = date > todayKey;
+
+    const begin = () => {
+        if (!selectedDay) return;
+        // Midday keeps a back-dated session on the intended day in every view.
+        const iso = isToday ? new Date().toISOString() : new Date(`${date}T12:00:00`).toISOString();
+        startWorkout(selectedDay, iso);
+    };
 
     return (
         <div className="space-y-6">
             <div className="glass-card p-6 rounded-2xl">
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center">
                     <div>
                         <p className="text-gray-400 text-sm">Текущая программа</p>
                         <h2 className="text-2xl font-bold text-white">{activeProgram.name}</h2>
@@ -118,21 +146,63 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) 
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="glass-card p-6 rounded-2xl border border-cyan-400/30">
-                    <p className="text-gray-400 text-sm mb-1">Сегодня:</p>
-                    <h3 className="text-xl font-bold text-cyan-400 mb-4">{todayDay?.name || "Отдых"}</h3>
-                    {todayDay && (
-                        <button onClick={() => startWorkout(todayDay)} className="w-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold py-3 rounded-lg">
-                            Начать тренировку
+            <div className="glass-card p-6 rounded-2xl border border-cyan-400/30">
+                <h3 className="text-xl font-bold mb-4">Новая тренировка</h3>
+
+                {days.length === 0 ? (
+                    <div className="text-gray-400 text-sm">
+                        В программе пока нет дней.{' '}
+                        <button onClick={() => setView('programs')} className="text-cyan-400 hover:underline">Добавить их</button>
+                    </div>
+                ) : (
+                    <>
+                        <label className="block text-sm text-gray-400 mb-2">День программы</label>
+                        <div className="flex flex-wrap gap-2 mb-5">
+                            {days.map((d: any, i: number) => (
+                                <button key={d.id} onClick={() => setDayId(d.id)}
+                                    className={`px-4 py-2 rounded-lg text-sm border transition ${
+                                        selectedDay?.id === d.id
+                                            ? 'bg-cyan-400/15 text-cyan-400 border-cyan-400/50 font-bold'
+                                            : 'border-[var(--border)] text-gray-400 hover:text-white'
+                                    }`}>
+                                    {d.name}
+                                    <span className="opacity-60 text-xs"> · {d.exercises?.length ?? 0} упр.</span>
+                                    {i === suggestedIndex && selectedDay?.id !== d.id && (
+                                        <span className="ml-1.5 text-[10px] text-green-400">след.</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+
+                        <label className="block text-sm text-gray-400 mb-2">Дата тренировки</label>
+                        <div className="flex flex-wrap items-center gap-3 mb-5">
+                            <input type="date" value={date} max={todayKey}
+                                onChange={e => setDate(e.target.value)}
+                                className="bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-white outline-none focus:border-cyan-400" />
+                            {!isToday && (
+                                <button onClick={() => setDate(todayKey)} className="text-xs text-cyan-400 hover:underline">
+                                    Вернуть сегодня
+                                </button>
+                            )}
+                            <span className="text-xs text-gray-500">
+                                {isToday ? 'Сегодня' : `Запись задним числом · ${new Date(date + 'T12:00:00').toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}`}
+                            </span>
+                        </div>
+
+                        <button onClick={begin} disabled={!selectedDay || isFuture}
+                            className="w-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold py-3 rounded-lg disabled:opacity-40">
+                            Начать тренировку{selectedDay ? ` · ${selectedDay.name}` : ''}
                         </button>
-                    )}
-                </div>
-                <div className="glass-card p-6 rounded-2xl">
-                    <p className="text-gray-400 text-sm mb-1">Последняя:</p>
-                    <h3 className="text-xl font-bold text-white mb-2">{lastWorkout ? lastWorkout.dayName : "Нет данных"}</h3>
-                    <p className="text-gray-400 text-sm">{lastWorkout ? new Date(lastWorkout.date).toLocaleDateString('ru-RU') : "—"}</p>
-                </div>
+                    </>
+                )}
+            </div>
+
+            <div className="glass-card p-6 rounded-2xl">
+                <p className="text-gray-400 text-sm mb-1">Последняя тренировка</p>
+                <h3 className="text-xl font-bold text-white mb-1">{lastWorkout ? lastWorkout.dayName : 'Нет данных'}</h3>
+                <p className="text-gray-400 text-sm">
+                    {lastWorkout ? new Date(lastWorkout.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : '—'}
+                </p>
             </div>
         </div>
     );
