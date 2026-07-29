@@ -1,6 +1,7 @@
+import { WeekSummary } from '../components/WeekSummary';
 import { computeXp, levelFromXp, chapterFor, evaluateAchievements, xpToReach } from '../lib/xp';
 
-export function Progress({ logs, habits, kanban, gymData, testResults }: any) {
+export function Progress({ logs, habits, kanban, gymData, testResults, diary }: any) {
     const data = { logs, habits, kanban, gymData, testResults };
     const { total, breakdown } = computeXp(data);
     const info = levelFromXp(total);
@@ -11,6 +12,11 @@ export function Progress({ logs, habits, kanban, gymData, testResults }: any) {
     return (
         <div className="max-w-5xl">
             <h1 className="text-3xl font-bold mb-6">Прогресс</h1>
+
+            <div className="mb-6">
+                <WeekSummary logs={logs} habits={habits} kanban={kanban} gymData={gymData}
+                    testResults={testResults} diary={diary} />
+            </div>
 
             {/* Level + XP */}
             <div className="glass-card p-6 rounded-2xl mb-6 border border-cyan-400/25 bg-cyan-400/5">

@@ -104,7 +104,7 @@ function App() {
         kanban: <Kanban kanban={kanban} setKanban={setKanban} />,
         dynamics: <Dynamics logs={logs} testResults={testResults} gymData={gymData} />,
         hub: <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />,
-        progress: <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} />,
+        progress: <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} diary={diary} />,
         calendar: <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />,
         card: <UserCard logs={logs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData} testResults={testResults} />,
         aiplan: <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />,
@@ -140,6 +140,7 @@ function App() {
                     kanban={kanban}
                     setKanban={setKanban}
                     dopamineMenu={dopamineMenu}
+                    energy={energy}
                     setDopamineMenu={setDopamineMenu}
                     onClose={() => setRouletteOpen(false)}
                 />

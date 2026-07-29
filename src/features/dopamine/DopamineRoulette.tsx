@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineMenu, onClose }: any) {
+export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineMenu, energy = 5, onClose }: any) {
     const [phase, setPhase] = useState<'idle' | 'spinning' | 'result'>('idle');
     const [result, setResult] = useState<{ text: string; type: 'task' | 'break' } | null>(null);
     const [displayText, setDisplayText] = useState('?');
@@ -13,28 +13,42 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
         setPhase('spinning');
         setSpinsLeft(prev => prev - 1);
 
-        // Собираем пул вариантов: 50% задачи, 50% перерывы
+        // Weighted pool rather than a flat 50/50: on low energy the wheel should
+        // mostly offer recovery, on high energy mostly work — and among tasks,
+        // the urgent ones should come up more often than 'buy a lightbulb'.
         const todoTasks = kanban.filter((t: any) => t.status === 'todo');
-        const pool: { text: string; type: 'task' | 'break' }[] = [
-            ...todoTasks.map((t: any) => ({ text: t.text, type: 'task' as const })),
-            ...dopamineMenu.map((b: string) => ({ text: b, type: 'break' as const }))
+        const taskShare = energy >= 7 ? 3 : energy >= 4 ? 1 : 0.35;
+        const priorityWeight = (p: string) => (p === 'high' ? 3 : p === 'medium' ? 2 : 1);
+
+        const pool: { text: string; type: 'task' | 'break'; w: number }[] = [
+            ...todoTasks.map((t: any) => ({
+                text: t.text, type: 'task' as const,
+                w: priorityWeight(t.priority) * taskShare,
+            })),
+            ...dopamineMenu.map((b: string) => ({ text: b, type: 'break' as const, w: 1 })),
         ];
 
-        // Если пул пуст, даем дефолтный
         if (pool.length === 0) {
-            pool.push({ text: 'Список пуст. Просто подыши 1 минуту!', type: 'break' });
+            pool.push({ text: 'Список пуст. Просто подыши 1 минуту!', type: 'break', w: 1 });
         }
+
+        const totalWeight = pool.reduce((s, i) => s + i.w, 0);
+        const pick = () => {
+            let r = Math.random() * totalWeight;
+            for (const item of pool) { r -= item.w; if (r <= 0) return item; }
+            return pool[pool.length - 1];
+        };
 
         // Анимация прокрутки текста
         const spinInterval = setInterval(() => {
-            const randomItem = pool[Math.floor(Math.random() * pool.length)];
+            const randomItem = pick();
             setDisplayText(randomItem.text.length > 40 ? randomItem.text.slice(0, 40) + '...' : randomItem.text);
         }, 80);
 
         // Останавливаем через 2 секунды
         setTimeout(() => {
             clearInterval(spinInterval);
-            const finalResult = pool[Math.floor(Math.random() * pool.length)];
+            const finalResult = pick();
             setResult(finalResult);
             setPhase('result');
         }, 2000);
@@ -66,7 +80,13 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
                 <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-2">
                     Генератор Драйва
                 </h2>
-                <p className="text-gray-400 text-sm mb-8">Судьба решит, что тебе сейчас нужнее: задача или перезагрузка.</p>
+                <p className="text-gray-400 text-sm mb-2">Судьба решит, что тебе сейчас нужнее: задача или перезагрузка.</p>
+                <p className="text-xs mb-6">
+                    <span className="text-gray-500">Энергия {energy.toFixed(1)} — </span>
+                    <span className={energy >= 7 ? 'text-cyan-400' : energy >= 4 ? 'text-gray-400' : 'text-pink-400'}>
+                        {energy >= 7 ? 'чаще выпадут задачи' : energy >= 4 ? 'поровну задач и пауз' : 'чаще выпадут паузы'}
+                    </span>
+                </p>
 
                 {/* Экран выбора / результата */}
                 <div className="h-32 flex items-center justify-center mb-8 bg-black/30 rounded-2xl border border-[var(--border)] p-4 overflow-hidden">
