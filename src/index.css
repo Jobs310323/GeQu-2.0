@@ -3,36 +3,39 @@
 @tailwind utilities;
 
 :root {
-    --bg-main: #050510;
-    --bg-card: rgba(20, 20, 35, 0.6);
-    --bg-input: rgba(0, 0, 0, 0.3);
-    --text-main: #E0E6ED;
-    --text-muted: #8892B0;
-    --border: rgba(255, 255, 255, 0.1);
-    --accent-cyan: #64FFDA;
-    --accent-purple: #BD93F9;
-    --accent-pink: #FF79C6;
+    --bg-main: #0A0B0D;
+    --bg-card: rgba(22, 24, 28, 0.72);
+    --bg-input: rgba(255, 255, 255, 0.035);
+    --text-main: #E3E5E9;
+    --text-muted: #868C99;
+    --border: rgba(255, 255, 255, 0.075);
+    --accent-cyan: #7E9AAB;
+    --accent-purple: #9490AE;
+    --accent-pink: #AE8E9B;
 }
 
 :root.light {
-    --bg-main: #F0F2F5;
-    --bg-card: rgba(255, 255, 255, 0.8);
-    --bg-input: rgba(0, 0, 0, 0.05);
-    --text-main: #1E1E24;
-    --text-muted: #555555;
-    --border: rgba(0, 0, 0, 0.1);
-    --accent-cyan: #0EA5E9;
-    --accent-purple: #8B5CF6;
-    --accent-pink: #EC4899;
+    --bg-main: #F4F5F7;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-input: rgba(0, 0, 0, 0.04);
+    --text-main: #1A1C20;
+    --text-muted: #5A6070;
+    --border: rgba(0, 0, 0, 0.09);
+    --accent-cyan: #3F5A6B;
+    --accent-purple: #5B5473;
+    --accent-pink: #7A5764;
 }
 
 body {
     background-color: var(--bg-main);
     color: var(--text-main);
     font-family: 'Inter', system-ui, sans-serif;
-    transition: background-color 0.3s ease;
     margin: 0;
 }
+/* No `transition` on background-color here on purpose: the value comes from a
+   custom property that changes on <html> when the theme flips, and Chrome does
+   not reliably invalidate a transition driven that way — the page would stay
+   painted in the previous theme until something else forced a reflow. */
 
 /* ---------------------------------------------------------------
    Light theme readability.
@@ -59,13 +62,14 @@ body {
 /* Hovering a nav item set text to white, which disappeared on light. */
 :root.light .hover\:text-white:hover { color: var(--text-main); }
 
-/* Accent text needs more contrast against a light background. */
-:root.light .text-cyan-400 { color: #016177; }
-:root.light .text-purple-400 { color: #7A3FD4; }
-:root.light .text-pink-400 { color: #C2185B; }
-:root.light .text-green-400 { color: #15803D; }
-:root.light .text-yellow-400 { color: #A16207; }
-:root.light .text-red-400 { color: #DC2626; }
+/* Accent text needs more contrast against a light background — kept in the
+   same restrained register as the dark palette, just darker. */
+:root.light .text-cyan-400 { color: #3A5566; }
+:root.light .text-purple-400 { color: #554F6D; }
+:root.light .text-pink-400 { color: #74515E; }
+:root.light .text-green-400 { color: #3D6049; }
+:root.light .text-yellow-400 { color: #6B5F38; }
+:root.light .text-red-400 { color: #8A4A4A; }
 
 /* Gradient "black text on bright button" stays correct, but plain
    white-on-dark note cards need their body text darkened. */
@@ -79,21 +83,23 @@ body {
     background: var(--bg-card);
     border: 1px solid var(--border);
     backdrop-filter: blur(10px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 .note-card { animation: popIn 0.3s ease-out; }
-.fire-glow { box-shadow: 0 0 15px rgba(255, 121, 198, 0.4); }
+/* Was a neon pink halo; kept as a restrained ring so the streak still reads
+   as "hot" without glowing. */
+.fire-glow { box-shadow: 0 0 0 1px var(--accent-pink); }
 
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .anim-fade-in { animation: fadeInUp 0.35s ease-out both; }
 
 /* Card hover lift (used by Notes) */
 .lift { transition: transform 0.18s ease, box-shadow 0.18s ease; }
-.lift:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 10px 28px rgba(0,0,0,0.35); }
+.lift:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.28); }
 
-/* Box-breathing indicator glow */
-@keyframes breathGlow { 0%,100% { box-shadow: 0 0 12px 2px var(--accent-cyan); } 50% { box-shadow: 0 0 22px 8px var(--accent-cyan); } }
+/* Box-breathing indicator — a soft expanding ring rather than a neon halo. */
+@keyframes breathGlow { 0%,100% { box-shadow: 0 0 0 2px var(--accent-cyan); } 50% { box-shadow: 0 0 0 8px rgba(126,154,171,0.18); } }
 .breath-dot { animation: breathGlow 2s ease-in-out infinite; }
 
 input, textarea, button { color: var(--text-main); }
@@ -104,5 +110,5 @@ input[type="checkbox"] { accent-color: var(--accent-cyan); }
 .markdown-content h2 { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; }
 .markdown-content ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.5rem; }
 .markdown-content ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.5rem; }
-.markdown-content a { color: #64FFDA; text-decoration: underline; }
+.markdown-content a { color: var(--accent-cyan); text-decoration: underline; }
 .markdown-content strong { font-weight: bold; }

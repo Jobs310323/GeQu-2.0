@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { callAIJson } from '../lib/ai';
 import { DB } from '../lib/db';
+import { Icon } from '../components/Icons';
+import { PageHeader } from '../components/PageHeader';
 
 type Block = {
     time: string;
@@ -19,7 +21,7 @@ type Plan = {
 };
 
 const KIND_ICON: Record<string, string> = {
-    task: '🎯', test: '🎓', break: '🌿', gym: '🏋️', habit: '♻️', closing: '🌙',
+    task: 'target', test: 'flask', break: 'pause', gym: 'dumbbell', habit: 'repeat', closing: 'moon',
 };
 
 const PLANNER_SYSTEM = `Ты — проактивный ассистент по планированию дня в приложении GeQu. Пользователь — человек с СДВГ: ему нужны короткие блоки, ясные формулировки и бережный тон.
@@ -128,8 +130,8 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
 
     return (
         <div className="max-w-3xl">
-            <h1 className="text-3xl font-bold mb-2">ИИ-план дня</h1>
-            <p className="text-gray-400 text-sm mb-6">Соберу твою энергию, задачи и привычки — и предложу расписание на остаток дня.</p>
+            <PageHeader page="aiplan" title="ИИ-план дня"
+                subtitle="Соберу твою энергию, задачи и привычки — и предложу расписание на остаток дня." />
 
             <div className="glass-card p-6 rounded-2xl mb-6 border border-cyan-400/25 bg-cyan-400/5">
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -163,11 +165,16 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
 
                     {(plan.blocks ?? []).length > 0 && (
                         <div className="glass-card p-6 rounded-2xl">
-                            <h2 className="text-xl font-bold mb-4">📅 План на сегодня</h2>
+                            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <Icon name="calendar" size={18} className="text-cyan-400" />
+                                План на сегодня
+                            </h2>
                             <div className="space-y-3">
                                 {plan.blocks!.map((b, i) => (
                                     <div key={i} className="flex gap-4 items-start bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
-                                        <div className="text-xl leading-none mt-0.5">{KIND_ICON[b.kind ?? ''] ?? '⏰'}</div>
+                                        <div className="w-8 h-8 rounded-lg bg-cyan-400/10 text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
+                                            <Icon name={KIND_ICON[b.kind ?? ''] ?? 'clock'} size={16} />
+                                        </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex flex-wrap items-baseline gap-2">
                                                 <span className="text-cyan-400 font-bold tabular-nums text-sm">{b.time}</span>
@@ -181,8 +188,9 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
 
                             <div className="mt-5 flex flex-wrap items-center gap-4">
                                 <button onClick={acceptPlan} disabled={accepted}
-                                    className="bg-gradient-to-r from-green-400 to-cyan-400 text-black font-bold px-6 py-2.5 rounded-lg disabled:opacity-40">
-                                    {accepted ? '✓ План принят' : '✅ Принять план'}
+                                    className="bg-gradient-to-r from-green-400 to-cyan-400 text-black font-bold px-6 py-2.5 rounded-lg disabled:opacity-40 flex items-center gap-2">
+                                    <Icon name="check" size={16} />
+                                    {accepted ? 'План принят' : 'Принять план'}
                                 </button>
                                 <span className="text-xs text-gray-500">
                                     {accepted
@@ -197,7 +205,10 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
 
                     {(plan.deferred ?? []).length > 0 && (
                         <div className="glass-card p-6 rounded-2xl">
-                            <h2 className="text-xl font-bold mb-1">📥 Перенёс на потом</h2>
+                            <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
+                                <Icon name="clock" size={18} className="text-[var(--text-muted)]" />
+                                Перенёс на потом
+                            </h2>
                             <p className="text-xs text-gray-500 mb-4">Чтобы сегодня не перегружаться.</p>
                             <div className="space-y-2">
                                 {plan.deferred!.map((d, i) => {
@@ -216,7 +227,7 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
                     {plan.tip && (
                         <div className="glass-card p-5 rounded-2xl border border-purple-400/30 bg-purple-400/5">
                             <div className="flex gap-3">
-                                <span className="text-xl">💡</span>
+                                <Icon name="sparkle" size={18} className="text-purple-400 shrink-0 mt-0.5" />
                                 <p className="text-sm text-gray-300">{plan.tip}</p>
                             </div>
                         </div>

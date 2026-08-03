@@ -5,13 +5,10 @@ import { DraggableDice } from './components/DraggableDice';
 import { Dashboard } from './pages/Dashboard';
 import { Kanban } from './pages/Kanban';
 import { Habits } from './pages/Habits';
-import { Notes } from './pages/Notes';
 import { Goals } from './pages/Goals';
 import { Diary } from './pages/Diary';
-import { Dynamics } from './pages/Dynamics';
 import { Training } from './pages/Training';
 import { Knowledge } from './pages/Knowledge';
-import { AboutAdhd } from './pages/AboutAdhd';
 import { Settings } from './pages/Settings';
 import { UnifiedStats } from './pages/UnifiedStats';
 import { Progress } from './pages/Progress';
@@ -19,12 +16,13 @@ import { AiPlan } from './pages/AiPlan';
 import { UserCard } from './pages/UserCard';
 import { CalendarPage } from './pages/CalendarPage';
 import { ClinicalTests } from './pages/ClinicalTests';
-import { Cbt } from './pages/Cbt';
 import { loadPrefs, savePrefs, type Prefs } from './lib/prefs';
 import { CirclesOfInfluence } from './pages/CirclesOfInfluence';
+import { Finance, DEFAULT_FINANCE } from './pages/Finance';
 import { GymApp } from './features/gym/Gym';
 import { DopamineRoulette } from './features/dopamine/DopamineRoulette';
 import { HyperfocusOverlay } from './features/hyperfocus/HyperfocusOverlay';
+import { computeXp, levelFromXp } from './lib/xp';
 
 function App() {
     const [page, setPage] = useState('dashboard');
@@ -34,7 +32,6 @@ function App() {
     const [rouletteOpen, setRouletteOpen] = useState(false);
     const [logs, setLogs] = useState(DB.get('logs'));
     const [diary, setDiary] = useState(DB.get('diary'));
-    const [notes, setNotes] = useState(DB.get('notes'));
     const [goals, setGoals] = useState(DB.get('goals'));
     const [habits, setHabits] = useState(DB.get('habits'));
     const [kanban, setKanban] = useState(DB.get('kanban'));
@@ -47,6 +44,7 @@ function App() {
     const [reminders, setReminders] = useState(DB.get('reminders', []));
     const [clinicalResults, setClinicalResults] = useState(DB.get('clinical', []));
     const [cbtRecords, setCbtRecords] = useState(DB.get('cbt', []));
+    const [finance, setFinance] = useState(DB.get('finance', DEFAULT_FINANCE));
     const [prefs, setPrefs] = useState<Prefs>(() => loadPrefs());
 
     useEffect(() => { savePrefs(prefs); }, [prefs]);
@@ -63,13 +61,13 @@ function App() {
     useEffect(() => { DB.save('logs', logs); }, [logs]);
     useEffect(() => { DB.save('dopamineMenu', dopamineMenu); }, [dopamineMenu]);
     useEffect(() => { DB.save('diary', diary); }, [diary]);
-    useEffect(() => { DB.save('notes', notes); }, [notes]);
     useEffect(() => { DB.save('goals', goals); }, [goals]);
     useEffect(() => { DB.save('habits', habits); }, [habits]);
     useEffect(() => { DB.save('kanban', kanban); }, [kanban]);
     useEffect(() => { DB.save('tests', testResults); }, [testResults]);
     useEffect(() => { DB.save('ach', achievements); }, [achievements]);
     useEffect(() => { DB.save('gym', gymData); }, [gymData]);
+    useEffect(() => { DB.save('finance', finance); }, [finance]);
 
     useEffect(() => {
         DB.save('theme', theme);
@@ -92,37 +90,42 @@ function App() {
     }
     energy = Math.max(0, Math.min(10, energy));
 
+    const levelInfo = levelFromXp(computeXp({ logs, habits, kanban, gymData, testResults }).total);
+
     // Every page as a lookup, so a page can render either in the main area
     // or embedded on the dashboard as a mini-app.
     const PAGES: Record<string, any> = {
         gym: <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />,
         diary: <Diary diary={diary} setDiary={setDiary} />,
-        notes: <Notes notes={notes} setNotes={setNotes} />,
         goals: <Goals goals={goals} setGoals={setGoals} />,
         circles: <CirclesOfInfluence circles={circles} setCircles={setCircles} />,
         habits: <Habits habits={habits} setHabits={setHabits} />,
         kanban: <Kanban kanban={kanban} setKanban={setKanban} />,
-        dynamics: <Dynamics logs={logs} testResults={testResults} gymData={gymData} />,
         hub: <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />,
         progress: <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} diary={diary} />,
         calendar: <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />,
         card: <UserCard logs={logs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData} testResults={testResults} />,
         aiplan: <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />,
-        cbt: <Cbt cbtRecords={cbtRecords} setCbtRecords={setCbtRecords} />,
-        clinical: <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults} />,
+        clinical: <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults}
+            cbtRecords={cbtRecords} setCbtRecords={setCbtRecords} />,
         training: <Training setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />,
         knowledge: <Knowledge setPage={setPage} />,
-        about: <AboutAdhd />,
         settings: <Settings diary={diary} logs={logs} prefs={prefs} setPrefs={setPrefs} />,
+        finance: <Finance finance={finance} setFinance={setFinance} />,
     };
 
-    const dashProps = { logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults, prefs };
+    const dashProps = {
+        logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults, prefs,
+        // The dashboard doubles as an overview, so it needs the same figures the
+        // sidebar shows plus enough state to tick a habit without leaving.
+        habits, setHabits, setPage, levelInfo, energy,
+    };
     const promotedWidget = (prefs.asPage ?? []).includes(page) ? page : null;
 
     return (
         <div className="flex h-screen overflow-hidden">
             <Sidebar page={page} setPage={setPage} theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog}
-                prefs={prefs} setPrefs={setPrefs}
+                prefs={prefs} setPrefs={setPrefs} levelInfo={levelInfo}
                 reminderCount={reminders.filter((r: any) => !r.done && r.date >= todayStr).length} />
             <main className="flex-1 p-6 overflow-y-auto relative">
                 {page === 'dashboard' && <Dashboard {...dashProps} renderPage={(id: string) => PAGES[id]} />}

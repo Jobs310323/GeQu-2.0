@@ -1,14 +1,16 @@
 import { useState, useMemo } from 'react';
+import { Icon } from '../components/Icons';
+import { PageHeader } from '../components/PageHeader';
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
     'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
 const KINDS: Record<string, { color: string; label: string; icon: string }> = {
-    workout:  { color: '#EA580C', label: 'Тренировка', icon: '🏋️' },
-    log:      { color: '#0284C7', label: 'День закрыт', icon: '🌙' },
-    diary:    { color: '#7C3AED', label: 'Дневник', icon: '📓' },
-    reminder: { color: '#DB2777', label: 'Напоминание', icon: '🔔' },
+    workout:  { color: '#EA580C', label: 'Тренировка', icon: 'dumbbell' },
+    log:      { color: '#0284C7', label: 'День закрыт', icon: 'moon' },
+    diary:    { color: '#7C3AED', label: 'Дневник', icon: 'book' },
+    reminder: { color: '#DB2777', label: 'Напоминание', icon: 'bell' },
 };
 
 /** Local-time YYYY-MM-DD. Using toISOString here would shift evening entries. */
@@ -86,10 +88,8 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
 
     return (
         <div className="max-w-6xl">
-            <h1 className="text-3xl font-bold mb-2">Календарь</h1>
-            <p className="text-gray-400 text-sm mb-6">
-                Тренировки, закрытые дни, записи дневника и напоминания — всё на одной сетке.
-            </p>
+            <PageHeader page="calendar" title="Календарь"
+                subtitle="Тренировки, закрытые дни, записи дневника и напоминания — всё на одной сетке." />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Month grid */}
@@ -97,9 +97,13 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <button onClick={() => shift(-1)}
-                                className="w-8 h-8 rounded-lg border border-[var(--border)] text-gray-400 hover:text-cyan-400 hover:border-cyan-400/40 transition">‹</button>
+                                className="w-8 h-8 rounded-lg border border-[var(--border)] text-gray-400 hover:text-cyan-400 hover:border-cyan-400/40 transition flex items-center justify-center">
+                                <Icon name="chevronLeft" size={16} />
+                            </button>
                             <button onClick={() => shift(1)}
-                                className="w-8 h-8 rounded-lg border border-[var(--border)] text-gray-400 hover:text-cyan-400 hover:border-cyan-400/40 transition">›</button>
+                                className="w-8 h-8 rounded-lg border border-[var(--border)] text-gray-400 hover:text-cyan-400 hover:border-cyan-400/40 transition flex items-center justify-center">
+                                <Icon name="chevronRight" size={16} />
+                            </button>
                             <h2 className="text-xl font-bold ml-2">
                                 {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
                             </h2>
@@ -182,19 +186,22 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
 
                         <div className="space-y-2 mb-4">
                             {dayItems.log && (
-                                <div className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)]">
-                                    🌙 День закрыт · сон {dayItems.log.sleep}, фокус {dayItems.log.focus}, настроение {dayItems.log.mood}
+                                <div className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)] flex items-center gap-2">
+                                    <Icon name={KINDS.log.icon} size={14} className="text-[var(--text-muted)] shrink-0" />
+                                    День закрыт · сон {dayItems.log.sleep}, фокус {dayItems.log.focus}, настроение {dayItems.log.mood}
                                 </div>
                             )}
                             {dayItems.workouts.map((w: any) => (
-                                <div key={w.id ?? w.date} className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)]">
-                                    🏋️ {w.dayName || 'Тренировка'}
+                                <div key={w.id ?? w.date} className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)] flex items-center gap-2">
+                                    <Icon name={KINDS.workout.icon} size={14} className="text-[var(--text-muted)] shrink-0" />
+                                    {w.dayName || 'Тренировка'}
                                     <span className="text-gray-500"> · {(w.exercises ?? []).length} упр.</span>
                                 </div>
                             ))}
                             {dayItems.diary.map((e: any) => (
-                                <div key={e.id} className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)]">
-                                    📓 {String(e.content).slice(0, 80)}{String(e.content).length > 80 ? '…' : ''}
+                                <div key={e.id} className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)] flex items-center gap-2">
+                                    <Icon name={KINDS.diary.icon} size={14} className="text-[var(--text-muted)] shrink-0" />
+                                    {String(e.content).slice(0, 80)}{String(e.content).length > 80 ? '…' : ''}
                                 </div>
                             ))}
                             {!dayItems.log && !dayItems.workouts.length && !dayItems.diary.length && (
@@ -203,7 +210,10 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                         </div>
 
                         <div className="pt-3 border-t border-[var(--border)]">
-                            <div className="text-xs text-gray-400 mb-2">🔔 Напоминания</div>
+                            <div className="text-xs text-gray-400 mb-2 flex items-center gap-1.5">
+                                <Icon name="bell" size={13} />
+                                Напоминания
+                            </div>
                             <div className="space-y-1.5 mb-3">
                                 {dayItems.reminders.map((r: any) => (
                                     <div key={r.id} className="flex items-start gap-2 group">
@@ -213,7 +223,9 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                                             {r.text}
                                         </span>
                                         <button onClick={() => removeReminder(r.id)}
-                                            className="text-gray-600 hover:text-red-400 text-xs opacity-0 group-hover:opacity-100 transition">✕</button>
+                                            className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition shrink-0">
+                                            <Icon name="close" size={13} />
+                                        </button>
                                     </div>
                                 ))}
                                 {dayItems.reminders.length === 0 && (

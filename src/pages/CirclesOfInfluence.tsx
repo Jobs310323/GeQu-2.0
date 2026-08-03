@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PageHeader } from '../components/PageHeader';
 
 export function CirclesOfInfluence({ circles, setCircles }: any) {
     const [text, setText] = useState('');
@@ -21,14 +22,16 @@ export function CirclesOfInfluence({ circles, setCircles }: any) {
     };
 
     const circleOrder = ['inner', 'middle', 'outer'] as const;
+    const dotClass = {
+        inner: 'bg-red-400', middle: 'bg-yellow-400', outer: 'bg-blue-400',
+    } as const;
 
     return (
         <div className="max-w-5xl mx-auto">
-            <h1 className="text-3xl font-bold mb-2">Круги влияния</h1>
-            <p className="text-gray-400 mb-8">Фокусируйся на красном, отпускай синее. Снижай тревожность.</p>
+            <PageHeader page="circles" title="Круги влияния" subtitle="Фокусируйся на красном, отпускай синее. Снижай тревожность." />
 
             {/* Визуализация легенды */}
-            <div className="glass-card p-8 rounded-2xl mb-8 flex flex-col md:flex-row items-center gap-8">
+            <div className="glass-card p-8 rounded-2xl mb-6 flex flex-col md:flex-row items-center gap-8">
                 <div className="relative w-48 h-48 flex items-center justify-center flex-shrink-0">
                     <div className="absolute w-48 h-48 rounded-full border-4 border-blue-400/30 bg-blue-400/5"></div>
                     <div className="absolute w-32 h-32 rounded-full border-4 border-yellow-400/30 bg-yellow-400/5"></div>
@@ -38,7 +41,7 @@ export function CirclesOfInfluence({ circles, setCircles }: any) {
                     <div className="flex gap-2 mb-3">
                         {circleOrder.map(key => (
                             <button key={key} onClick={() => setActiveCircle(key)}
-                                className={`flex-1 px-3 py-2 rounded-lg text-sm border transition ${activeCircle === key ? `${config[key].bg} ${config[key].border} ${config[key].text}` : 'border-[var(--border)] text-gray-400'}`}>
+                                className={`flex-1 px-3 py-2 rounded-xl text-sm border transition ${activeCircle === key ? `${config[key].bg} ${config[key].border} ${config[key].text}` : 'border-[var(--border)] text-gray-400 hover:bg-white/5'}`}>
                                 {config[key].label}
                             </button>
                         ))}
@@ -50,9 +53,9 @@ export function CirclesOfInfluence({ circles, setCircles }: any) {
                             onChange={e => setText(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && addItem()}
                             placeholder="Например: Погода, Мой сон, Реакция коллеги..."
-                            className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 text-white"
+                            className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl p-3 outline-none focus:border-cyan-400 text-white"
                         />
-                        <button onClick={addItem} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 rounded-lg">Добавить</button>
+                        <button onClick={addItem} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 rounded-xl">Добавить</button>
                     </div>
                 </div>
             </div>
@@ -61,17 +64,18 @@ export function CirclesOfInfluence({ circles, setCircles }: any) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {circleOrder.map(key => (
                     <div key={key} className={`glass-card p-6 rounded-2xl border ${config[key].border}`}>
-                        <h2 className={`text-lg font-bold mb-4 ${config[key].text}`}>
-                            {key === 'inner' && '🔴'} {key === 'middle' && '🔶'} {key === 'outer' && '🔵'} {config[key].label}
+                        <h2 className={`flex items-center gap-2 text-lg font-bold mb-4 ${config[key].text}`}>
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotClass[key]}`} />
+                            {config[key].label}
                         </h2>
                         <div className="space-y-2">
                             {circles.filter((c: any) => c.circle === key).length === 0 && (
-                                <p className="text-gray-500 text-sm italic">Пусто...</p>
+                                <p className="text-[var(--text-muted)] text-sm italic">Пусто...</p>
                             )}
                             {circles.filter((c: any) => c.circle === key).map((item: any) => (
-                                <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${config[key].bg} ${key === 'outer' ? 'opacity-60' : ''}`}>
-                                    <span className="text-white text-sm">{item.text}</span>
-                                    <button onClick={() => removeItem(item.id)} className="text-gray-500 hover:text-red-400 text-sm ml-2">✕</button>
+                                <div key={item.id} className={`flex items-center justify-between p-3 rounded-xl ${config[key].bg} ${key === 'outer' ? 'opacity-60' : ''}`}>
+                                    <span className="text-[var(--text-main)] text-sm">{item.text}</span>
+                                    <button onClick={() => removeItem(item.id)} className="text-[var(--text-muted)] hover:text-red-400 text-sm ml-2">✕</button>
                                 </div>
                             ))}
                         </div>

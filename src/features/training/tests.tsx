@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { saveResult } from '../../lib/helpers';
+import { Icon } from '../../components/Icons';
 
 export function NBackTest({ setTestResults }: any) {
     const [phase, setPhase] = useState<'config' | 'playing' | 'finished'>('config');
@@ -118,11 +119,11 @@ export function NBackTest({ setTestResults }: any) {
                     ))}
                 </div>
 
-                <button 
-                    onClick={handleMatch} 
-                    className={`w-full max-w-md px-8 py-4 rounded-xl font-bold transition-all duration-150 ${hasAnswered ? 'bg-green-500/20 text-green-400 border border-green-500/30 scale-95' : 'bg-purple-400/10 text-purple-400 border border-purple-400/20 hover:bg-purple-400/20'}`}
+                <button
+                    onClick={handleMatch}
+                    className={`w-full max-w-md px-8 py-4 rounded-xl font-bold transition-all duration-150 flex items-center justify-center gap-2 ${hasAnswered ? 'bg-green-500/20 text-green-400 border border-green-500/30 scale-95' : 'bg-purple-400/10 text-purple-400 border border-purple-400/20 hover:bg-purple-400/20'}`}
                 >
-                    {hasAnswered ? '✓ Отмечено' : 'Совпадение! (или Space)'}
+                    {hasAnswered ? <><Icon name="check" size={16} /> Отмечено</> : 'Совпадение! (или Space)'}
                 </button>
             </div>
         );
@@ -417,7 +418,7 @@ export function ReactionTest({ setTestResults, achievements, setAchievements }: 
     const addAchievement = (name: string) => {
         if (Array.isArray(achievements) && !achievements.includes(name)) {
             setAchievements((prev: any[]) => [...prev, name]);
-            setToast(`🏆 Ачивка: «${name}»!`);
+            setToast(`Ачивка: «${name}»!`);
             setTimeout(() => setToast(''), 4000);
         }
     };
@@ -490,7 +491,12 @@ export function ReactionTest({ setTestResults, achievements, setAchievements }: 
                 </button>
             )}
 
-            {toast && <div className="mt-6 bg-green-400/10 border border-green-400 text-green-400 px-6 py-3 rounded-lg text-sm">{toast}</div>}
+            {toast && (
+                <div className="mt-6 bg-green-400/10 border border-green-400 text-green-400 px-6 py-3 rounded-lg text-sm flex items-center gap-2">
+                    <Icon name="trophy" size={16} />
+                    {toast}
+                </div>
+            )}
         </div>
     );
 }

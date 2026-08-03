@@ -3,6 +3,8 @@ import { getGroqKey, setGroqKey } from '../lib/ai';
 import { NAV_GROUPS, LOCKED_TABS } from '../lib/nav';
 import { DASHBOARD_WIDGETS, toggleIn } from '../lib/prefs';
 import { LayoutArranger } from '../components/LayoutArranger';
+import { Icon } from '../components/Icons';
+import { PageHeader } from '../components/PageHeader';
 
 export function Settings({ diary, logs, prefs, setPrefs }: any) {
     const hiddenTabs: string[] = prefs?.hiddenTabs ?? [];
@@ -91,14 +93,16 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
 
     return (
         <div>
-            <h1 className="text-3xl font-bold mb-8">Настройки и данные</h1>
+            <PageHeader page="settings" title="Настройки и данные" />
 
             <LayoutArranger prefs={prefs} setPrefs={setPrefs} />
 
             {/* Which pages appear in the sidebar */}
             <div className="glass-card p-6 rounded-2xl mb-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-                    <h2 className="text-xl">📑 Разделы меню</h2>
+                    <h2 className="text-xl flex items-center gap-2">
+                        <Icon name="columns" size={17} className="text-[var(--text-muted)]" /> Разделы меню
+                    </h2>
                     {hiddenTabs.length > 0 && (
                         <button onClick={() => setPrefs((p: any) => ({ ...p, hiddenTabs: [] }))}
                             className="text-xs text-cyan-400 hover:underline">
@@ -130,7 +134,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
                                             }`}
                                         >
                                             <span>{item.icon}</span>{item.label}
-                                            {locked && <span className="text-[10px]">🔒</span>}
+                                            {locked && <Icon name="lock" size={11} />}
                                         </button>
                                     );
                                 })}
@@ -143,7 +147,9 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
             {/* Which blocks appear on the dashboard */}
             <div className="glass-card p-6 rounded-2xl mb-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-                    <h2 className="text-xl">⬢ Виджеты дашборда</h2>
+                    <h2 className="text-xl flex items-center gap-2">
+                        <Icon name="grid" size={17} className="text-[var(--text-muted)]" /> Виджеты дашборда
+                    </h2>
                     {hiddenWidgets.length > 0 && (
                         <button onClick={() => setPrefs((p: any) => ({ ...p, hiddenWidgets: [] }))}
                             className="text-xs text-cyan-400 hover:underline">
@@ -174,7 +180,9 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
             </div>
 
             <div className="glass-card p-6 rounded-2xl mb-6 border border-purple-400/30 bg-purple-400/5">
-                <h2 className="text-xl mb-2 text-purple-400">✨ ИИ (Groq)</h2>
+                <h2 className="text-xl mb-2 text-purple-400 flex items-center gap-2">
+                    <Icon name="sparkle" size={18} /> ИИ (Groq)
+                </h2>
                 <p className="text-gray-400 mb-4 text-sm">
                     Бесплатный ключ берётся на <span className="text-purple-300">console.groq.com → API Keys</span>. Хранится только в этом браузере и используется для ИИ-функций (например, ИИ-тренер в Зале).
                 </p>
@@ -194,7 +202,9 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
             </div>
 
             <div className="glass-card p-6 rounded-2xl mb-6 border border-cyan-400/30 bg-cyan-400/5">
-                <h2 className="text-xl mb-2 text-cyan-400">Резервное копирование (Всё приложение)</h2>
+                <h2 className="text-xl mb-2 text-cyan-400 flex items-center gap-2">
+                    <Icon name="download" size={18} /> Резервное копирование (Всё приложение)
+                </h2>
                 <p className="text-gray-400 mb-4 text-sm">Сохраните все данные (Дневник, Тесты, Спортзал, Привычки) в один файл или загрузите из файла для переноса на другое устройство.</p>
                 <div className="flex gap-4 flex-wrap">
                     <button onClick={exportAllData} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg">Выгрузить всё (JSON)</button>

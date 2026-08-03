@@ -2,6 +2,19 @@ import { useState } from 'react';
 import { streamAI } from '../../lib/ai';
 import { ProgramImport } from './ProgramImport';
 import { marked } from 'marked';
+import { PageHeader } from '../../components/PageHeader';
+import { Icon } from '../../components/Icons';
+
+function GymEmptyState({ icon, text }: { icon: string; text: string }) {
+    return (
+        <div className="glass-card p-8 rounded-2xl text-center flex flex-col items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-white/5 text-[var(--text-muted)] flex items-center justify-center">
+                <Icon name={icon} size={22} />
+            </div>
+            <p className="text-gray-400">{text}</p>
+        </div>
+    );
+}
 
 export function GymApp({ gymData, setGymData, logs }: any) {
     const [view, setView] = useState('home');
@@ -66,26 +79,22 @@ export function GymApp({ gymData, setGymData, logs }: any) {
         { id: 'home', label: 'Главная' },
         { id: 'programs', label: 'Программы' },
         { id: 'history', label: 'История' },
-        { id: 'calendar', label: 'Календарь' },
-        { id: 'balance', label: 'Баланс' },
         { id: 'pr', label: 'Рекорды' },
         { id: 'ai', label: 'ИИ-Тренер' },
     ];
 
     return (
         <div>
-            <h1 className="text-3xl font-bold mb-8">Спортзал</h1>
-            <div className="flex gap-2 mb-8 border-b border-[var(--border)] pb-2 overflow-x-auto">
+            <PageHeader page="gym" title="Спортзал" />
+            <div className="glass-card rounded-xl p-1.5 mb-6 flex gap-1 overflow-x-auto">
                 {tabs.map(t => (
-                    <button key={t.id} onClick={() => setView(t.id)} className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${view === t.id ? 'text-cyan-400 bg-cyan-400/10' : 'text-gray-400 hover:bg-white/5'}`}>{t.label}</button>
+                    <button key={t.id} onClick={() => setView(t.id)} className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm transition ${view === t.id ? 'text-cyan-400 bg-cyan-400/10 font-medium' : 'text-[var(--text-muted)] hover:bg-white/5 hover:text-[var(--text-main)]'}`}>{t.label}</button>
                 ))}
             </div>
 
             {view === 'home' && <GymHome activeProgram={activeProgram} gymData={gymData} startWorkout={startWorkout} setView={setView} />}
             {view === 'programs' && <GymPrograms gymData={gymData} setGymData={setGymData} />}
             {view === 'history' && <GymHistory gymData={gymData} setGymData={setGymData} setEditingWorkout={setEditingWorkout} />}
-            {view === 'calendar' && <GymCalendar gymData={gymData} />}
-            {view === 'balance' && <GymMuscleBalance gymData={gymData} />}
             {view === 'pr' && <GymPRs gymData={gymData} />}
             {view === 'ai' && <GymAI gymData={gymData} logs={logs} />}
         </div>
@@ -95,8 +104,11 @@ export function GymApp({ gymData, setGymData, logs }: any) {
 export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) {
     if (!activeProgram) {
         return (
-            <div className="glass-card p-8 rounded-2xl text-center">
-                <p className="text-xl text-gray-300 mb-4">У вас нет активной программы.</p>
+            <div className="glass-card p-8 rounded-2xl text-center flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/5 text-[var(--text-muted)] flex items-center justify-center">
+                    <Icon name="dumbbell" size={22} />
+                </div>
+                <p className="text-xl text-gray-300">У вас нет активной программы.</p>
                 <button onClick={() => setView('programs')} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg">Создать программу</button>
             </div>
         );
@@ -236,8 +248,9 @@ export function GymPrograms({ gymData, setGymData }: any) {
             <div className="flex flex-wrap gap-3 mb-6">
                 <button onClick={createProgram} className="bg-cyan-400 text-black font-bold px-6 py-3 rounded-lg">+ Создать программу</button>
                 <button onClick={() => setImporting(true)}
-                    className="px-6 py-3 rounded-lg border border-purple-400/40 text-purple-400 hover:bg-purple-400/10 font-bold transition">
-                    📥 Импорт из текста
+                    className="px-6 py-3 rounded-lg border border-purple-400/40 text-purple-400 hover:bg-purple-400/10 font-bold transition flex items-center gap-2">
+                    <Icon name="download" size={16} />
+                    Импорт из текста
                 </button>
             </div>
             {importing && <ProgramImport gymData={gymData} setGymData={setGymData} onClose={() => setImporting(false)} />}
@@ -402,13 +415,15 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
                                 <input type="number" value={set.reps} onChange={e => updateSet(idx, 'reps', parseInt(e.target.value) || 0)} className="w-full bg-transparent border border-[var(--border)] rounded-md p-2 text-center text-white" />
                             </div>
                             <div className="col-span-2 flex justify-center">
-                                <button onClick={() => toggleDone(idx)} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center ${set.done ? 'bg-green-400 border-green-400 text-black' : 'border-gray-500 text-transparent'}`}>✓</button>
+                                <button onClick={() => toggleDone(idx)} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition ${set.done ? 'bg-green-400 border-green-400 text-black' : 'border-gray-500 text-transparent'}`}>
+                                    <Icon name="check" size={16} />
+                                </button>
                             </div>
                             <div className="col-span-2 flex justify-center">
                                 <button onClick={() => removeSet(idx)} disabled={exercise.sets.length <= 1}
                                     title={exercise.sets.length <= 1 ? 'Последний подход нельзя убрать' : 'Убрать подход'}
-                                    className="text-gray-600 hover:text-red-400 disabled:opacity-20 disabled:hover:text-gray-600 text-sm px-2">
-                                    ✕
+                                    className="text-gray-600 hover:text-red-400 disabled:opacity-20 disabled:hover:text-gray-600 px-2">
+                                    <Icon name="close" size={14} />
                                 </button>
                             </div>
                         </div>
@@ -430,7 +445,7 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
 }
 
 export function GymHistory({ gymData, setGymData, setEditingWorkout }: any) {
-    if (gymData.history.length === 0) return <div className="glass-card p-8 text-center text-gray-400">История пуста. Начните первую тренировку!</div>;
+    if (gymData.history.length === 0) return <GymEmptyState icon="clock" text="История пуста. Начните первую тренировку!" />;
 
     const reversedHistory = [...gymData.history].reverse();
 
@@ -502,86 +517,6 @@ export function GymHistory({ gymData, setGymData, setEditingWorkout }: any) {
     );
 }
 
-export function GymCalendar({ gymData }: any) {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDay = new Date(year, month, 1).getDay();
-
-    const emptyDays = Array.from({ length: (firstDay === 0 ? 6 : firstDay - 1) }).map((_, i) => `empty-${i}`);
-    const days = Array.from({ length: daysInMonth }).map((_, i) => i + 1);
-
-    const getWorkoutForDay = (day: number) => {
-        const dateStr = new Date(year, month, day).toISOString().split('T')[0];
-        return gymData.history.find((w: any) => w.date.split('T')[0] === dateStr);
-    };
-
-    return (
-        <div className="glass-card p-6 rounded-2xl">
-            <h2 className="text-xl font-bold text-white mb-4 text-center">{today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}</h2>
-            <div className="grid grid-cols-7 gap-2 text-center text-xs text-gray-400 mb-2">
-                {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => <div key={d}>{d}</div>)}
-            </div>
-            <div className="grid grid-cols-7 gap-2">
-                {emptyDays.map(d => <div key={d}></div>)}
-                {days.map(day => {
-                    const workout = getWorkoutForDay(day);
-                    const isToday = day === today.getDate();
-                    return (
-                        <div key={day} className={`aspect-square flex flex-col items-center justify-center rounded-lg border ${isToday ? 'border-cyan-400' : 'border-[var(--border)]'} ${workout ? 'bg-green-500/20' : 'bg-[var(--bg-input)]'}`}>
-                            <span className={`text-sm ${workout ? 'text-green-400 font-bold' : 'text-gray-400'}`}>{day}</span>
-                            {workout && <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-1"></div>}
-                        </div>
-                    );
-                })}
-            </div>
-            <div className="mt-6 flex justify-center gap-4 text-xs text-gray-400">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-green-500/30 border border-green-400"></div>Тренировка</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-[var(--bg-input)] border border-[var(--border)]"></div>Отдых</div>
-            </div>
-        </div>
-    );
-}
-
-export function GymMuscleBalance({ gymData }: any) {
-    const muscleData: any = {};
-    gymData.history.forEach((w: any) => {
-        w.exercises.forEach((ex: any) => {
-            if (!muscleData[ex.muscle]) muscleData[ex.muscle] = 0;
-            ex.sets.forEach((s: any) => {
-                if (s.done) {
-                    muscleData[ex.muscle] += (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0);
-                }
-            });
-        });
-    });
-
-    const muscles = Object.keys(muscleData);
-    if (muscles.length === 0) return <div className="glass-card p-8 text-center text-gray-400">Нет данных. Выполните тренировку.</div>;
-
-    const maxTonnage = Math.max(...(Object.values(muscleData) as number[]), 1);
-
-    return (
-        <div className="glass-card p-6 rounded-2xl">
-            <h2 className="text-xl font-bold text-white mb-6">Распределение нагрузки (кг)</h2>
-            <div className="space-y-4">
-                {muscles.map(m => (
-                    <div key={m}>
-                        <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-300">{m}</span>
-                            <span className="text-cyan-400">{Math.round(muscleData[m])} кг</span>
-                        </div>
-                        <div className="w-full bg-black/30 h-3 rounded-full overflow-hidden">
-                            <div className="bg-gradient-to-r from-cyan-400 to-purple-400 h-3 rounded-full transition-all duration-500" style={{ width: `${(muscleData[m] / maxTonnage) * 100}%` }}></div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
-
 export function GymPRs({ gymData }: any) {
     const [filter, setFilter] = useState('Все');
     
@@ -604,7 +539,7 @@ export function GymPRs({ gymData }: any) {
     });
 
     const muscles = ['Все', ...Object.keys(db)];
-    if (muscles.length === 1) return <div className="glass-card p-8 text-center text-gray-400">Нет данных для рекордов.</div>;
+    if (muscles.length === 1) return <GymEmptyState icon="trophy" text="Нет данных для рекордов." />;
 
     return (
         <div>
@@ -625,7 +560,9 @@ export function GymPRs({ gymData }: any) {
                         const pr = db[muscle][name];
                         return (
                             <div key={muscle + name} className="glass-card p-6 rounded-2xl flex items-center gap-4">
-                                <div className="text-4xl">🏆</div>
+                                <div className="w-12 h-12 rounded-xl bg-yellow-400/10 text-yellow-400 flex items-center justify-center shrink-0">
+                                    <Icon name="trophy" size={22} />
+                                </div>
                                 <div className="flex-1">
                                     <h3 className="text-xl font-bold text-white">{name}</h3>
                                     <p className="text-xs text-gray-500 mb-2">{muscle}</p>
@@ -702,10 +639,10 @@ export function GymAI({ gymData, logs }: any) {
     const [error, setError] = useState('');
 
     const activeProgram = gymData.programs.find((p: any) => p.id === gymData.activeProgramId);
-    if (!activeProgram) return <div className="glass-card p-8 text-center text-gray-400">Нет активной программы.</div>;
+    if (!activeProgram) return <GymEmptyState icon="sparkle" text="Нет активной программы." />;
 
     const context = buildGymContext(activeProgram, gymData, logs);
-    if (context.length === 0) return <div className="glass-card p-8 text-center text-gray-400">Выполните тренировки, чтобы получить рекомендации.</div>;
+    if (context.length === 0) return <GymEmptyState icon="sparkle" text="Выполните тренировки, чтобы получить рекомендации." />;
 
     const askCoach = async () => {
         setLoading(true);
@@ -732,7 +669,10 @@ export function GymAI({ gymData, logs }: any) {
         <div className="space-y-4">
             <div className="glass-card p-6 rounded-2xl flex flex-col md:flex-row md:items-center gap-4 bg-cyan-400/5 border border-cyan-400/30">
                 <div className="flex-1">
-                    <h3 className="text-lg font-bold text-cyan-400 mb-1">✨ ИИ-тренер</h3>
+                    <h3 className="text-lg font-bold text-cyan-400 mb-1 flex items-center gap-2">
+                        <Icon name="sparkle" size={18} />
+                        ИИ-тренер
+                    </h3>
                     <p className="text-sm text-gray-400">Проанализирую твои последние результаты, целевые повторы и связь со сном, и подскажу что делать дальше.</p>
                 </div>
                 <button

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { marked } from 'marked';
 import { streamAI } from '../lib/ai';
+import { Icon } from '../components/Icons';
+import { PageHeader } from '../components/PageHeader';
 
 const JOURNAL_SYSTEM = `Ты — тёплый, бережный собеседник в приложении GeQu (пользователь — человек с СДВГ, ему важны ясность и поддержка).
 Тебе дают последние записи из личного дневника с датами. Мягко отрефлексируй их: подметь повторяющиеся темы и настроения, что радует и что тревожит, отметь сильные стороны и маленькие победы. Дай 1–2 бережных выполнимых предложения на подумать — без давления и нравоучений.
@@ -46,23 +48,25 @@ export function Diary({ diary, setDiary }: any) {
 
     return (
         <div>
-            <h1 className="text-3xl font-bold mb-2">Дневник мыслей</h1>
-            <p className="text-gray-400 text-sm mb-6">Поддерживается Markdown для форматирования записей.</p>
+            <PageHeader page="diary" title="Дневник мыслей" subtitle="Поддерживается Markdown для форматирования записей." />
             <div className="glass-card p-6 rounded-2xl mb-6">
                 <h2 className="text-xl mb-4">Новая запись</h2>
-                <textarea className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 mb-3 min-h-[100px] outline-none focus:border-cyan-400 text-white" placeholder="Что у вас в голове?" value={newEntry} onChange={e => setNewEntry(e.target.value)} />
-                <button onClick={addEntry} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-2 rounded-lg">Добавить</button>
+                <textarea className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-xl p-3 mb-3 min-h-[100px] outline-none focus:border-cyan-400 text-white" placeholder="Что у вас в голове?" value={newEntry} onChange={e => setNewEntry(e.target.value)} />
+                <button onClick={addEntry} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-2 rounded-xl">Добавить</button>
             </div>
 
             {/* ИИ-разбор дневника */}
             <div className="glass-card p-6 rounded-2xl mb-6 border border-purple-400/30 bg-purple-400/5">
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    <div className="flex-1">
-                        <h2 className="text-lg font-bold text-purple-400 mb-1">💭 ИИ-разбор дневника</h2>
-                        <p className="text-sm text-gray-400">Мягко разберу последние записи: повторяющиеся темы, настроение, сильные стороны.</p>
+                    <div className="flex-1 flex items-start gap-2.5">
+                        <Icon name="sparkle" size={18} className="text-purple-400 mt-0.5 shrink-0" />
+                        <div>
+                            <h2 className="text-lg font-bold text-purple-400 mb-1">ИИ-разбор дневника</h2>
+                            <p className="text-sm text-gray-400">Мягко разберу последние записи: повторяющиеся темы, настроение, сильные стороны.</p>
+                        </div>
                     </div>
                     <button onClick={analyzeJournal} disabled={aiLoading || diary.length === 0}
-                        className="bg-gradient-to-r from-purple-400 to-pink-400 text-black font-bold px-6 py-3 rounded-lg disabled:opacity-40 whitespace-nowrap">
+                        className="bg-gradient-to-r from-purple-400 to-pink-400 text-black font-bold px-6 py-3 rounded-xl disabled:opacity-40 whitespace-nowrap">
                         {aiLoading ? 'Читаю…' : aiOutput ? 'Обновить разбор' : 'Разобрать записи'}
                     </button>
                 </div>
@@ -83,8 +87,11 @@ export function Diary({ diary, setDiary }: any) {
                     <h2 className="text-xl">История</h2>
                     {diary.length > 0 && (
                         <div className="flex items-center gap-3">
-                            <input type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="🔍 Поиск по дневнику…"
-                                className="bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-2 text-sm outline-none focus:border-cyan-400 text-white w-full sm:w-64" />
+                            <div className="relative w-full sm:w-64">
+                                <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <input type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder="Поиск по дневнику…"
+                                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-xl pl-9 pr-3 py-2 text-sm outline-none focus:border-cyan-400 text-white" />
+                            </div>
                             <span className="text-xs text-gray-500 whitespace-nowrap">{visible.length} из {diary.length}</span>
                         </div>
                     )}
@@ -98,7 +105,7 @@ export function Diary({ diary, setDiary }: any) {
                             <div className="text-xs text-cyan-400 mb-2">{new Date(entry.date).toLocaleString('ru-RU')}</div>
                             {editingId === entry.id ? (
                                 <div>
-                                    <textarea className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded p-2 mb-2 outline-none focus:border-cyan-400 text-white" value={editText} onChange={e => setEditText(e.target.value)} />
+                                    <textarea className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-xl p-2 mb-2 outline-none focus:border-cyan-400 text-white" value={editText} onChange={e => setEditText(e.target.value)} />
                                     <div className="flex gap-4">
                                         <button onClick={() => saveEdit(entry.id)} className="text-green-400 text-sm hover:underline">Сохранить</button>
                                         <button onClick={() => setEditingId(null)} className="text-gray-400 text-sm hover:underline">Отмена</button>
@@ -108,8 +115,12 @@ export function Diary({ diary, setDiary }: any) {
                                 <div>
                                     <div className="text-gray-300 markdown-content" dangerouslySetInnerHTML={{ __html: marked.parse(entry.content) }}></div>
                                     <div className="mt-2 flex gap-4">
-                                        <button onClick={() => { setEditingId(entry.id); setEditText(entry.content); }} className="text-purple-400 text-sm hover:underline">Изменить</button>
-                                        <button onClick={() => deleteEntry(entry.id)} className="text-red-400 text-sm hover:underline">Удалить</button>
+                                        <button onClick={() => { setEditingId(entry.id); setEditText(entry.content); }} className="flex items-center gap-1.5 text-purple-400 text-sm hover:underline">
+                                            <Icon name="edit" size={13} /> Изменить
+                                        </button>
+                                        <button onClick={() => deleteEntry(entry.id)} className="flex items-center gap-1.5 text-red-400 text-sm hover:underline">
+                                            <Icon name="trash" size={13} /> Удалить
+                                        </button>
                                     </div>
                                 </div>
                             )}

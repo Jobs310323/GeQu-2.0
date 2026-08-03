@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ALL_TABS, LOCKED_TABS } from '../lib/nav';
 import { DASHBOARD_WIDGETS, UNMOVABLE_PAGES } from '../lib/prefs';
+import { Icon } from './Icons';
 
 type Zone = 'menu' | 'dashboard';
 type Item = { id: string; icon: string; label: string; origin: 'page' | 'widget'; locked: boolean };
@@ -30,12 +31,12 @@ function Chip({ item, misplaced, isDragging, onDragStart, onDragEnd }: {
             } ${isDragging ? 'opacity-40' : ''}`}
         >
             <span>{item.icon}</span>{item.label}
-            {item.locked && <span className="text-[10px]">🔒</span>}
+            {item.locked && <Icon name="lock" size={11} />}
         </div>
     );
 }
 
-function DropZone({ title, hint, active, children, onEnter, onLeave, onDrop }: any) {
+function DropZone({ icon, title, hint, active, children, onEnter, onLeave, onDrop }: any) {
     return (
         <div
             onDragOver={e => { e.preventDefault(); onEnter(); }}
@@ -45,7 +46,9 @@ function DropZone({ title, hint, active, children, onEnter, onLeave, onDrop }: a
                 active ? 'border-cyan-400 bg-cyan-400/5' : 'border-[var(--border)]'
             }`}
         >
-            <div className="mb-1 font-bold">{title}</div>
+            <div className="mb-1 font-bold flex items-center gap-2">
+                <Icon name={icon} size={15} className="text-[var(--text-muted)]" /> {title}
+            </div>
             <p className="text-xs text-gray-500 mb-3">{hint}</p>
             <div className="flex flex-wrap gap-2">{children}</div>
         </div>
@@ -116,7 +119,9 @@ export function LayoutArranger({ prefs, setPrefs }: any) {
     return (
         <div className="glass-card p-6 rounded-2xl mb-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-                <h2 className="text-xl">🔀 Раскладка интерфейса</h2>
+                <h2 className="text-xl flex items-center gap-2">
+                    <Icon name="swap" size={18} className="text-[var(--text-muted)]" /> Раскладка интерфейса
+                </h2>
                 {movedCount > 0 && (
                     <button onClick={() => setPrefs((p: any) => ({ ...p, asWidget: [], asPage: [] }))}
                         className="text-xs text-cyan-400 hover:underline">
@@ -130,7 +135,7 @@ export function LayoutArranger({ prefs, setPrefs }: any) {
             </p>
 
             <div className="flex flex-col md:flex-row gap-4">
-                <DropZone title="📑 Меню" hint="Разделы в боковой панели"
+                <DropZone icon="columns" title="Меню" hint="Разделы в боковой панели"
                     active={over === 'menu'}
                     onEnter={() => setOver('menu')}
                     onLeave={() => setOver(o => (o === 'menu' ? null : o))}
@@ -138,7 +143,7 @@ export function LayoutArranger({ prefs, setPrefs }: any) {
                     {chipsFor('menu')}
                 </DropZone>
 
-                <DropZone title="⬢ Дашборд" hint="Блоки на «Закрытии дня»"
+                <DropZone icon="grid" title="Дашборд" hint="Блоки на «Закрытии дня»"
                     active={over === 'dashboard'}
                     onEnter={() => setOver('dashboard')}
                     onLeave={() => setOver(o => (o === 'dashboard' ? null : o))}

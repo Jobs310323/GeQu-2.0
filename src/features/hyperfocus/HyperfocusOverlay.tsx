@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Icon } from '../../components/Icons';
 
 export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs, todayLog }: any) {
     const [phase, setPhase] = useState(hyperfocus.status); // setup, running, finished, interrupted
@@ -65,7 +66,10 @@ export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs
             {/* SETUP PHASE */}
             {phase === 'setup' && (
                 <div className="glass-card p-8 rounded-2xl max-w-md w-full text-center">
-                    <h2 className="text-3xl font-bold text-cyan-400 mb-2">🚀 Подготовка к гиперфокусу</h2>
+                    <div className="w-14 h-14 rounded-2xl bg-cyan-400/10 text-cyan-400 flex items-center justify-center mx-auto mb-4">
+                        <Icon name="rocket" size={26} />
+                    </div>
+                    <h2 className="text-3xl font-bold text-cyan-400 mb-2">Подготовка к гиперфокусу</h2>
                     <p className="text-gray-400 mb-6">Выбери ОДНУ задачу. Остальное будет заблокировано.</p>
                     <select value={task} onChange={e => setTask(e.target.value)} className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-3 mb-6 text-white outline-none focus:border-cyan-400">
                         {hyperfocus.todoTasks?.map((t: any) => <option key={t.id} value={t.text}>{t.text}</option>)}
@@ -92,7 +96,9 @@ export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs
             {/* FINISHED PHASE */}
             {phase === 'finished' && (
                 <div className="glass-card p-8 rounded-2xl max-w-md w-full text-center border border-green-400/30">
-                    <div className="text-6xl mb-4">✅</div>
+                    <div className="w-16 h-16 rounded-2xl bg-green-400/10 text-green-400 flex items-center justify-center mx-auto mb-4">
+                        <Icon name="check" size={30} />
+                    </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Цикл завершен!</h2>
                     <p className="text-gray-400 mb-6">Что ты успел за {hyperfocus.duration} минут?</p>
                     <textarea value={reflection} onChange={e => setReflection(e.target.value)} placeholder="Опиши результат..." className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 mb-6 text-white outline-none focus:border-cyan-400 min-h-[80px]" />
@@ -103,7 +109,9 @@ export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs
             {/* INTERRUPTED PHASE */}
             {phase === 'interrupted' && (
                 <div className="glass-card p-8 rounded-2xl max-w-md w-full text-center border border-red-400/30">
-                    <div className="text-5xl mb-4">⚠️</div>
+                    <div className="w-14 h-14 rounded-2xl bg-red-400/10 text-red-400 flex items-center justify-center mx-auto mb-4">
+                        <Icon name="alertTriangle" size={26} />
+                    </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Цикл прерван</h2>
                     <p className="text-gray-400 mb-6">Что отвлекло? Это попадет в аналитику.</p>
                     <div className="flex flex-wrap gap-2 justify-center mb-6">

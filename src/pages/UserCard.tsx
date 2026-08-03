@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { callAIJson } from '../lib/ai';
 import { DB } from '../lib/db';
 import { buildProfile, hasEnoughData } from '../lib/profile';
+import { Icon } from '../components/Icons';
+import { PageHeader } from '../components/PageHeader';
 
 type AiCard = {
     headline?: string;
@@ -44,7 +46,10 @@ function Section({ title, items, icon, tone }: { title: string; items?: string[]
     if (!items?.length) return null;
     return (
         <div className="glass-card p-5 rounded-2xl">
-            <h3 className={`font-bold mb-3 ${tone}`}>{icon} {title}</h3>
+            <h3 className={`font-bold mb-3 flex items-center gap-2 ${tone}`}>
+                <Icon name={icon} size={16} />
+                {title}
+            </h3>
             <ul className="space-y-2">
                 {items.map((t, i) => (
                     <li key={i} className="text-sm text-gray-300 flex gap-2">
@@ -97,10 +102,8 @@ export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResu
 
     return (
         <div className="max-w-5xl">
-            <h1 className="text-3xl font-bold mb-2">Карточка пользователя</h1>
-            <p className="text-gray-400 text-sm mb-6">
-                Сводка по всем твоим данным: состояние, привычки, задачи, зал, когнитивные тесты и дневник.
-            </p>
+            <PageHeader page="card" title="Карточка пользователя"
+                subtitle="Сводка по всем твоим данным: состояние, привычки, задачи, зал, когнитивные тесты и дневник." />
 
             {!enough ? (
                 <div className="glass-card p-10 rounded-2xl text-center text-gray-500">
@@ -111,7 +114,10 @@ export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResu
                     {/* Factual layer — always available, no AI or network needed */}
                     <div className="glass-card p-6 rounded-2xl mb-6">
                         <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
-                            <h2 className="text-xl font-bold">📇 Факты</h2>
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <Icon name="idcard" size={18} className="text-cyan-400" />
+                                Факты
+                            </h2>
                             <span className="text-xs text-gray-500">
                                 {profile.period.firstEntry
                                     ? `${profile.period.firstEntry} — ${profile.period.lastEntry} · ${profile.period.daysTracked} записей`
@@ -193,7 +199,10 @@ export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResu
                     <div className="glass-card p-6 rounded-2xl mb-6 border border-purple-400/30 bg-purple-400/5">
                         <div className="flex flex-col md:flex-row md:items-center gap-4">
                             <div className="flex-1">
-                                <h2 className="text-lg font-bold text-purple-400 mb-1">✨ Разбор от ИИ</h2>
+                                <h2 className="text-lg font-bold text-purple-400 mb-1 flex items-center gap-2">
+                                    <Icon name="sparkle" size={16} />
+                                    Разбор от ИИ
+                                </h2>
                                 <p className="text-sm text-gray-400">
                                     Соберу из этих цифр портрет: сильные стороны, узкие места и закономерности.
                                 </p>
@@ -222,20 +231,23 @@ export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResu
                             )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <Section title="Сильные стороны" items={card.strengths} icon="💪" tone="text-green-400" />
-                                <Section title="Узкие места" items={card.challenges} icon="⚠️" tone="text-yellow-400" />
+                                <Section title="Сильные стороны" items={card.strengths} icon="flame" tone="text-green-400" />
+                                <Section title="Узкие места" items={card.challenges} icon="alertTriangle" tone="text-yellow-400" />
                             </div>
 
-                            <Section title="Замеченные закономерности" items={card.patterns} icon="🔎" tone="text-cyan-400" />
+                            <Section title="Замеченные закономерности" items={card.patterns} icon="search" tone="text-cyan-400" />
 
                             {card.cognitiveProfile && (
                                 <div className="glass-card p-5 rounded-2xl">
-                                    <h3 className="font-bold text-purple-400 mb-2">🎓 Когнитивный профиль</h3>
+                                    <h3 className="font-bold text-purple-400 mb-2 flex items-center gap-2">
+                                        <Icon name="library" size={16} />
+                                        Когнитивный профиль
+                                    </h3>
                                     <p className="text-sm text-gray-300">{card.cognitiveProfile}</p>
                                 </div>
                             )}
 
-                            <Section title="Что можно сделать" items={card.recommendations} icon="🎯" tone="text-pink-400" />
+                            <Section title="Что можно сделать" items={card.recommendations} icon="target" tone="text-pink-400" />
                         </div>
                     )}
                 </>

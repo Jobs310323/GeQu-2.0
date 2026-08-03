@@ -2,6 +2,11 @@ import { useState, useMemo } from 'react';
 import { marked } from 'marked';
 import { CATEGORIES, ARTICLES, ARTICLES_BY_CATEGORY, searchArticles, relatedTo, type Article } from '../lib/knowledge';
 import { DB } from '../lib/db';
+import { Icon } from '../components/Icons';
+import { PageHeader } from '../components/PageHeader';
+
+/** Former «Про СДВГ» page — kept as a fixed entry point at the top of the list. */
+const INTRO_IDS = ['adhd-what', 'adhd-symptoms', 'adhd-impact', 'adhd-not-a-sentence'];
 
 function loadSet(key: string): string[] {
     const v = DB.get(key, []);
@@ -36,8 +41,9 @@ export function Knowledge({ setPage }: any) {
         const related = relatedTo(open);
         return (
             <div className="max-w-3xl">
-                <button onClick={() => setOpen(null)} className="text-sm text-gray-400 hover:text-cyan-400 mb-4">
-                    ← Назад к базе знаний
+                <button onClick={() => setOpen(null)}
+                    className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-cyan-400 mb-4 transition">
+                    <Icon name="chevronLeft" size={14} /> Назад к базе знаний
                 </button>
 
                 <div className="glass-card p-8 rounded-2xl">
@@ -47,12 +53,13 @@ export function Knowledge({ setPage }: any) {
                         </span>
                         <span className="text-gray-500">{open.minutes} мин чтения</span>
                         <button onClick={() => toggleSaved(open.id)}
-                            className={`ml-auto px-3 py-1 rounded-full border transition ${
+                            className={`ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full border transition ${
                                 saved.includes(open.id)
                                     ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/40'
                                     : 'border-[var(--border)] text-gray-500 hover:text-white'
                             }`}>
-                            {saved.includes(open.id) ? '★ В закладках' : '☆ В закладки'}
+                            <Icon name="star" size={13} className={saved.includes(open.id) ? 'fill-current' : ''} />
+                            {saved.includes(open.id) ? 'В закладках' : 'В закладки'}
                         </button>
                     </div>
 
@@ -89,13 +96,14 @@ export function Knowledge({ setPage }: any) {
     // ---------- list view ----------
     const listed = category ? ARTICLES_BY_CATEGORY(category) : null;
     const savedArticles = ARTICLES.filter(a => saved.includes(a.id));
+    const intro = ARTICLES.filter(a => INTRO_IDS.includes(a.id));
 
     const Card = ({ a }: { a: Article }) => (
         <button onClick={() => openArticle(a)}
             className="glass-card p-5 rounded-2xl text-left border border-transparent hover:border-cyan-400/40 transition flex flex-col">
             <div className="flex items-start justify-between gap-2 mb-1">
                 <h3 className="font-bold flex-1">{a.title}</h3>
-                {saved.includes(a.id) && <span className="text-yellow-400 text-sm">★</span>}
+                {saved.includes(a.id) && <Icon name="star" size={14} className="text-yellow-400 fill-current shrink-0 mt-0.5" />}
             </div>
             <p className="text-sm text-gray-400 flex-1 mb-3">{a.summary}</p>
             <div className="flex items-center gap-3 text-xs text-gray-500">
@@ -107,18 +115,19 @@ export function Knowledge({ setPage }: any) {
 
     return (
         <div className="max-w-5xl">
-            <h1 className="text-3xl font-bold mb-2">База знаний</h1>
-            <p className="text-gray-400 text-sm mb-6">
-                {ARTICLES.length} статей о том, как устроен СДВГ и что с этим делать. Каждая — на несколько минут.
-            </p>
+            <PageHeader page="knowledge" title="База знаний"
+                subtitle={`${ARTICLES.length} статей о том, как устроен СДВГ и что с этим делать. Каждая — на несколько минут.`} />
 
-            <input
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="🔍 Поиск по всем статьям…"
-                className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-3 mb-6 outline-none focus:border-cyan-400 text-white"
-            />
+            <div className="relative mb-6">
+                <Icon name="search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                <input
+                    type="text"
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    placeholder="Поиск по всем статьям…"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-xl pl-11 pr-4 py-3 outline-none focus:border-cyan-400 text-white"
+                />
+            </div>
 
             {query.trim() ? (
                 <>
@@ -131,8 +140,9 @@ export function Knowledge({ setPage }: any) {
                 </>
             ) : category ? (
                 <>
-                    <button onClick={() => setCategory(null)} className="text-sm text-gray-400 hover:text-cyan-400 mb-4">
-                        ← Все разделы
+                    <button onClick={() => setCategory(null)}
+                        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-cyan-400 mb-4 transition">
+                        <Icon name="chevronLeft" size={14} /> Все разделы
                     </button>
                     <h2 className="text-2xl font-bold mb-4">
                         {CATEGORIES.find(c => c.id === category)?.icon} {CATEGORIES.find(c => c.id === category)?.title}
@@ -143,9 +153,38 @@ export function Knowledge({ setPage }: any) {
                 </>
             ) : (
                 <>
+                    {intro.length > 0 && (
+                        <div className="glass-card p-5 rounded-2xl mb-8">
+                            <div className="flex items-start gap-3 mb-3">
+                                <Icon name="info" size={16} className="text-cyan-400 mt-0.5 shrink-0" />
+                                <div>
+                                    <h2 className="font-bold mb-1">Про СДВГ — с чего начать</h2>
+                                    <p className="text-sm text-gray-400">
+                                        Что это такое, как проявляется и на что влияет. Если раньше не читал — начни отсюда.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {intro.map(a => (
+                                    <button key={a.id} onClick={() => openArticle(a)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition ${
+                                            read.includes(a.id)
+                                                ? 'border-[var(--border)] text-gray-500 hover:text-white'
+                                                : 'border-cyan-400/30 text-cyan-400 hover:bg-cyan-400/10'
+                                        }`}>
+                                        {read.includes(a.id) && <Icon name="check" size={12} />}
+                                        {a.title}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {savedArticles.length > 0 && (
                         <div className="mb-8">
-                            <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">★ Закладки</h2>
+                            <h2 className="flex items-center gap-1.5 text-sm uppercase tracking-wider text-gray-500 mb-3">
+                                <Icon name="star" size={12} className="text-yellow-400 fill-current" /> Закладки
+                            </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {savedArticles.map(a => <Card key={a.id} a={a} />)}
                             </div>

@@ -7,6 +7,8 @@
 import { DB } from './db';
 
 export const DASHBOARD_WIDGETS = [
+    { id: 'overview', label: 'Обзор дня (метрики и шкалы)', icon: '⬢' },
+    { id: 'today', label: 'Сегодня: привычки и задачи', icon: '✅' },
     { id: 'hyperfocus', label: 'Кнопка гиперфокуса', icon: '🚀' },
     { id: 'streak', label: 'Серия и ачивки', icon: '🔥' },
     { id: 'ratings', label: 'Оценка дня (сон/фокус/настроение)', icon: '📊' },

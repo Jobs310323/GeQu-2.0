@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DISTORTIONS, PRACTICES, RECORD_FIELDS } from '../lib/cbt';
 import { streamAI, hasGroqKey } from '../lib/ai';
 import { marked } from 'marked';
+import { Icon } from '../components/Icons';
 
 const TABS = [
     { id: 'record', label: 'Дневник мыслей' },
@@ -64,16 +65,17 @@ export function Cbt({ cbtRecords, setCbtRecords }: any) {
 
     return (
         <div className="max-w-4xl">
-            <h1 className="text-3xl font-bold mb-2">КПТ-практика</h1>
-            <p className="text-gray-400 text-sm mb-6">
+            <p className="text-sm text-gray-400 mb-4">
                 Инструменты когнитивно-поведенческой терапии: разбирать мысли, узнавать свои искажения и действовать, не дожидаясь настроения.
             </p>
 
-            <div className="flex gap-2 mb-6 flex-wrap">
+            <div className="mb-6 flex gap-1 flex-wrap">
                 {TABS.map(t => (
                     <button key={t.id} onClick={() => setTab(t.id)}
-                        className={`px-4 py-2 rounded-lg transition text-sm ${
-                            tab === t.id ? 'bg-cyan-400/10 text-cyan-400 border border-cyan-400' : 'text-gray-400 border border-[var(--border)]'
+                        className={`px-3 py-1 rounded-full text-xs border transition ${
+                            tab === t.id
+                                ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/40'
+                                : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-white/5 hover:text-[var(--text-main)]'
                         }`}>
                         {t.label}
                     </button>
@@ -96,7 +98,7 @@ export function Cbt({ cbtRecords, setCbtRecords }: any) {
                                         value={draft[f.key]}
                                         onChange={e => setDraft(p => ({ ...p, [f.key]: e.target.value }))}
                                         placeholder={f.hint}
-                                        className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 text-sm text-white outline-none focus:border-cyan-400 min-h-[60px] resize-y"
+                                        className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-xl p-3 text-sm text-white outline-none focus:border-cyan-400 min-h-[60px] resize-y"
                                     />
                                 </div>
                             ))}
@@ -104,13 +106,14 @@ export function Cbt({ cbtRecords, setCbtRecords }: any) {
 
                         <div className="flex flex-wrap gap-3 mt-5">
                             <button onClick={save} disabled={!canSave}
-                                className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-2.5 rounded-lg disabled:opacity-40">
+                                className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-2.5 rounded-xl disabled:opacity-40">
                                 Сохранить запись
                             </button>
                             <button onClick={analyse} disabled={aiLoading || !canSave || !hasGroqKey()}
                                 title={!hasGroqKey() ? 'Нужен ключ Groq в Настройках' : undefined}
-                                className="px-6 py-2.5 rounded-lg border border-purple-400/40 text-purple-400 hover:bg-purple-400/10 disabled:opacity-40 transition">
-                                {aiLoading ? 'Разбираю…' : '✨ Разобрать с ИИ'}
+                                className="flex items-center gap-1.5 px-6 py-2.5 rounded-xl border border-purple-400/40 text-purple-400 hover:bg-purple-400/10 disabled:opacity-40 transition">
+                                {!aiLoading && <Icon name="sparkle" size={14} />}
+                                {aiLoading ? 'Разбираю…' : 'Разобрать с ИИ'}
                             </button>
                             {!canSave && <span className="text-xs text-gray-500 self-center">Заполни хотя бы ситуацию и мысль</span>}
                         </div>

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { StateChart, TestChart, SERIES } from '../features/charts';
 import { LOWER_IS_BETTER, TEST_LABELS } from '../lib/profile';
+import { Icon } from '../components/Icons';
 
 const PERIODS = [
     { id: 7, label: '7 дней' },
@@ -30,8 +31,9 @@ function MetricTile({ label, value, delta, color }: any) {
             </div>
             <div className="text-3xl font-bold text-white tabular-nums">{value || '—'}</div>
             {hasDelta && (
-                <div className={`text-xs mt-1 tabular-nums ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {delta > 0 ? '▲' : '▼'} {Math.abs(delta)} к прошлому периоду
+                <div className={`flex items-center gap-1 text-xs mt-1 tabular-nums ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <Icon name={delta > 0 ? 'trendUp' : 'trendDown'} size={12} />
+                    {Math.abs(delta)} к прошлому периоду
                 </div>
             )}
         </div>
@@ -113,7 +115,7 @@ export function Dynamics({ logs, testResults, gymData }: any) {
         if (sleepHigh.length && sleepLow.length) {
             const d = round(avg(sleepHigh) - avg(sleepLow));
             out.push({
-                icon: '🌙', title: 'Сон → Фокус',
+                icon: 'moon', title: 'Сон → Фокус',
                 text: `При сне ≥ 7 фокус в среднем ${round(avg(sleepHigh))}, при сне ≤ 4 — ${round(avg(sleepLow))}.`,
                 highlight: `Разница: ${d > 0 ? '+' : ''}${d} балла`,
                 verdict: d > 0 ? 'Сон — самый управляемый рычаг для фокуса.' : 'Связь неочевидна — данных пока мало.',
@@ -126,7 +128,7 @@ export function Dynamics({ logs, testResults, gymData }: any) {
         if (withGym.length && noGym.length) {
             const d = round(avg(withGym) - avg(noGym));
             out.push({
-                icon: '🏋️', title: 'Тренировки → Настроение',
+                icon: 'dumbbell', title: 'Тренировки → Настроение',
                 text: `В дни с тренировкой настроение ${round(avg(withGym))}, без неё — ${round(avg(noGym))}.`,
                 highlight: `Разница: ${d > 0 ? '+' : ''}${d} балла`,
                 verdict: d > 0 ? 'Зал заметно поднимает настроение.' : 'Пока без выигрыша — посмотри на восстановление.',
@@ -145,7 +147,7 @@ export function Dynamics({ logs, testResults, gymData }: any) {
             .sort((a, b) => b.drop - a.drop)[0];
         if (worst && worst.drop > 0.3) {
             out.push({
-                icon: '⚠️', title: 'Что дороже всего стоит',
+                icon: 'alertTriangle', title: 'Что дороже всего стоит',
                 text: `В дни с тегом «${worst.tag}» (${worst.n} раз) фокус ниже среднего по периоду.`,
                 highlight: `−${worst.drop} балла к фокусу`,
                 verdict: `Убрать «${worst.tag}» — самый быстрый выигрыш.`,
@@ -156,20 +158,16 @@ export function Dynamics({ logs, testResults, gymData }: any) {
     }, [periodLogs, gymData]);
 
     return (
-        <div className="max-w-5xl">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                <h1 className="text-3xl font-bold">Динамика</h1>
-                {/* Filters live in one row above the charts. */}
-                <div className="flex gap-1 bg-[var(--bg-input)] p-1 rounded-xl border border-[var(--border)]">
-                    {PERIODS.map(p => (
-                        <button key={p.id} onClick={() => setDays(p.id)}
-                            className={`px-3 py-1.5 rounded-lg text-sm transition ${
-                                days === p.id ? 'bg-cyan-400/15 text-cyan-400 font-bold' : 'text-gray-400 hover:text-white'
-                            }`}>
-                            {p.label}
-                        </button>
-                    ))}
-                </div>
+        <div>
+            <div className="flex flex-wrap gap-1 w-fit bg-[var(--bg-input)] p-1 rounded-xl border border-[var(--border)] mb-6">
+                {PERIODS.map(p => (
+                    <button key={p.id} onClick={() => setDays(p.id)}
+                        className={`px-3 py-1.5 rounded-lg text-sm transition ${
+                            days === p.id ? 'bg-cyan-400/15 text-cyan-400 font-bold' : 'text-gray-400 hover:text-white'
+                        }`}>
+                        {p.label}
+                    </button>
+                ))}
             </div>
 
             {periodLogs.length === 0 ? (
@@ -192,11 +190,17 @@ export function Dynamics({ logs, testResults, gymData }: any) {
 
                     {insights.length > 0 && (
                         <div className="mb-6">
-                            <h2 className="text-xl font-bold mb-3">🔎 Закономерности</h2>
+                            <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
+                                <Icon name="search" size={18} className="text-cyan-400" />
+                                Закономерности
+                            </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {insights.map((ins, i) => (
                                     <div key={i} className="glass-card p-5 rounded-2xl border border-cyan-400/20">
-                                        <h3 className="font-bold text-cyan-400 mb-2">{ins.icon} {ins.title}</h3>
+                                        <h3 className="font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                                            <Icon name={ins.icon} size={16} />
+                                            {ins.title}
+                                        </h3>
                                         <p className="text-sm text-gray-300 mb-2">{ins.text}</p>
                                         <p className="text-sm text-white font-bold mb-3">{ins.highlight}</p>
                                         <p className="text-xs text-gray-400 pt-3 border-t border-[var(--border)]">{ins.verdict}</p>

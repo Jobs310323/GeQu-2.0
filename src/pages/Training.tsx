@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NBackTest, SchulteTable, CorsiTest, ArithmeticTest, SwitchingTest, BreathingExercise, StroopTest, ReactionTest, TrailMakingTest, DigitSpanTest, GoNoGoTest, PomodoroTimer } from '../features/training/tests';
+import { PageHeader } from '../components/PageHeader';
 
 export function Training({ setTestResults, achievements, setAchievements }: any) {
     const [tab, setTab] = useState('schulte');
@@ -20,11 +21,11 @@ export function Training({ setTestResults, achievements, setAchievements }: any)
 
     return (
         <div>
-            <h1 className="text-3xl font-bold mb-8">Тренировки</h1>
-            <div className="flex gap-2 mb-6 flex-wrap">
+            <PageHeader page="training" title="Тренировки" subtitle="Когнитивные тренажёры и упражнения" />
+            <div className="glass-card rounded-2xl p-1.5 mb-6 flex gap-1 flex-wrap">
                 {tabs.map(t => (
-                    <button key={t.id} onClick={() => setTab(t.id)} 
-                        className={`px-4 py-2 rounded-lg transition ${tab === t.id ? 'bg-cyan-400/10 text-cyan-400 border border-cyan-400' : 'text-gray-400 border border-[var(--border)]'}`}>
+                    <button key={t.id} onClick={() => setTab(t.id)}
+                        className={`px-3.5 py-1.5 rounded-xl text-sm transition ${tab === t.id ? 'bg-cyan-400/10 text-cyan-400' : 'text-[var(--text-muted)] hover:bg-white/5 hover:text-[var(--text-main)]'}`}>
                         {t.label}
                     </button>
                 ))}

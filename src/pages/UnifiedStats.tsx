@@ -1,3 +1,7 @@
+import { PageHeader } from '../components/PageHeader';
+import { RadialGauge } from '../components/RadialGauge';
+import { BentoCard } from '../components/BentoCard';
+
 export function UnifiedStats({ logs, testResults, gymData }: any) {
     const last7Logs = logs.slice(-7);
     // Only average entries that actually carry a finite number — older logs may
@@ -17,34 +21,40 @@ export function UnifiedStats({ logs, testResults, gymData }: any) {
     const uniqueExercises = new Set();
     gymData.history.forEach((w: any) => w.exercises.forEach((e: any) => uniqueExercises.add(e.name)));
 
+    const gaugeValue = (key: string) => {
+        const raw = avg(key);
+        return raw === '—' ? null : Number(raw);
+    };
+
     return (
         <div>
-            <h1 className="text-3xl font-bold mb-8">Единый хаб статистики</h1>
+            <PageHeader page="hub" title="Единый хаб статистики" subtitle="Общая картина за последние 7 дней" />
+
             <div className="glass-card p-6 rounded-2xl mb-6 bg-cyan-400/5 border border-cyan-400/20">
-                <h2 className="text-xl font-bold text-cyan-400 mb-4">Общая картина (за последние 7 дней)</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-[var(--bg-input)] p-4 rounded-xl text-center">
-                        <div className="text-3xl font-bold text-purple-400">{avg('sleep')}</div>
-                        <div className="text-xs text-gray-400 mt-1">Средний сон</div>
-                    </div>
-                    <div className="bg-[var(--bg-input)] p-4 rounded-xl text-center">
-                        <div className="text-3xl font-bold text-cyan-400">{avg('focus')}</div>
-                        <div className="text-xs text-gray-400 mt-1">Средний фокус</div>
-                    </div>
-                    <div className="bg-[var(--bg-input)] p-4 rounded-xl text-center">
-                        <div className="text-3xl font-bold text-green-400">{avg('mood')}</div>
-                        <div className="text-xs text-gray-400 mt-1">Настроение</div>
-                    </div>
-                    <div className="bg-[var(--bg-input)] p-4 rounded-xl text-center">
-                        <div className="text-3xl font-bold text-pink-400">{Math.round(totalTonnage)}</div>
+                    {[
+                        { key: 'sleep', label: 'Средний сон', textClass: 'text-purple-400' },
+                        { key: 'focus', label: 'Средний фокус', textClass: 'text-cyan-400' },
+                        { key: 'mood', label: 'Настроение', textClass: 'text-green-400' },
+                    ].map(g => {
+                        const value = gaugeValue(g.key);
+                        return (
+                            <div key={g.key} className={`flex flex-col items-center justify-center ${g.textClass}`}>
+                                {value === null
+                                    ? <div className="text-sm text-gray-500 py-6">Нет данных</div>
+                                    : <RadialGauge value={value} max={10} label={g.label} color="currentColor" />}
+                            </div>
+                        );
+                    })}
+                    <div className="bg-[var(--bg-input)] p-4 rounded-xl text-center flex flex-col items-center justify-center">
+                        <div className="text-3xl font-bold text-pink-400 tabular-nums">{Math.round(totalTonnage)}</div>
                         <div className="text-xs text-gray-400 mt-1">Тоннаж в зале (кг)</div>
                     </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="glass-card p-6 rounded-2xl">
-                    <h3 className="text-xl font-bold text-white mb-4">🎓 Когнитивные тесты</h3>
+                <BentoCard title="Когнитивные тесты" icon="flask">
                     {Object.keys(testCounts).length === 0 ? <p className="text-gray-400">Нет данных</p> : (
                         <div className="space-y-3">
                             {Object.entries(testCounts).map(([type, count]: any) => (
@@ -55,10 +65,9 @@ export function UnifiedStats({ logs, testResults, gymData }: any) {
                             ))}
                         </div>
                     )}
-                </div>
+                </BentoCard>
 
-                <div className="glass-card p-6 rounded-2xl">
-                    <h3 className="text-xl font-bold text-white mb-4">🏋️ Спортзал</h3>
+                <BentoCard title="Спортзал" icon="dumbbell">
                     <div className="space-y-3">
                         <div className="flex justify-between items-center bg-[var(--bg-input)] p-3 rounded-lg">
                             <span className="text-gray-300">Всего тренировок</span>
@@ -69,7 +78,7 @@ export function UnifiedStats({ logs, testResults, gymData }: any) {
                             <span className="text-cyan-400 font-bold">{uniqueExercises.size}</span>
                         </div>
                     </div>
-                </div>
+                </BentoCard>
             </div>
         </div>
     );

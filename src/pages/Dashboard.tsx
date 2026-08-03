@@ -1,20 +1,29 @@
 import { useState } from 'react';
 import { calculateStreak } from '../lib/helpers';
 import { DASHBOARD_WIDGETS } from '../lib/prefs';
-import { ALL_TABS } from '../lib/nav';
+import { ALL_TABS, STANDALONE_TABS } from '../lib/nav';
+import { Icon } from '../components/Icons';
+import { RadialGauge } from '../components/RadialGauge';
 
 const WIDGET_TITLES: Record<string, string> = Object.fromEntries(
     DASHBOARD_WIDGETS.map(w => [w.id, w.label]));
 
 const WIDGET_PAGE_LABEL: Record<string, string> = Object.fromEntries(
-    ALL_TABS.map(t => [t.id, t.icon + ' ' + t.label]));
+    [...ALL_TABS, ...STANDALONE_TABS].map(t => [t.id, t.icon + ' ' + t.label]));
 
 const HELPED_TAGS = ['Кофе', 'Спорт', 'Сон', 'Pomodoro', 'Интерес к задаче', 'Медитация'];
 const HINDERED_TAGS = ['Телефон', 'Усталость', 'Шум', 'Скука', 'Голод', 'Откладывание'];
 
+const DAY_MS = 86400000;
+/** How many entries in `items` fall inside the last `days` days. */
+function countRecent(items: any[], days: number) {
+    const from = Date.now() - days * DAY_MS;
+    return (items ?? []).filter((i: any) => new Date(i.date).getTime() >= from).length;
+}
+
 /**
- * Collapsible card. The dashboard used to stack eight always-open blocks in
- * one column, which meant a lot of scrolling past things not being filled in;
+ * Collapsible card. The day-closing form used to stack eight always-open blocks
+ * in one column, which meant a lot of scrolling past things not being filled in;
  * these fold away and show a one-line summary of what's inside instead.
  */
 function Section({ icon, title, summary, filled, children, open, onToggle }: any) {
@@ -22,19 +31,37 @@ function Section({ icon, title, summary, filled, children, open, onToggle }: any
         <div className="glass-card rounded-2xl overflow-hidden">
             <button onClick={onToggle}
                 className="w-full px-5 py-3.5 flex items-center gap-3 text-left hover:bg-white/5 transition">
-                <span className="text-lg leading-none">{icon}</span>
+                <Icon name={icon} size={18} className="text-[var(--text-muted)] shrink-0" />
                 <span className="font-medium flex-1">{title}</span>
                 {filled
                     ? <span className="text-xs text-green-400 truncate max-w-[45%]">{summary}</span>
                     : <span className="text-xs text-gray-600">{summary}</span>}
-                <span className="text-gray-500 text-xs">{open ? '▾' : '▸'}</span>
+                <Icon name={open ? 'chevronDown' : 'chevronRight'} size={14} className="text-[var(--text-muted)] shrink-0" />
             </button>
             {open && <div className="px-5 pb-5 pt-1 border-t border-[var(--border)]">{children}</div>}
         </div>
     );
 }
 
-export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults, prefs, onlyWidget, renderPage }: any) {
+/** One number plus its caption, the building block of the overview grid. */
+function StatTile({ icon, value, label, hint, tone = 'text-[var(--text-main)]', onClick }: any) {
+    const Tag: any = onClick ? 'button' : 'div';
+    return (
+        <Tag onClick={onClick}
+            className={`glass-card rounded-2xl p-3 flex flex-col gap-1 text-left ${onClick ? 'hover:bg-white/5 transition' : ''}`}>
+            <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
+                <Icon name={icon} size={13} />
+                <span className="text-[11px] uppercase tracking-wide truncate">{label}</span>
+            </div>
+            <div className={`text-2xl font-semibold leading-none ${tone}`}>{value}</div>
+            {hint && <div className="text-[11px] text-[var(--text-muted)]">{hint}</div>}
+        </Tag>
+    );
+}
+
+export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults,
+                            prefs, habits, setHabits, setPage, levelInfo, energy,
+                            onlyWidget, renderPage }: any) {
     const [sleep, setSleep] = useState(5);
     const [focus, setFocus] = useState(5);
     const [mood, setMood] = useState(5);
@@ -65,6 +92,26 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     const todayGym = gymData.history.some((w: any) => w.date.split('T')[0] === todayStr);
     const todayTest = testResults.some((t: any) => t.date.split('T')[0] === todayStr);
 
+    // --- Overview figures --------------------------------------------------
+    // Gauges show today's numbers once the day is closed, and the running
+    // 7-day average before that — so the block is never empty.
+    const todayLog = logs.find((l: any) => l.date.split('T')[0] === todayStr);
+    const recentLogs = logs.filter((l: any) => new Date(l.date).getTime() >= Date.now() - 7 * DAY_MS);
+    const avg = (key: string) => recentLogs.length
+        ? recentLogs.reduce((s: number, l: any) => s + Number(l[key] ?? 0), 0) / recentLogs.length
+        : 0;
+    const gaugeSource = todayLog ?? (recentLogs.length ? { sleep: avg('sleep'), focus: avg('focus'), mood: avg('mood') } : null);
+    const gaugeCaption = todayLog ? 'Сегодня' : recentLogs.length ? 'В среднем за 7 дней' : 'Пока нет записей';
+
+    const habitList: any[] = habits ?? [];
+    const habitsDone = habitList.filter((h: any) => h.history?.includes(todayStr)).length;
+    const openTasks = kanban.filter((t: any) => t.status !== 'done');
+    const nextTasks = openTasks.slice(0, 3);
+
+    const level = levelInfo?.level ?? 1;
+    const levelPct = Math.round((levelInfo?.progress ?? 0) * 100);
+    const energyValue = typeof energy === 'number' ? energy : 5;
+
     const bodyScanItems = [
         { id: '☀️ Солнце', label: 'Солнце > 15 мин', auto: false },
         { id: '💧 Вода', label: 'Вода 1.5+ л', auto: false },
@@ -83,6 +130,16 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     const toggleTag = (tag: string, type: 'helped' | 'hindered') => {
         const set = type === 'helped' ? setHelped : setHindered;
         set(prev => prev.includes(tag) ? prev.filter(s => s !== tag) : [...prev, tag]);
+    };
+
+    /** Same toggle the Habits page uses, so ticking here is the same action. */
+    const toggleHabit = (id: number) => {
+        if (!setHabits) return;
+        setHabits(habitList.map((h: any) => {
+            if (h.id !== id) return h;
+            const done = h.history?.includes(todayStr);
+            return { ...h, history: done ? h.history.filter((d: string) => d !== todayStr) : [...(h.history ?? []), todayStr] };
+        }));
     };
 
     const gratitudeCount = gratitude.filter(g => g.trim()).length;
@@ -119,58 +176,132 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     );
 
     return (
-        <div className="max-w-3xl mx-auto pb-24">
-            <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
-                <h1 className="text-3xl font-bold">
-                    {onlyWidget ? (WIDGET_TITLES[onlyWidget] ?? 'Закрытие дня') : 'Закрытие дня'}
-                </h1>
-                {!onlyWidget && (
-                    <span className="text-sm text-gray-500">
-                        {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
-                    </span>
+        <div className="max-w-4xl mx-auto pb-24">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+                <div>
+                    <h1 className="text-2xl font-bold leading-tight">
+                        {onlyWidget ? (WIDGET_TITLES[onlyWidget] ?? 'Сегодня') : 'Сегодня'}
+                    </h1>
+                    {!onlyWidget && (
+                        <p className="text-sm text-[var(--text-muted)]">
+                            {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            {alreadyClosed && ' · день закрыт'}
+                        </p>
+                    )}
+                </div>
+                {show('hyperfocus') && (
+                    <button onClick={startHyper}
+                        className="glass-card rounded-xl px-4 py-2.5 flex items-center gap-2.5 border border-cyan-400/30 hover:bg-cyan-400/10 transition">
+                        <Icon name="rocket" size={18} className="text-cyan-400" />
+                        <span className="font-medium text-cyan-400 text-sm">Гиперфокус</span>
+                    </button>
                 )}
             </div>
 
-            {/* Compact status strip — was two large cards */}
-            {!onlyWidget && (show('streak') || show('hyperfocus')) && (
-                <div className="flex flex-wrap gap-3 mb-5">
-                    {show('streak') && (
-                        <div className="glass-card rounded-xl px-4 py-2.5 flex items-center gap-2.5">
-                            <span className="text-xl">🔥</span>
-                            <div>
-                                <div className="text-xl font-bold text-pink-400 leading-none">{streak}</div>
-                                <div className="text-[11px] text-gray-500 mt-0.5">дней подряд</div>
+            {/* ---- Overview: how the last day / week actually went ---------- */}
+            {show('overview') && (
+                <div className="mb-4 space-y-3">
+                    <div className="glass-card rounded-2xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Состояние</h3>
+                            <span className="text-[11px] text-[var(--text-muted)]">{gaugeCaption}</span>
+                        </div>
+                        {gaugeSource ? (
+                            <div className="grid grid-cols-3 gap-2">
+                                <RadialGauge value={Number(gaugeSource.sleep)} label="Сон" size={80} />
+                                <RadialGauge value={Number(gaugeSource.focus)} label="Фокус" size={80} color="var(--accent-purple)" />
+                                <RadialGauge value={Number(gaugeSource.mood)} label="Настроение" size={80} color="var(--accent-pink)" />
+                            </div>
+                        ) : (
+                            <p className="text-sm text-[var(--text-muted)] py-4 text-center">
+                                Закрой первый день — здесь появятся твои шкалы.
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <StatTile icon="trophy" label="Уровень" value={level} hint={`${levelPct}% до следующего`} tone="text-cyan-400" />
+                        <StatTile icon="flame" label="Энергия" value={energyValue.toFixed(1)}
+                            hint={energyValue >= 7 ? 'полный заряд' : energyValue >= 4 ? 'средний заряд' : 'на исходе'} />
+                        <StatTile icon="repeat" label="Привычки" value={`${habitsDone}/${habitList.length}`}
+                            hint="отмечено сегодня" onClick={setPage ? () => setPage('habits') : undefined} />
+                        <StatTile icon="columns" label="Задачи" value={openTasks.length}
+                            hint="в работе" onClick={setPage ? () => setPage('kanban') : undefined} />
+                        {show('streak') && (
+                            <StatTile icon="calendar" label="Серия" value={streak} hint="дней подряд" tone="text-pink-400" />
+                        )}
+                        {show('streak') && (
+                            <StatTile icon="star" label="Ачивки" value={achievements.length} hint="получено" />
+                        )}
+                        <StatTile icon="dumbbell" label="Тренировки" value={countRecent(gymData.history, 7)} hint="за 7 дней"
+                            onClick={setPage ? () => setPage('gym') : undefined} />
+                        <StatTile icon="flask" label="Тесты" value={countRecent(testResults, 7)} hint="за 7 дней"
+                            onClick={setPage ? () => setPage('training') : undefined} />
+                    </div>
+                </div>
+            )}
+
+            {/* ---- Today: the two things worth doing without leaving here --- */}
+            {show('today') && (habitList.length > 0 || openTasks.length > 0) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    {habitList.length > 0 && (
+                        <div className="glass-card rounded-2xl p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Привычки сегодня</h3>
+                                <span className="text-[11px] text-[var(--text-muted)]">{habitsDone} из {habitList.length}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {habitList.map((h: any) => {
+                                    const done = h.history?.includes(todayStr);
+                                    return (
+                                        <button key={h.id} onClick={() => toggleHabit(h.id)}
+                                            className={`px-3 py-1.5 rounded-full text-sm border flex items-center gap-1.5 transition ${
+                                                done ? 'bg-green-400/15 border-green-400/40 text-green-400'
+                                                     : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-muted)] hover:border-green-400/40'
+                                            }`}>
+                                            <Icon name="check" size={13} className={done ? '' : 'opacity-30'} />
+                                            {h.name}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
-                    {show('streak') && (
-                        <div className="glass-card rounded-xl px-4 py-2.5 flex items-center gap-2.5">
-                            <span className="text-xl">🏆</span>
-                            <div>
-                                <div className="text-xl font-bold text-cyan-400 leading-none">{achievements.length}</div>
-                                <div className="text-[11px] text-gray-500 mt-0.5">ачивок</div>
+
+                    {openTasks.length > 0 && (
+                        <div className="glass-card rounded-2xl p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Ближайшие задачи</h3>
+                                {setPage && (
+                                    <button onClick={() => setPage('kanban')}
+                                        className="text-[11px] text-cyan-400 hover:underline">все {openTasks.length}</button>
+                                )}
                             </div>
+                            <ul className="space-y-2">
+                                {nextTasks.map((t: any) => (
+                                    <li key={t.id} className="flex items-start gap-2 text-sm">
+                                        <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${
+                                            t.status === 'doing' ? 'bg-cyan-400' : 'bg-[var(--text-muted)]'
+                                        }`} />
+                                        <span className="text-[var(--text-main)] leading-snug">{t.text}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
-                    )}
-                    {show('hyperfocus') && (
-                        <button onClick={startHyper}
-                            className="glass-card rounded-xl px-4 py-2.5 flex items-center gap-2.5 border border-cyan-400/30 hover:bg-cyan-400/10 transition ml-auto">
-                            <span className="text-xl">🚀</span>
-                            <span className="font-bold text-cyan-400 text-sm">Гиперфокус</span>
-                        </button>
                     )}
                 </div>
             )}
 
             {alreadyClosed && !onlyWidget && (
                 <div className="glass-card rounded-xl px-4 py-2.5 mb-4 text-sm text-green-400 border border-green-400/30">
-                    ✓ Сегодняшний день уже закрыт — новая запись добавится отдельно.
+                    Сегодняшний день уже закрыт — новая запись добавится отдельно.
                 </div>
             )}
 
+            {/* ---- The day-closing form ------------------------------------ */}
             <div className="space-y-3">
                 {show('ratings') && (
-                    <Section icon="📊" title="Оценка дня" open={isOpen('ratings')} onToggle={() => toggle('ratings')}
+                    <Section icon="chart" title="Оценка дня" open={isOpen('ratings')} onToggle={() => toggle('ratings')}
                         filled summary={`сон ${sleep} · фокус ${focus} · настроение ${mood}`}>
                         <div className="space-y-3 mt-3">
                             <Slider label="Сон" value={sleep} onChange={setSleep} />
@@ -181,7 +312,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 )}
 
                 {show('bodyscan') && (
-                    <Section icon="🔎" title="Сканирование тела" open={isOpen('bodyscan')} onToggle={() => toggle('bodyscan')}
+                    <Section icon="search" title="Сканирование тела" open={isOpen('bodyscan')} onToggle={() => toggle('bodyscan')}
                         filled={bodyScan.length > 0}
                         summary={bodyScan.length ? `${bodyScan.length} из ${bodyScanItems.length}` : 'ничего не отмечено'}>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
@@ -204,13 +335,13 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 )}
 
                 {show('tags') && (
-                    <Section icon="🏷️" title="Что помогло и что мешало" open={isOpen('tags')} onToggle={() => toggle('tags')}
+                    <Section icon="tag" title="Что помогло и что мешало" open={isOpen('tags')} onToggle={() => toggle('tags')}
                         filled={helped.length + hindered.length > 0}
                         summary={helped.length + hindered.length
                             ? `+${helped.length} / −${hindered.length}` : 'не отмечено'}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3">
                             <div>
-                                <div className="text-sm text-gray-400 mb-2">✅ Помогло</div>
+                                <div className="text-sm text-gray-400 mb-2">Помогло</div>
                                 <div className="flex flex-wrap gap-2">
                                     {HELPED_TAGS.map(tag => (
                                         <button key={tag} onClick={() => toggleTag(tag, 'helped')}
@@ -222,7 +353,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                                 </div>
                             </div>
                             <div>
-                                <div className="text-sm text-gray-400 mb-2">⚠️ Мешало</div>
+                                <div className="text-sm text-gray-400 mb-2">Мешало</div>
                                 <div className="flex flex-wrap gap-2">
                                     {HINDERED_TAGS.map(tag => (
                                         <button key={tag} onClick={() => toggleTag(tag, 'hindered')}
@@ -238,7 +369,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 )}
 
                 {show('mainEvent') && (
-                    <Section icon="📝" title="Главное событие дня" open={isOpen('mainEvent')} onToggle={() => toggle('mainEvent')}
+                    <Section icon="pin" title="Главное событие дня" open={isOpen('mainEvent')} onToggle={() => toggle('mainEvent')}
                         filled={!!mainEvent.trim()}
                         summary={mainEvent.trim() ? mainEvent.trim().slice(0, 40) : 'не заполнено'}>
                         <textarea value={mainEvent} onChange={e => setMainEvent(e.target.value)}
@@ -248,7 +379,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 )}
 
                 {show('testTomorrow') && (
-                    <Section icon="🔬" title="Что проверить завтра" open={isOpen('testTomorrow')} onToggle={() => toggle('testTomorrow')}
+                    <Section icon="flask" title="Что проверить завтра" open={isOpen('testTomorrow')} onToggle={() => toggle('testTomorrow')}
                         filled={!!testTomorrow.trim()}
                         summary={testTomorrow.trim() ? testTomorrow.trim().slice(0, 40) : 'не заполнено'}>
                         <textarea value={testTomorrow} onChange={e => setTestTomorrow(e.target.value)}
@@ -258,7 +389,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 )}
 
                 {show('gratitude') && (
-                    <Section icon="💖" title="За что благодарен" open={isOpen('gratitude')} onToggle={() => toggle('gratitude')}
+                    <Section icon="heart" title="За что благодарен" open={isOpen('gratitude')} onToggle={() => toggle('gratitude')}
                         filled={gratitudeCount > 0}
                         summary={gratitudeCount ? `${gratitudeCount} из 3` : 'не заполнено'}>
                         <p className="text-gray-500 text-xs mt-3 mb-2">Найди 3 хороших момента. В плохие дни они поддержат.</p>
@@ -291,13 +422,13 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
             {/* Save stays reachable without scrolling back down the page. */}
             <div className="sticky bottom-0 -mx-1 mt-5 pt-3 pb-1 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)] to-transparent">
                 <button onClick={handleSave}
-                    className="w-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold py-3 rounded-lg text-lg">
+                    className="w-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold py-3 rounded-xl text-lg">
                     Закрыть день
                 </button>
             </div>
 
             {toast && (
-                <div className="fixed bottom-8 right-8 bg-[var(--bg-card)] border border-cyan-400 px-6 py-3 rounded-lg text-white shadow-xl anim-fade-in">
+                <div className="fixed bottom-8 right-8 bg-[var(--bg-card)] border border-cyan-400 px-6 py-3 rounded-xl text-white shadow-xl anim-fade-in">
                     {toast}
                 </div>
             )}

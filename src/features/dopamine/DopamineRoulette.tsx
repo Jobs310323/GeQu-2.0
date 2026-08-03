@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from '../../components/Icons';
 
 export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineMenu, energy = 5, onClose }: any) {
     const [phase, setPhase] = useState<'idle' | 'spinning' | 'result'>('idle');
@@ -75,7 +76,9 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={onClose}>
             <div className="glass-card p-8 rounded-3xl max-w-md w-full text-center border border-cyan-400/30 relative" onClick={e => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white text-xl">✕</button>
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition">
+                    <Icon name="close" size={18} />
+                </button>
                 
                 <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-2">
                     Генератор Драйва
@@ -90,12 +93,13 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
 
                 {/* Экран выбора / результата */}
                 <div className="h-32 flex items-center justify-center mb-8 bg-black/30 rounded-2xl border border-[var(--border)] p-4 overflow-hidden">
-                    {phase === 'idle' && <span className="text-5xl">💭</span>}
+                    {phase === 'idle' && <Icon name="thought" size={44} className="text-[var(--text-muted)]" />}
                     {phase === 'spinning' && <span className="text-xl font-bold text-cyan-400 animate-pulse">{displayText}</span>}
                     {phase === 'result' && result && (
                         <div className="animate-fade-in">
-                            <span className="block text-xs uppercase mb-2 font-bold {result.type === 'task' ? 'text-purple-400' : 'text-green-400'}">
-                                {result.type === 'task' ? '🎯 Рабочая задача' : '❄️ Легальный перерыв'}
+                            <span className={`flex items-center justify-center gap-1.5 text-xs uppercase mb-2 font-bold ${result.type === 'task' ? 'text-purple-400' : 'text-green-400'}`}>
+                                <Icon name={result.type === 'task' ? 'target' : 'pause'} size={14} />
+                                {result.type === 'task' ? 'Рабочая задача' : 'Легальный перерыв'}
                             </span>
                             <span className="text-lg font-bold text-white">{result.text}</span>
                         </div>
@@ -110,7 +114,7 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
                 )}
 
                 {phase === 'spinning' && (
-                    <button disabled className="w-full bg-gray-600 text-gray-300 font-bold py-4 rounded-xl text-lg cursor-not-allowed">
+                    <button disabled className="w-full bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-muted)] font-bold py-4 rounded-xl text-lg cursor-not-allowed">
                         Крутим...
                     </button>
                 )}
@@ -132,8 +136,9 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
 
                 {/* Настройка меню перерывов */}
                 <div className="mt-8 pt-6 border-t border-[var(--border)]">
-                    <button onClick={() => setShowMenuSettings(!showMenuSettings)} className="text-sm text-gray-400 hover:text-white">
-                        ⚙️ Настроить меню перерывов
+                    <button onClick={() => setShowMenuSettings(!showMenuSettings)} className="text-sm text-gray-400 hover:text-white flex items-center gap-1.5 mx-auto">
+                        <Icon name="settings" size={14} />
+                        Настроить меню перерывов
                     </button>
                     {showMenuSettings && (
                         <div className="mt-4 text-left">
@@ -151,7 +156,9 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
                                 {dopamineMenu.map((item: string, idx: number) => (
                                     <span key={idx} className="text-xs bg-white/5 px-2 py-1 rounded-full flex items-center gap-1">
                                         {item}
-                                        <button onClick={() => setDopamineMenu(dopamineMenu.filter((_: string, i: number) => i !== idx))} className="text-red-400 hover:text-red-300">✕</button>
+                                        <button onClick={() => setDopamineMenu(dopamineMenu.filter((_: string, i: number) => i !== idx))} className="text-red-400 hover:text-red-300 flex items-center">
+                                            <Icon name="close" size={11} />
+                                        </button>
                                     </span>
                                 ))}
                             </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { callAIJson, hasGroqKey } from '../../lib/ai';
+import { Icon } from '../../components/Icons';
 
 type ParsedExercise = { name: string; muscle: string; sets: number; reps: string };
 type ParsedDay = { name: string; exercises: ParsedExercise[] };
@@ -114,7 +115,9 @@ export function ProgramImport({ gymData, setGymData, onClose }: any) {
                             Вставь программу в любом виде — списком, таблицей, текстом от ИИ. Я разберу её сам.
                         </p>
                     </div>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white text-xl leading-none">✕</button>
+                    <button onClick={onClose} className="text-gray-500 hover:text-white p-1 rounded-lg hover:bg-white/5 transition">
+                        <Icon name="close" size={18} />
+                    </button>
                 </div>
 
                 {!preview ? (
