@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { SignedIn, SignedOut } from '@clerk/clerk-react';
 import { DB } from './lib/db';
+import { CloudSync } from './components/CloudSync';
+import { AuthGate } from './components/AuthGate';
 import { Sidebar } from './components/Sidebar';
-import { DraggableDice } from './components/DraggableDice';
 import { Dashboard } from './pages/Dashboard';
 import { Kanban } from './pages/Kanban';
 import { Habits } from './pages/Habits';
@@ -24,7 +26,8 @@ import { DopamineRoulette } from './features/dopamine/DopamineRoulette';
 import { HyperfocusOverlay } from './features/hyperfocus/HyperfocusOverlay';
 import { computeXp, levelFromXp } from './lib/xp';
 
-function App() {
+/** The real app, mounted only once Clerk confirms a signed-in user. */
+function GequApp() {
     const [page, setPage] = useState('dashboard');
     const [dopamineMenu, setDopamineMenu] = useState(DB.get('dopamineMenu', [
         'Попить воды', 'Сделать растяжку', 'Посмотреть в окно 2 мин', 'Поиграть с котом', 'Закрыть глаза на 1 мин'
@@ -104,7 +107,9 @@ function App() {
         hub: <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />,
         progress: <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} diary={diary} />,
         calendar: <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />,
-        card: <UserCard logs={logs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData} testResults={testResults} />,
+        card: <UserCard logs={logs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData}
+            testResults={testResults} clinicalResults={clinicalResults} cbtRecords={cbtRecords}
+            finance={finance} circles={circles} />,
         aiplan: <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />,
         clinical: <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults}
             cbtRecords={cbtRecords} setCbtRecords={setCbtRecords} />,
@@ -126,6 +131,7 @@ function App() {
         <div className="flex h-screen overflow-hidden">
             <Sidebar page={page} setPage={setPage} theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog}
                 prefs={prefs} setPrefs={setPrefs} levelInfo={levelInfo}
+                onRoulette={() => setRouletteOpen(true)}
                 reminderCount={reminders.filter((r: any) => !r.done && r.date >= todayStr).length} />
             <main className="flex-1 p-6 overflow-y-auto relative">
                 {page === 'dashboard' && <Dashboard {...dashProps} renderPage={(id: string) => PAGES[id]} />}
@@ -135,8 +141,6 @@ function App() {
             </main>
 
             {hyperfocus && <HyperfocusOverlay hyperfocus={hyperfocus} setHyperfocus={setHyperfocus} kanban={kanban} setDiary={setDiary} setLogs={setLogs} todayLog={todayLog} />}
-            {/* Плавающая кнопка рулетки — перетаскивается по экрану */}
-            <DraggableDice onClick={() => setRouletteOpen(true)} />
 
             {rouletteOpen && (
                 <DopamineRoulette
@@ -149,6 +153,21 @@ function App() {
                 />
             )}
         </div>
+    );
+}
+
+/** Gates the whole app behind auth: each account only ever sees its own data. */
+function App() {
+    return (
+        <>
+            <SignedIn>
+                <CloudSync />
+                <GequApp />
+            </SignedIn>
+            <SignedOut>
+                <AuthGate />
+            </SignedOut>
+        </>
     );
 }
 

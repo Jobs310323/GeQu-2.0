@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { UserButton } from '@clerk/clerk-react';
 import { NAV_GROUPS } from '../lib/nav';
 import { DASHBOARD_WIDGETS } from '../lib/prefs';
 import { Logo, LogoMark } from './Logo';
@@ -7,7 +8,7 @@ import { Icon, NAV_ICON } from './Icons';
 const COLLAPSE_KEY = 'gequ_sidebar_collapsed';
 
 export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
-                          prefs, reminderCount, levelInfo }: any) {
+                          prefs, reminderCount, levelInfo, onRoulette }: any) {
     const [collapsed, setCollapsed] = useState(() => {
         try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
     });
@@ -44,15 +45,18 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
 
     return (
         <aside className={`${collapsed ? 'w-[68px]' : 'w-60'} shrink-0 h-full flex flex-col bg-[var(--bg-card)] border-r border-[var(--border)] backdrop-blur-md overflow-hidden transition-[width] duration-200`}>
-            <div className="flex items-center justify-between px-3 h-14 shrink-0 border-b border-[var(--border)]">
-                {collapsed ? <LogoMark size={24} className="mx-auto" /> : <Logo />}
-                <button
-                    onClick={() => setCollapsed((c: boolean) => !c)}
-                    title={collapsed ? 'Развернуть меню' : 'Свернуть меню'}
-                    className={`p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent-cyan)] hover:bg-white/5 transition ${collapsed ? 'mx-auto' : ''}`}
-                >
-                    <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={16} />
-                </button>
+            <div className={`flex items-center px-3 h-14 shrink-0 border-b border-[var(--border)] ${collapsed ? 'flex-col justify-center gap-2 h-auto py-3' : 'justify-between'}`}>
+                {collapsed ? <LogoMark size={24} /> : <Logo />}
+                <div className="flex items-center gap-1.5">
+                    <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: 'w-6 h-6' } }} />
+                    <button
+                        onClick={() => setCollapsed((c: boolean) => !c)}
+                        title={collapsed ? 'Развернуть меню' : 'Свернуть меню'}
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--accent-cyan)] hover:bg-white/5 transition"
+                    >
+                        <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={16} />
+                    </button>
+                </div>
             </div>
 
             <div className="p-3 shrink-0">
@@ -154,6 +158,15 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
                 </button>
 
                 <div className={`flex items-center border-t border-[var(--border)] ${collapsed ? 'flex-col' : ''}`}>
+                    <button
+                        onClick={onRoulette}
+                        title="Дофаминовая рулетка"
+                        className={`flex items-center justify-center py-2 text-[var(--text-muted)] hover:text-[var(--text-main)] transition hover:bg-white/5 ${
+                            collapsed ? 'w-full border-b border-[var(--border)]' : 'px-3 border-r border-[var(--border)]'
+                        }`}
+                    >
+                        <Icon name="dice" size={15} />
+                    </button>
                     <button
                         onClick={() => setPage('settings')}
                         title="Настройки"

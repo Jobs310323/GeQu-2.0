@@ -3,6 +3,15 @@
 // can never crash the whole app on startup.
 const PREFIX = 'gequ_';
 
+// Cloud sync listens here so it knows when there is something new to push.
+const listeners = new Set<() => void>();
+
+/** Subscribe to writes. Returns an unsubscribe function. */
+export function onDbChange(fn: () => void): () => void {
+    listeners.add(fn);
+    return () => { listeners.delete(fn); };
+}
+
 export const DB = {
     get: (key: string, def: any = []): any => {
         try {
@@ -20,5 +29,6 @@ export const DB = {
         } catch {
             // Storage full or unavailable (private mode): ignore silently.
         }
+        listeners.forEach(fn => fn());
     },
 };

@@ -58,6 +58,7 @@ function currentStreak(logs: any[]): number {
 export function buildProfile(d: {
     logs: any[]; diary: any[]; habits: any[]; kanban: any[];
     goals: any[]; gymData: any; testResults: any[];
+    clinicalResults?: any[]; cbtRecords?: any[]; finance?: any; circles?: any[];
 }) {
     const logs = d.logs ?? [];
     const sorted = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -94,18 +95,28 @@ export function buildProfile(d: {
 
     // --- gym ---
     const workouts = d.gymData?.history ?? [];
-    let tonnage = 0;
+    let tonnage = 0, cardioMinutes = 0, cardioKm = 0, cardioSessions = 0;
     const muscleTonnage: Record<string, number> = {};
     const exerciseCount: Record<string, number> = {};
-    workouts.forEach((w: any) => (w.exercises ?? []).forEach((ex: any) => {
-        exerciseCount[ex.name] = (exerciseCount[ex.name] || 0) + 1;
-        (ex.sets ?? []).forEach((s: any) => {
-            if (!s.done) return;
-            const t = (Number(s.weight) || 0) * (Number(s.reps) || 0);
-            tonnage += t;
-            if (ex.muscle) muscleTonnage[ex.muscle] = (muscleTonnage[ex.muscle] || 0) + t;
+    workouts.forEach((w: any) => {
+        let hasCardio = false;
+        (w.exercises ?? []).forEach((ex: any) => {
+            exerciseCount[ex.name] = (exerciseCount[ex.name] || 0) + 1;
+            (ex.sets ?? []).forEach((s: any) => {
+                if (!s.done) return;
+                if (ex.type === 'cardio') {
+                    hasCardio = true;
+                    cardioMinutes += Number(s.duration) || 0;
+                    cardioKm += Number(s.distance) || 0;
+                    return;
+                }
+                const t = (Number(s.weight) || 0) * (Number(s.reps) || 0);
+                tonnage += t;
+                if (ex.muscle) muscleTonnage[ex.muscle] = (muscleTonnage[ex.muscle] || 0) + t;
+            });
         });
-    }));
+        if (hasCardio) cardioSessions++;
+    });
 
     // --- habits ---
     const spanDays = sorted.length
@@ -124,6 +135,67 @@ export function buildProfile(d: {
         done: (g.tasks ?? []).filter((t: any) => t.done).length,
         total: (g.tasks ?? []).length,
     }));
+
+    // --- clinical screening tests: latest band per test, plus direction of travel ---
+    const byTest: Record<string, any[]> = {};
+    (d.clinicalResults ?? []).forEach(r => { (byTest[r.testId] ||= []).push(r); });
+    const clinical = Object.entries(byTest).map(([testId, list]) => {
+        const chrono = [...list].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+        const first = Number(chrono[0].score) || 0;
+        const latest = chrono[chrono.length - 1];
+        return {
+            testId, count: chrono.length,
+            firstScore: first, latestScore: Number(latest.score) || 0,
+            latestLabel: latest.label ?? null,
+            latestDate: String(latest.date).split('T')[0],
+            changeSinceFirst: chrono.length > 1 ? round((Number(latest.score) || 0) - first, 0) : null,
+        };
+    });
+
+    // --- CBT thought records ---
+    const cbt = d.cbtRecords ?? [];
+    const cbtSummary = {
+        records: cbt.length,
+        lastDate: cbt[0]?.date ? String(cbt[0].date).split('T')[0] : null,
+        recentThoughts: cbt.slice(0, 4).map((r: any) => ({
+            date: String(r.date ?? '').split('T')[0],
+            situation: String(r.situation ?? '').slice(0, 160),
+            thought: String(r.thought ?? '').slice(0, 160),
+            alternative: String(r.alternative ?? '').slice(0, 160),
+        })),
+    };
+
+    // --- money: aggregates only, never the PIN or raw entry list ---
+    const fin = d.finance ?? null;
+    const finEntries: any[] = fin?.entries ?? [];
+    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+    const sum = (list: any[], type: string) =>
+        list.filter(e => e.type === type).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const thisMonth = finEntries.filter(e => new Date(e.date).getTime() >= monthStart.getTime());
+    const catLabel = (id: string) =>
+        [...(fin?.categories?.expense ?? []), ...(fin?.categories?.income ?? [])].find((c: any) => c.id === id)?.label ?? id;
+    const expenseByCat: Record<string, number> = {};
+    thisMonth.filter(e => e.type === 'expense').forEach(e => {
+        const k = catLabel(e.categoryId);
+        expenseByCat[k] = (expenseByCat[k] || 0) + (Number(e.amount) || 0);
+    });
+    const finance = fin && finEntries.length ? {
+        balance: Math.round((Number(fin.initialBalance) || 0) + sum(finEntries, 'income') - sum(finEntries, 'expense')),
+        thisMonth: { income: Math.round(sum(thisMonth, 'income')), expense: Math.round(sum(thisMonth, 'expense')) },
+        topExpenseCategories: Object.entries(expenseByCat).sort((a, b) => b[1] - a[1]).slice(0, 5)
+            .map(([label, amount]) => ({ label, amount: Math.round(amount) })),
+        activeDebts: (fin.debts ?? []).filter((x: any) => x.status === 'active').length,
+        monthlySubscriptions: Math.round((fin.subscriptions ?? []).reduce((s: number, x: any) => s + (Number(x.amount) || 0), 0)),
+    } : null;
+
+    // --- circles of control/influence/concern ---
+    const circleItems = d.circles ?? [];
+    const circles = circleItems.length ? {
+        inControl: circleItems.filter((c: any) => c.circle === 'inner').length,
+        canInfluence: circleItems.filter((c: any) => c.circle === 'middle').length,
+        beyondControl: circleItems.filter((c: any) => c.circle === 'outer').length,
+        examples: circleItems.slice(0, 6).map((c: any) => ({ circle: c.circle, text: String(c.text ?? '').slice(0, 120) })),
+    } : null;
 
     // --- gamification ---
     const gameData: GameData = {
@@ -169,8 +241,13 @@ export function buildProfile(d: {
             totalTonnageKg: Math.round(tonnage),
             topExercises: Object.entries(exerciseCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, n]) => ({ name, n })),
             muscleTonnage: Object.fromEntries(Object.entries(muscleTonnage).map(([m, t]) => [m, Math.round(t)])),
+            cardio: { sessions: cardioSessions, totalMinutes: Math.round(cardioMinutes), totalKm: round(cardioKm) },
         },
         cognitive: tests,
+        clinical,
+        cbt: cbtSummary,
+        finance,
+        circles,
         journal: {
             entries: (d.diary ?? []).length,
             gratitudeEntries: logs.reduce((s: number, l: any) => s + (l.gratitude?.length ?? 0), 0),

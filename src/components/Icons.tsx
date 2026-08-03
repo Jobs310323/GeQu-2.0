@@ -49,6 +49,10 @@ const paths: Record<string, string> = {
     trendUp: 'M1 18l7.5-7.5 5 5L23 6 M17 6h6v6',
     trendDown: 'M1 6l7.5 7.5 5-5L23 18 M17 18h6v-6',
     swap: 'M4 8h13l-3-3 M4 8l3 3 M20 16H7l3 3 M20 16l-3-3',
+    grip: 'M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01',
+    dice: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M8 8h.01M16 8h.01M12 12h.01M8 16h.01M16 16h.01',
+    note: 'M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z M8 8h8M8 12h5',
+    activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
 };
 
 export function Icon({ name, size = 18, className = '' }: { name: keyof typeof paths | string } & IconProps) {

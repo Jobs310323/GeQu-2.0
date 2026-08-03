@@ -4,6 +4,13 @@ import { ProgramImport } from './ProgramImport';
 import { marked } from 'marked';
 import { PageHeader } from '../../components/PageHeader';
 import { Icon } from '../../components/Icons';
+import { useDragReorder } from '../../lib/useDragReorder';
+
+const MUSCLES = ['Грудь', 'Спина', 'Ноги', 'Плечи', 'Руки', 'Пресс', 'Всё тело'];
+const INTENSITIES = ['Низкая', 'Средняя', 'Высокая', 'Интервалы'];
+
+/** Exercises saved before cardio existed have no `type` — they are strength. */
+const isCardio = (ex: any) => ex?.type === 'cardio';
 
 function GymEmptyState({ icon, text }: { icon: string; text: string }) {
     return (
@@ -27,12 +34,24 @@ export function GymApp({ gymData, setGymData, logs }: any) {
         const lastHistory = [...gymData.history].reverse().find((h: any) => h.dayId === day.id);
         const exercises = day.exercises.map((ex: any) => {
             const lastEx = lastHistory?.exercises.find((e: any) => e.name === ex.name);
+            if (isCardio(ex)) {
+                const last = lastEx?.sets?.[0];
+                return {
+                    name: ex.name, muscle: 'Кардио', type: 'cardio',
+                    sets: [{
+                        duration: parseFloat(last?.duration) || ex.duration || 20,
+                        distance: parseFloat(last?.distance) || 0,
+                        intensity: ex.intensity || last?.intensity || 'Средняя',
+                        done: false,
+                    }],
+                };
+            }
             const sets = Array.from({ length: ex.sets }).map((_, i) => ({
                 weight: parseFloat(lastEx?.sets[i]?.weight) || 0,
-                reps: parseInt(lastEx?.sets[i]?.reps) || parseInt(ex.reps.split('-')[0]) || 0,
+                reps: parseInt(lastEx?.sets[i]?.reps) || parseInt(String(ex.reps).split('-')[0]) || 0,
                 done: false
             }));
-            return { name: ex.name, muscle: ex.muscle, sets };
+            return { name: ex.name, muscle: ex.muscle, type: 'strength', sets };
         });
 
         setActiveWorkout({
@@ -274,60 +293,169 @@ export function GymPrograms({ gymData, setGymData }: any) {
 }
 
 export function ProgramEditor({ program, gymData, setGymData, setEditingProgram }: any) {
-    const addDay = () => {
-        const updatedPrograms = gymData.programs.map((p: any) => 
-            p.id === program.id ? { ...p, days: [...p.days, { id: Date.now(), name: "День " + (p.days.length + 1), exercises: [] }] } : p
-        );
-        setGymData({ ...gymData, programs: updatedPrograms });
-    };
+    // { dayId, exercise } — an open add/edit form. `exercise` is null when adding.
+    const [form, setForm] = useState<any>(null);
 
-    const addExercise = (dayId: number) => {
-        const exName = prompt("Название упражнения:");
-        if (!exName) return;
-        const muscle = prompt("Мышечная группа (Грудь, Спина, Ноги):") || "—";
-        const sets = parseInt(prompt("Кол-во подходов:", "4") || "4") || 4;
-        const reps = prompt("Диапазон повторений:", "8-12") || "8-12";
+    const patchProgram = (patch: any) =>
+        setGymData({ ...gymData, programs: gymData.programs.map((p: any) => p.id === program.id ? { ...p, ...patch } : p) });
+    const patchDay = (dayId: number, patch: any) =>
+        patchProgram({ days: program.days.map((d: any) => d.id === dayId ? { ...d, ...patch } : d) });
 
-        const updatedPrograms = gymData.programs.map((p: any) => 
-            p.id === program.id ? { ...p, days: p.days.map((d: any) => d.id === dayId ? { ...d, exercises: [...d.exercises, { id: Date.now(), name: exName, muscle, sets, reps }] } : d) } : p
-        );
-        setGymData({ ...gymData, programs: updatedPrograms });
-    };
-
+    const addDay = () => patchProgram({ days: [...program.days, { id: Date.now(), name: 'День ' + (program.days.length + 1), exercises: [] }] });
     const deleteDay = (dayId: number) => {
-        const updatedPrograms = gymData.programs.map((p: any) => 
-            p.id === program.id ? { ...p, days: p.days.filter((d: any) => d.id !== dayId) } : p
-        );
-        setGymData({ ...gymData, programs: updatedPrograms });
+        if (!confirm('Удалить день вместе со всеми упражнениями?')) return;
+        patchProgram({ days: program.days.filter((d: any) => d.id !== dayId) });
     };
+
+    const saveExercise = (dayId: number, ex: any) => {
+        const day = program.days.find((d: any) => d.id === dayId);
+        const exists = day.exercises.some((e: any) => e.id === ex.id);
+        patchDay(dayId, {
+            exercises: exists
+                ? day.exercises.map((e: any) => e.id === ex.id ? ex : e)
+                : [...day.exercises, ex],
+        });
+        setForm(null);
+    };
+    const deleteExercise = (dayId: number, exId: number) => {
+        const day = program.days.find((d: any) => d.id === dayId);
+        patchDay(dayId, { exercises: day.exercises.filter((e: any) => e.id !== exId) });
+    };
+
+    const drag = useDragReorder(program.days, (days: any[]) => patchProgram({ days }));
 
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <input type="text" value={program.name} onChange={e => setGymData({ ...gymData, programs: gymData.programs.map((p:any) => p.id === program.id ? {...p, name: e.target.value} : p) })} className="bg-transparent text-2xl font-bold text-white border-b border-[var(--border)] outline-none focus:border-cyan-400" />
+                <input type="text" value={program.name} onChange={e => patchProgram({ name: e.target.value })} className="bg-transparent text-2xl font-bold text-white border-b border-[var(--border)] outline-none focus:border-cyan-400" />
                 <button onClick={() => setEditingProgram(null)} className="text-gray-400 hover:text-white">← Назад</button>
             </div>
 
+            {program.days.length > 1 && (
+                <p className="text-xs text-[var(--text-muted)] mb-3 flex items-center gap-1.5">
+                    <Icon name="grip" size={13} /> Перетащи день за ручку, чтобы поменять порядок
+                </p>
+            )}
+
             <div className="space-y-6">
-                {program.days.map((day: any) => (
-                    <div key={day.id} className="glass-card p-6 rounded-2xl">
-                        <div className="flex justify-between items-center mb-4">
-                            <input type="text" value={day.name} onChange={e => setGymData({ ...gymData, programs: gymData.programs.map((p:any) => p.id === program.id ? {...p, days: p.days.map((d:any) => d.id === day.id ? {...d, name: e.target.value} : d)} : p) })} className="bg-transparent text-xl font-bold text-cyan-400 border-b border-[var(--border)] outline-none" />
-                            <button onClick={() => deleteDay(day.id)} className="text-red-400 text-sm">Удалить день</button>
+                {program.days.map((day: any, i: number) => (
+                    <div key={day.id} {...drag.itemProps(i)} className={`glass-card p-6 rounded-2xl ${drag.itemClass(i)}`}>
+                        <div className="flex items-center gap-3 mb-4">
+                            <span {...drag.handleProps} title="Перетащить день"
+                                className="text-[var(--text-muted)] hover:text-cyan-400 transition shrink-0">
+                                <Icon name="grip" size={16} />
+                            </span>
+                            <input type="text" value={day.name} onChange={e => patchDay(day.id, { name: e.target.value })} className="flex-1 min-w-0 bg-transparent text-xl font-bold text-cyan-400 border-b border-[var(--border)] outline-none focus:border-cyan-400" />
+                            <button onClick={() => deleteDay(day.id)} className="text-red-400 text-sm hover:text-red-300 shrink-0">Удалить день</button>
                         </div>
+
                         <div className="space-y-2 mb-4">
                             {day.exercises.map((ex: any) => (
-                                <div key={ex.id} className="bg-[var(--bg-input)] p-3 rounded-lg flex justify-between items-center">
-                                    <div><span className="text-white font-medium">{ex.name}</span> <span className="text-gray-400 text-sm">({ex.muscle})</span></div>
-                                    <span className="text-gray-300 text-sm">{ex.sets} × {ex.reps}</span>
+                                <div key={ex.id} className="bg-[var(--bg-input)] p-3 rounded-lg flex items-center gap-3">
+                                    <Icon name={isCardio(ex) ? 'activity' : 'dumbbell'} size={16}
+                                        className={isCardio(ex) ? 'text-pink-400 shrink-0' : 'text-cyan-400 shrink-0'} />
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-white font-medium">{ex.name}</span>{' '}
+                                        <span className="text-gray-400 text-sm">({ex.muscle})</span>
+                                    </div>
+                                    <span className="text-gray-300 text-sm whitespace-nowrap">
+                                        {isCardio(ex) ? `${ex.duration} мин · ${ex.intensity}` : `${ex.sets} × ${ex.reps}`}
+                                    </span>
+                                    <button onClick={() => setForm({ dayId: day.id, exercise: ex })} title="Изменить упражнение"
+                                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-purple-400 transition shrink-0">
+                                        <Icon name="edit" size={14} />
+                                    </button>
+                                    <button onClick={() => deleteExercise(day.id, ex.id)} title="Удалить упражнение"
+                                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-400 transition shrink-0">
+                                        <Icon name="trash" size={14} />
+                                    </button>
                                 </div>
                             ))}
                         </div>
-                        <button onClick={() => addExercise(day.id)} className="w-full border border-dashed border-[var(--border)] text-gray-400 py-2 rounded-lg hover:border-cyan-400 hover:text-cyan-400 transition">+ Упражнение</button>
+
+                        {form?.dayId === day.id ? (
+                            <ExerciseForm
+                                initial={form.exercise}
+                                defaultType={form.type}
+                                onSave={(ex: any) => saveExercise(day.id, ex)}
+                                onCancel={() => setForm(null)}
+                            />
+                        ) : (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <button onClick={() => setForm({ dayId: day.id, exercise: null, type: 'strength' })}
+                                    className="flex-1 flex items-center justify-center gap-2 border border-dashed border-[var(--border)] text-gray-400 py-2 rounded-lg hover:border-cyan-400 hover:text-cyan-400 transition">
+                                    <Icon name="dumbbell" size={15} /> Силовое
+                                </button>
+                                <button onClick={() => setForm({ dayId: day.id, exercise: null, type: 'cardio' })}
+                                    className="flex-1 flex items-center justify-center gap-2 border border-dashed border-[var(--border)] text-gray-400 py-2 rounded-lg hover:border-pink-400 hover:text-pink-400 transition">
+                                    <Icon name="activity" size={15} /> Кардио
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
             <button onClick={addDay} className="mt-6 w-full bg-white/5 text-white font-bold py-3 rounded-lg border border-[var(--border)]">+ Добавить день</button>
+        </div>
+    );
+}
+
+function ExerciseForm({ initial, defaultType, onSave, onCancel }: any) {
+    const [ex, setEx] = useState<any>(() => initial ?? (defaultType === 'cardio'
+        ? { id: Date.now(), type: 'cardio', name: '', muscle: 'Кардио', duration: 20, intensity: 'Средняя' }
+        : { id: Date.now(), type: 'strength', name: '', muscle: MUSCLES[0], sets: 4, reps: '8-12' }));
+
+    const cardio = isCardio(ex);
+    const patch = (p: any) => setEx({ ...ex, ...p });
+    const save = () => { if (ex.name.trim()) onSave({ ...ex, name: ex.name.trim() }); };
+    const field = 'bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-400';
+
+    return (
+        <div className={`p-4 rounded-xl border ${cardio ? 'border-pink-400/30 bg-pink-400/5' : 'border-cyan-400/30 bg-cyan-400/5'}`}>
+            <div className="flex items-center gap-2 mb-3 text-sm font-bold">
+                <Icon name={cardio ? 'activity' : 'dumbbell'} size={16} className={cardio ? 'text-pink-400' : 'text-cyan-400'} />
+                {initial ? 'Изменить упражнение' : cardio ? 'Новое кардио' : 'Новое силовое'}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <input autoFocus value={ex.name} onChange={e => patch({ name: e.target.value })}
+                    onKeyDown={e => e.key === 'Enter' && save()}
+                    placeholder={cardio ? 'Бег / Велотренажёр / Ходьба' : 'Жим лёжа'} className={`${field} sm:col-span-2`} />
+
+                {cardio ? (
+                    <>
+                        <label className="flex items-center gap-2 text-sm text-gray-400">
+                            Минут
+                            <input type="number" min={1} value={ex.duration}
+                                onChange={e => patch({ duration: parseInt(e.target.value) || 0 })} className={`${field} w-24`} />
+                        </label>
+                        <select value={ex.intensity} onChange={e => patch({ intensity: e.target.value })} className={field}>
+                            {INTENSITIES.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                    </>
+                ) : (
+                    <>
+                        <select value={ex.muscle} onChange={e => patch({ muscle: e.target.value })} className={field}>
+                            {[...new Set([ex.muscle, ...MUSCLES])].map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <div className="flex gap-2">
+                            <label className="flex items-center gap-2 text-sm text-gray-400">
+                                Подходы
+                                <input type="number" min={1} max={12} value={ex.sets}
+                                    onChange={e => patch({ sets: parseInt(e.target.value) || 1 })} className={`${field} w-20`} />
+                            </label>
+                            <input value={ex.reps} onChange={e => patch({ reps: e.target.value })}
+                                placeholder="8-12" className={`${field} flex-1 min-w-0`} />
+                        </div>
+                    </>
+                )}
+            </div>
+
+            <div className="flex gap-2">
+                <button onClick={save} disabled={!ex.name.trim()}
+                    className="bg-cyan-400 text-black font-bold px-5 py-2 rounded-lg text-sm disabled:opacity-40">Сохранить</button>
+                <button onClick={onCancel} className="px-5 py-2 rounded-lg text-sm border border-[var(--border)] text-gray-400 hover:text-white">Отмена</button>
+            </div>
         </div>
     );
 }
@@ -370,6 +498,17 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
         setActiveWorkout({ ...activeWorkout, exercises: newExercises });
     };
 
+    // Cardio is a single entry rather than a list of sets.
+    const updateCardio = (patch: any) => {
+        const newExercises = [...activeWorkout.exercises];
+        newExercises[activeExIdx] = {
+            ...newExercises[activeExIdx],
+            sets: [{ ...(newExercises[activeExIdx].sets[0] ?? {}), ...patch }],
+        };
+        setActiveWorkout({ ...activeWorkout, exercises: newExercises });
+    };
+    const cardioSet = exercise.sets[0] ?? {};
+
     return (
         <div className="max-w-2xl mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -385,15 +524,53 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
 
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
                 {activeWorkout.exercises.map((ex: any, i: number) => (
-                    <button key={i} onClick={() => setActiveExIdx(i)} className={`px-4 py-2 rounded-lg whitespace-nowrap transition ${i === activeExIdx ? 'bg-cyan-400 text-black font-bold' : 'bg-white/5 text-gray-400'}`}>
+                    <button key={i} onClick={() => setActiveExIdx(i)} className={`px-4 py-2 rounded-lg whitespace-nowrap transition flex items-center gap-2 ${i === activeExIdx ? 'bg-cyan-400 text-black font-bold' : 'bg-white/5 text-gray-400'}`}>
+                        {isCardio(ex) && <Icon name="activity" size={14} />}
                         {ex.name}
                     </button>
                 ))}
             </div>
 
+            {isCardio(exercise) ? (
+            <div className="glass-card p-6 rounded-2xl">
+                <h2 className="text-xl font-bold text-pink-400 mb-4 flex items-center gap-2">
+                    <Icon name="activity" size={18} /> {exercise.name}
+                </h2>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <label className="block">
+                        <span className="text-xs text-gray-400">Длительность (мин)</span>
+                        <input type="number" min={0} value={cardioSet.duration ?? 0}
+                            onChange={e => updateCardio({ duration: parseFloat(e.target.value) || 0 })}
+                            className="w-full mt-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 text-center text-white outline-none focus:border-pink-400" />
+                    </label>
+                    <label className="block">
+                        <span className="text-xs text-gray-400">Дистанция (км)</span>
+                        <input type="number" min={0} step="0.1" value={cardioSet.distance ?? 0}
+                            onChange={e => updateCardio({ distance: parseFloat(e.target.value) || 0 })}
+                            className="w-full mt-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 text-center text-white outline-none focus:border-pink-400" />
+                    </label>
+                    <label className="block">
+                        <span className="text-xs text-gray-400">Интенсивность</span>
+                        <select value={cardioSet.intensity ?? 'Средняя'}
+                            onChange={e => updateCardio({ intensity: e.target.value })}
+                            className="w-full mt-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 text-white outline-none focus:border-pink-400">
+                            {INTENSITIES.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                    </label>
+                </div>
+
+                <button onClick={() => updateCardio({ done: !cardioSet.done })}
+                    className={`mt-4 w-full py-3 rounded-lg font-bold transition flex items-center justify-center gap-2 ${
+                        cardioSet.done ? 'bg-green-400 text-black' : 'bg-white/5 text-gray-400 border border-[var(--border)]'
+                    }`}>
+                    <Icon name="check" size={16} /> {cardioSet.done ? 'Выполнено' : 'Отметить выполненным'}
+                </button>
+            </div>
+            ) : (
             <div className="glass-card p-6 rounded-2xl">
                 <h2 className="text-xl font-bold text-cyan-400 mb-4">{exercise.name} <span className="text-gray-400 text-sm">({exercise.muscle})</span></h2>
-                
+
                 <div className="grid grid-cols-12 gap-2 text-xs text-gray-400 mb-2 px-2">
                     <div className="col-span-1 text-center">#</div>
                     <div className="col-span-4 text-center">Вес (кг)</div>
@@ -435,6 +612,7 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
                     + Добавить подход
                 </button>
             </div>
+            )}
 
             <div className="flex justify-between mt-6">
                 <button onClick={() => setActiveExIdx(Math.max(0, activeExIdx - 1))} disabled={activeExIdx === 0} className="bg-white/5 text-gray-400 px-6 py-3 rounded-lg disabled:opacity-20">← Пред.</button>
@@ -450,20 +628,28 @@ export function GymHistory({ gymData, setGymData, setEditingWorkout }: any) {
     const reversedHistory = [...gymData.history].reverse();
 
     const calcStats = (workout: any) => {
-        let totalSets = 0, totalReps = 0, totalTonnage = 0;
+        let totalSets = 0, totalReps = 0, totalTonnage = 0, cardioMin = 0, cardioKm = 0;
         workout.exercises.forEach((ex: any) => {
             ex.sets.forEach((s: any) => {
-                if (s.done) {
-                    totalSets++;
-                    const w = parseFloat(s.weight) || 0;
-                    const r = parseInt(s.reps) || 0;
-                    totalReps += r;
-                    totalTonnage += w * r;
+                if (!s.done) return;
+                if (isCardio(ex)) {
+                    cardioMin += parseFloat(s.duration) || 0;
+                    cardioKm += parseFloat(s.distance) || 0;
+                    return;
                 }
+                totalSets++;
+                const w = parseFloat(s.weight) || 0;
+                const r = parseInt(s.reps) || 0;
+                totalReps += r;
+                totalTonnage += w * r;
             });
         });
         const duration = workout.endTime ? (workout.endTime - workout.startTime) / 60000 : 0;
-        return { totalSets, totalReps, totalTonnage: Math.round(totalTonnage), duration: Math.round(duration) };
+        return {
+            totalSets, totalReps, totalTonnage: Math.round(totalTonnage),
+            cardioMin: Math.round(cardioMin), cardioKm: Math.round(cardioKm * 10) / 10,
+            duration: Math.round(duration),
+        };
     };
 
     const deleteWorkout = (workout: any) => {
@@ -475,6 +661,13 @@ export function GymHistory({ gymData, setGymData, setEditingWorkout }: any) {
         <div className="space-y-4">
             {reversedHistory.map((w: any) => {
                 const stats = calcStats(w);
+                const tiles = [
+                    { value: stats.totalTonnage, label: 'Тоннаж (кг)' },
+                    { value: stats.totalSets, label: 'Подходы' },
+                    { value: stats.totalReps, label: 'Повторения' },
+                    ...(stats.cardioMin ? [{ value: stats.cardioMin, label: 'Кардио (мин)' }] : []),
+                    ...(stats.cardioKm ? [{ value: stats.cardioKm, label: 'Дистанция (км)' }] : []),
+                ];
                 return (
                     <div key={w.id || w.date} className="glass-card p-6 rounded-2xl">
                         <div className="flex justify-between items-center mb-4">
@@ -488,25 +681,28 @@ export function GymHistory({ gymData, setGymData, setEditingWorkout }: any) {
                                 <button onClick={() => deleteWorkout(w)} className="text-red-400 text-sm hover:underline">Удалить</button>
                             </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-4 text-center mb-4">
-                            <div className="bg-[var(--bg-input)] p-3 rounded-lg">
-                                <div className="text-xl font-bold text-white">{stats.totalTonnage}</div>
-                                <div className="text-xs text-gray-400">Тоннаж (кг)</div>
-                            </div>
-                            <div className="bg-[var(--bg-input)] p-3 rounded-lg">
-                                <div className="text-xl font-bold text-white">{stats.totalSets}</div>
-                                <div className="text-xs text-gray-400">Подходы</div>
-                            </div>
-                            <div className="bg-[var(--bg-input)] p-3 rounded-lg">
-                                <div className="text-xl font-bold text-white">{stats.totalReps}</div>
-                                <div className="text-xs text-gray-400">Повторения</div>
-                            </div>
+                        <div className={`grid gap-4 text-center mb-4 ${tiles.length > 3 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
+                            {tiles.map(t => (
+                                <div key={t.label} className="bg-[var(--bg-input)] p-3 rounded-lg">
+                                    <div className="text-xl font-bold text-white">{t.value}</div>
+                                    <div className="text-xs text-gray-400">{t.label}</div>
+                                </div>
+                            ))}
                         </div>
                         <div className="space-y-2 pt-4 border-t border-[var(--border)]">
                             {w.exercises.map((ex: any, i: number) => (
-                                <div key={i} className="flex justify-between text-sm">
-                                    <span className="text-gray-300">{ex.name}</span>
-                                    <span className="text-gray-500">{ex.sets.filter((s:any)=>s.done).map((s: any) => `${s.weight}×${s.reps}`).join(', ')}</span>
+                                <div key={i} className="flex justify-between text-sm gap-3">
+                                    <span className="text-gray-300 flex items-center gap-1.5">
+                                        {isCardio(ex) && <Icon name="activity" size={13} className="text-pink-400" />}
+                                        {ex.name}
+                                    </span>
+                                    <span className="text-gray-500 text-right">
+                                        {ex.sets.filter((s: any) => s.done).map((s: any) =>
+                                            isCardio(ex)
+                                                ? `${s.duration} мин${s.distance ? ` · ${s.distance} км` : ''}`
+                                                : `${s.weight}×${s.reps}`
+                                        ).join(', ')}
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -522,11 +718,24 @@ export function GymPRs({ gymData }: any) {
     
     // Собираем базу всех упражнений и их рекордов
     const db: any = {};
+    const cardioDb: any = {};
     gymData.history.forEach((w: any) => {
         w.exercises.forEach((ex: any) => {
+            if (isCardio(ex)) {
+                if (!cardioDb[ex.name]) cardioDb[ex.name] = { maxDuration: 0, maxDistance: 0, totalMin: 0 };
+                const rec = cardioDb[ex.name];
+                ex.sets.forEach((s: any) => {
+                    const d = parseFloat(s.duration) || 0;
+                    const km = parseFloat(s.distance) || 0;
+                    if (d > rec.maxDuration) rec.maxDuration = d;
+                    if (km > rec.maxDistance) rec.maxDistance = km;
+                    rec.totalMin += d;
+                });
+                return;
+            }
             if (!db[ex.muscle]) db[ex.muscle] = {};
             if (!db[ex.muscle][ex.name]) db[ex.muscle][ex.name] = { maxWeight: 0, max1RM: 0, maxReps: 0 };
-            
+
             ex.sets.forEach((s: any) => {
                 const w = parseFloat(s.weight) || 0;
                 const r = parseInt(s.reps) || 0;
@@ -538,13 +747,14 @@ export function GymPRs({ gymData }: any) {
         });
     });
 
-    const muscles = ['Все', ...Object.keys(db)];
+    const cardioNames = Object.keys(cardioDb);
+    const muscles = ['Все', ...Object.keys(db), ...(cardioNames.length ? ['Кардио'] : [])];
     if (muscles.length === 1) return <GymEmptyState icon="trophy" text="Нет данных для рекордов." />;
 
     return (
         <div>
             <h2 className="text-2xl font-bold text-white mb-4">База упражнений и рекорды</h2>
-            
+
             <div className="flex gap-2 mb-6 flex-wrap">
                 {muscles.map(m => (
                     <button key={m} onClick={() => setFilter(m)} className={`px-4 py-1 rounded-full text-sm transition ${filter === m ? 'bg-purple-400 text-black font-bold' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
@@ -554,6 +764,25 @@ export function GymPRs({ gymData }: any) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(filter === 'Все' || filter === 'Кардио') && cardioNames.map(name => {
+                    const pr = cardioDb[name];
+                    return (
+                        <div key={'cardio-' + name} className="glass-card p-6 rounded-2xl flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-pink-400/10 text-pink-400 flex items-center justify-center shrink-0">
+                                <Icon name="activity" size={22} />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-xl font-bold text-white">{name}</h3>
+                                <p className="text-xs text-gray-500 mb-2">Кардио</p>
+                                <div className="flex flex-wrap gap-4 text-sm">
+                                    <span className="text-gray-300">Дольше всего: <span className="text-cyan-400 font-bold">{pr.maxDuration} мин</span></span>
+                                    {pr.maxDistance > 0 && <span className="text-gray-300">Макс. дистанция: <span className="text-purple-400 font-bold">{pr.maxDistance} км</span></span>}
+                                    <span className="text-gray-300">Всего: <span className="text-green-400 font-bold">{Math.round(pr.totalMin)} мин</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
                 {Object.keys(db).map(muscle => {
                     if (filter !== 'Все' && filter !== muscle) return null;
                     return Object.keys(db[muscle]).map(name => {
@@ -582,13 +811,14 @@ export function GymPRs({ gymData }: any) {
 }
 
 const GYM_COACH_SYSTEM = `Ты — тёплый, поддерживающий персональный фитнес-тренер в приложении GeQu (пользователь — человек с СДВГ, ему важна ясность и мотивация).
-Тебе дают данные в JSON: упражнения активной программы, последние и предыдущие рабочие подходы (вес × повторы), целевой диапазон повторений и качество сна в дни тренировок (0–10).
-Задача: дать короткий живой разбор прогресса и конкретную рекомендацию на следующую тренировку по каждому упражнению — увеличить вес, оставить тот же, или сделать разгрузку (deload). Где уместно, связывай спад результатов с плохим сном.
+Тебе дают данные в JSON: упражнения активной программы, последние и предыдущие рабочие подходы, целевые ориентиры и качество сна в дни тренировок (0–10).
+У каждого упражнения есть "type": "strength" (подходы вес × повторы, ориентир targetReps) или "cardio" (длительность в минутах, дистанция в км, интенсивность, ориентир targetDurationMin).
+Задача: дать короткий живой разбор прогресса и конкретную рекомендацию на следующую тренировку по каждому упражнению — для силовых увеличить вес, оставить тот же или сделать разгрузку (deload); для кардио добавить минуты, темп или дистанцию либо снизить нагрузку. Где уместно, связывай спад результатов с плохим сном.
 Пиши по-русски, дружелюбно и по делу, без воды и общих фраз. Формат — Markdown: **название упражнения** жирным, затем 1–2 коротких предложения с рекомендацией. В конце добавь одну ободряющую строчку. Не выдумывай данные, которых нет в JSON.`;
 
 function buildGymContext(activeProgram: any, gymData: any, logs: any): any[] {
-    const exNames = new Set<string>();
-    activeProgram.days.forEach((d: any) => d.exercises.forEach((e: any) => exNames.add(e.name)));
+    const planned = new Map<string, any>();
+    activeProgram.days.forEach((d: any) => d.exercises.forEach((e: any) => planned.set(e.name, e)));
 
     const getHistory = (name: string) =>
         gymData.history
@@ -602,21 +832,19 @@ function buildGymContext(activeProgram: any, gymData: any, logs: any): any[] {
         logs.find((l: any) => l.date.split('T')[0] === dateStr.split('T')[0]);
 
     const items: any[] = [];
-    exNames.forEach((name) => {
+    planned.forEach((plan, name) => {
         const history = getHistory(name);
         if (history.length === 0 || history[history.length - 1].sets.length === 0) return;
 
-        let targetReps = 10;
-        activeProgram.days.forEach((d: any) => d.exercises.forEach((e: any) => {
-            if (e.name === name) {
-                const repRange = String(e.reps).split('-');
-                targetReps = repRange.length > 1 ? parseInt(repRange[1]) : parseInt(repRange[0]);
-            }
-        }));
+        const cardio = isCardio(plan);
+        const repRange = String(plan.reps ?? '').split('-');
+        const targetReps = cardio ? null : (parseInt(repRange[1] ?? repRange[0]) || 10);
 
         const summarize = (entry: any) => ({
             date: entry.date.split('T')[0],
-            sets: entry.sets.map((s: any) => ({ weight: s.weight, reps: s.reps })),
+            sets: entry.sets.map((s: any) => cardio
+                ? { durationMin: s.duration, distanceKm: s.distance, intensity: s.intensity }
+                : { weight: s.weight, reps: s.reps }),
             sleep: getDayLog(entry.date)?.sleep ?? null,
         });
 
@@ -625,7 +853,8 @@ function buildGymContext(activeProgram: any, gymData: any, logs: any): any[] {
 
         items.push({
             exercise: name,
-            targetReps,
+            type: cardio ? 'cardio' : 'strength',
+            ...(cardio ? { targetDurationMin: plan.duration ?? null } : { targetReps }),
             last: summarize(last),
             previous: prev && prev.sets.length ? summarize(prev) : null,
         });

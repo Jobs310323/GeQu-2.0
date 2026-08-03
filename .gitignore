@@ -11,6 +11,12 @@ node_modules
 dist
 dist-ssr
 *.local
+.vercel
+
+# Secrets: only .env.example is tracked.
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

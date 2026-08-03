@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { callAIJson } from '../lib/ai';
+import { marked } from 'marked';
+import { callAIJson, streamAI } from '../lib/ai';
 import { DB } from '../lib/db';
 import { buildProfile, hasEnoughData } from '../lib/profile';
 import { Icon } from '../components/Icons';
@@ -32,6 +33,31 @@ const CARD_SYSTEM = `Ты — внимательный аналитик в пр�
 
 Массивы — по 2–4 пункта. Всё по-русски. Никакого текста вне JSON.`;
 
+const REPORT_SYSTEM = `Ты — внимательный аналитик в приложении GeQu. Пользователь — человек с СДВГ. Он ведёт дневник и трекер состояния, закрывает задачи и цели, ходит в зал (силовые и кардио), проходит когнитивные и скрининговые тесты, ведёт дневник мыслей КПТ, следит за финансами и разбирает круги контроля.
+
+Тебе дают JSON со всей агрегированной статистикой по нему. Числа уже посчитаны — НЕ пересчитывай и не выдумывай новых.
+
+Составь развёрнутый отчёт в Markdown ровно из этих разделов (в этом порядке, каждый — заголовок ##):
+## Кто ты по этим данным
+## Состояние и энергия
+## Ритм и дисциплина
+## Дела, цели и продуктивность
+## Тело и тренировки
+## Когнитивные показатели
+## Мышление и эмоции
+## Деньги
+## Что связано с чем
+## Что делать дальше
+
+Правила:
+- В каждом разделе 2–5 предложений или короткий список, всегда с опорой на конкретные цифры из JSON.
+- Если по разделу данных нет или их мало — так и напиши одной строкой и переходи дальше. Не выдумывай.
+- В cognitive учитывай lowerIsBetter: для времени и реакции меньше = лучше, improvedPct > 0 = улучшение.
+- В разделе «Что связано с чем» ищи именно связи между областями (сон и фокус, тренировки и настроение, задачи и энергия), но только те, что видно в данных.
+- «Что делать дальше» — 3–5 конкретных выполнимых шагов, а не общие советы.
+- Никаких диагнозов, медицинских выводов и оценок скрининговых тестов как диагноза. Ты не врач.
+- Обращайся на «ты», тепло и по делу, без лести. Всё по-русски.`;
+
 function Stat({ label, value, hint }: { label: string; value: any; hint?: string }) {
     return (
         <div className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
@@ -61,19 +87,53 @@ function Section({ title, items, icon, tone }: { title: string; items?: string[]
     );
 }
 
-export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResults }: any) {
+export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResults,
+                           clinicalResults, cbtRecords, finance, circles }: any) {
     const [card, setCard] = useState<AiCard | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [madeAt, setMadeAt] = useState('');
+    const [report, setReport] = useState('');
+    const [reportLoading, setReportLoading] = useState(false);
+    const [reportError, setReportError] = useState('');
+    const [reportAt, setReportAt] = useState('');
 
-    const profile = buildProfile({ logs, diary, habits, kanban, goals, gymData, testResults });
+    const profile = buildProfile({ logs, diary, habits, kanban, goals, gymData, testResults,
+        clinicalResults, cbtRecords, finance, circles });
     const enough = hasEnoughData(profile);
 
     useEffect(() => {
         const cached = DB.get('usercard', null);
         if (cached?.card) { setCard(cached.card); setMadeAt(cached.madeAt || ''); }
+        const cachedReport = DB.get('usercard_report', null);
+        if (cachedReport?.text) { setReport(cachedReport.text); setReportAt(cachedReport.madeAt || ''); }
     }, []);
+
+    const stampNow = () =>
+        new Date().toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+    const generateReport = async () => {
+        setReportLoading(true); setReportError(''); setReport('');
+        let text = '';
+        try {
+            await streamAI({
+                system: REPORT_SYSTEM,
+                maxTokens: 3500,
+                messages: [{
+                    role: 'user',
+                    content: `Вот все мои данные (JSON):\n\n${JSON.stringify(profile)}\n\nСоставь полный отчёт по мне.`,
+                }],
+                onToken: chunk => { text += chunk; setReport(text); },
+            });
+            const stamp = stampNow();
+            setReportAt(stamp);
+            DB.save('usercard_report', { text, madeAt: stamp });
+        } catch (e: any) {
+            setReportError(e?.message || 'Не удалось составить отчёт.');
+        } finally {
+            setReportLoading(false);
+        }
+    };
 
     const generate = async () => {
         setLoading(true); setError('');
@@ -83,7 +143,7 @@ export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResu
                 prompt: `Вот моя статистика (JSON):\n\n${JSON.stringify(profile)}\n\nСоставь мою карточку.`,
                 maxTokens: 2000,
             });
-            const stamp = new Date().toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+            const stamp = stampNow();
             setCard(result); setMadeAt(stamp);
             DB.save('usercard', { card: result, madeAt: stamp });
         } catch (e: any) {
@@ -248,6 +308,36 @@ export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResu
                             )}
 
                             <Section title="Что можно сделать" items={card.recommendations} icon="target" tone="text-pink-400" />
+                        </div>
+                    )}
+
+                    {/* Long-form report over every data source, not just the summary card */}
+                    <div className="glass-card p-6 rounded-2xl mt-6 border border-cyan-400/30 bg-cyan-400/5">
+                        <div className="flex flex-col md:flex-row md:items-center gap-4">
+                            <div className="flex-1">
+                                <h2 className="text-lg font-bold text-cyan-400 mb-1 flex items-center gap-2">
+                                    <Icon name="library" size={16} />
+                                    Полный анализ
+                                </h2>
+                                <p className="text-sm text-gray-400">
+                                    Развёрнутый отчёт по всем данным сразу: состояние, ритм, дела, тело, когнитивные
+                                    и скрининговые тесты, КПТ-записи, деньги и связи между ними.
+                                </p>
+                                {reportAt && <p className="text-xs text-gray-500 mt-1">Составлено: {reportAt}</p>}
+                            </div>
+                            <button onClick={generateReport} disabled={reportLoading}
+                                className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg disabled:opacity-40 whitespace-nowrap">
+                                {reportLoading ? 'Анализирую…' : report ? 'Обновить отчёт' : 'Провести полный анализ'}
+                            </button>
+                        </div>
+                        {reportError && <div className="mt-4 p-3 rounded-xl border border-red-400/30 text-red-400 text-sm">{reportError}</div>}
+                        {reportLoading && !report && <div className="mt-4 text-sm text-gray-500 animate-pulse">Читаю все твои данные…</div>}
+                    </div>
+
+                    {report && (
+                        <div className="glass-card p-6 rounded-2xl mt-5 anim-fade-in">
+                            <div className="text-gray-200 markdown-content"
+                                dangerouslySetInnerHTML={{ __html: marked.parse(report) as string }} />
                         </div>
                     )}
                 </>
