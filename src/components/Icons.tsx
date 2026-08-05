@@ -53,6 +53,7 @@ const paths: Record<string, string> = {
     dice: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M8 8h.01M16 8h.01M12 12h.01M8 16h.01M16 16h.01',
     note: 'M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z M8 8h8M8 12h5',
     activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
+    snowman: 'M9.8,5 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 M9,12 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0 M8,19 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0',
 };
 
 export function Icon({ name, size = 18, className = '' }: { name: keyof typeof paths | string } & IconProps) {
@@ -84,6 +85,7 @@ export const NAV_ICON: Record<string, string> = {
     cbt: 'thought',
     clinical: 'clipboard',
     progress: 'trophy',
+    snowman: 'snowman',
     dynamics: 'chart',
     hub: 'grid',
     knowledge: 'library',

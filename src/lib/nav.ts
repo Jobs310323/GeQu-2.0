@@ -15,6 +15,7 @@ export const NAV_GROUPS: NavGroup[] = [
             { id: 'aiplan', icon: '✨', label: 'ИИ-план дня' },
             { id: 'calendar', icon: '📅', label: 'Календарь' },
             { id: 'habits', icon: '♻️', label: 'Привычки' },
+            { id: 'snowman', icon: '⛄', label: 'Снеговик' },
         ],
     },
     {
@@ -32,7 +33,7 @@ export const NAV_GROUPS: NavGroup[] = [
     {
         id: 'body', title: 'Тело и мозг', items: [
             { id: 'gym', icon: '🏋️', label: 'Зал' },
-            { id: 'training', icon: '🎯', label: 'Тренировки' },
+            { id: 'training', icon: '🎯', label: 'Тренажёры' },
             { id: 'circles', icon: '⭕', label: 'Круги' },
             { id: 'clinical', icon: '📝', label: 'Тесты и КПТ' },
         ],

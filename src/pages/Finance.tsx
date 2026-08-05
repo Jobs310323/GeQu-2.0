@@ -24,12 +24,14 @@ const DEFAULT_EXPENSE_CATS: Category[] = [
     { id: 'health', icon: '💊', label: 'Здоровье', color: '#16A34A' },
     { id: 'shopping', icon: '🛍️', label: 'Покупки', color: '#CA8A04' },
     { id: 'subscription', icon: '🔁', label: 'Подписки', color: '#0EA5E9' },
+    { id: 'debt', icon: '💳', label: 'Погашение долга', color: '#7C3AED' },
     { id: 'other_e', icon: '📦', label: 'Прочее', color: '#64748B' },
 ];
 const DEFAULT_INCOME_CATS: Category[] = [
     { id: 'salary', icon: '💰', label: 'Зарплата', color: '#16A34A' },
     { id: 'gift', icon: '🎁', label: 'Подарок', color: '#DB2777' },
     { id: 'freelance', icon: '💻', label: 'Фриланс', color: '#0284C7' },
+    { id: 'debt', icon: '💳', label: 'Возврат долга', color: '#7C3AED' },
     { id: 'other_i', icon: '📦', label: 'Прочее', color: '#64748B' },
 ];
 
@@ -412,14 +414,21 @@ function SubscriptionsPanel({ subs, addSub, markPaid, deleteSub, updateSub, fmt 
 
 export function Finance({ finance, setFinance }: { finance: FinanceData; setFinance: (f: FinanceData) => void }) {
     const savedExpenseCats = finance?.categories?.expense ?? DEFAULT_EXPENSE_CATS;
-    const expenseCats = savedExpenseCats.some(c => c.id === 'subscription')
+    const withSubscription = savedExpenseCats.some(c => c.id === 'subscription')
         ? savedExpenseCats
         : [...savedExpenseCats, DEFAULT_EXPENSE_CATS.find(c => c.id === 'subscription')!];
+    const expenseCats = withSubscription.some(c => c.id === 'debt')
+        ? withSubscription
+        : [...withSubscription, DEFAULT_EXPENSE_CATS.find(c => c.id === 'debt')!];
+    const savedIncomeCats = finance?.categories?.income ?? DEFAULT_INCOME_CATS;
+    const incomeCats = savedIncomeCats.some(c => c.id === 'debt')
+        ? savedIncomeCats
+        : [...savedIncomeCats, DEFAULT_INCOME_CATS.find(c => c.id === 'debt')!];
 
     const data: FinanceData = {
         ...DEFAULT_FINANCE,
         ...finance,
-        categories: { expense: expenseCats, income: finance?.categories?.income ?? DEFAULT_INCOME_CATS },
+        categories: { expense: expenseCats, income: incomeCats },
         entries: finance?.entries ?? [],
         debts: finance?.debts ?? [],
         subscriptions: finance?.subscriptions ?? [],
@@ -471,7 +480,24 @@ export function Finance({ finance, setFinance }: { finance: FinanceData; setFina
         const debt: Debt = { id: Date.now(), title: title.trim(), amount, direction, status: 'active', createdAt: new Date().toISOString() };
         setFinance({ ...data, debts: [debt, ...data.debts] });
     };
-    const markDebtPaid = (id: number) => setFinance({ ...data, debts: data.debts.map(d => d.id === id ? { ...d, status: 'paid' as const, paidAt: new Date().toISOString() } : d) });
+    // Repaying a debt moves real money: settling what I owe is an expense,
+    // getting repaid is income — either way savings must reflect it.
+    const markDebtPaid = (id: number) => {
+        const debt = data.debts.find(d => d.id === id);
+        if (!debt) return;
+        const entry: FinanceEntry = {
+            id: Date.now(),
+            type: debt.direction === 'i_owe' ? 'expense' : 'income',
+            categoryId: 'debt',
+            amount: debt.amount,
+            date: new Date().toISOString(),
+        };
+        setFinance({
+            ...data,
+            entries: [entry, ...data.entries],
+            debts: data.debts.map(d => d.id === id ? { ...d, status: 'paid' as const, paidAt: new Date().toISOString() } : d),
+        });
+    };
     const deleteDebt = (id: number) => setFinance({ ...data, debts: data.debts.filter(d => d.id !== id) });
     const updateDebt = (id: number, patch: Partial<Debt>) => setFinance({ ...data, debts: data.debts.map(d => d.id === id ? { ...d, ...patch } : d) });
 

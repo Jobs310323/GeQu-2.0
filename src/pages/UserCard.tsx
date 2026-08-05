@@ -87,7 +87,7 @@ function Section({ title, items, icon, tone }: { title: string; items?: string[]
     );
 }
 
-export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResults,
+export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData, testResults,
                            clinicalResults, cbtRecords, finance, circles }: any) {
     const [card, setCard] = useState<AiCard | null>(null);
     const [loading, setLoading] = useState(false);
@@ -101,6 +101,9 @@ export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResu
     const profile = buildProfile({ logs, diary, habits, kanban, goals, gymData, testResults,
         clinicalResults, cbtRecords, finance, circles });
     const enough = hasEnoughData(profile);
+
+    const deleteLog = (id: number) => setLogs((logs ?? []).filter((l: any) => l.id !== id));
+    const sortedLogs = [...(logs ?? [])].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     useEffect(() => {
         const cached = DB.get('usercard', null);
@@ -254,6 +257,44 @@ export function UserCard({ logs, diary, habits, kanban, goals, gymData, testResu
                             </div>
                         )}
                     </div>
+
+                    {/* Raw history of closed days — moved here from the daily-close screen so
+                        closing a day doesn't also mean scrolling through every past one. */}
+                    {sortedLogs.length > 0 && (
+                        <div className="glass-card p-6 rounded-2xl mb-6">
+                            <div className="flex items-baseline justify-between mb-4">
+                                <h2 className="text-xl font-bold flex items-center gap-2">
+                                    <Icon name="calendar" size={18} className="text-cyan-400" />
+                                    История записей
+                                </h2>
+                                <span className="text-xs text-gray-500">{sortedLogs.length}</span>
+                            </div>
+                            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                                {sortedLogs.map((l: any) => (
+                                    <div key={l.id ?? l.date} className="border-b border-[var(--border)] pb-4 anim-fade-in">
+                                        <div className="flex items-baseline justify-between gap-3 mb-2">
+                                            <span className="text-xs text-cyan-400">
+                                                {new Date(l.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                            </span>
+                                            <button onClick={() => deleteLog(l.id)} className="text-red-400 text-xs hover:underline shrink-0">Удалить</button>
+                                        </div>
+                                        <div className="text-sm text-gray-300 mb-1">Сон {l.sleep} · Фокус {l.focus} · Настроение {l.mood}</div>
+                                        {l.mainEvent && <div className="text-sm text-gray-400 mb-1">Главное: {l.mainEvent}</div>}
+                                        {l.testTomorrow && <div className="text-sm text-gray-400 mb-1">Проверить завтра: {l.testTomorrow}</div>}
+                                        {l.customQuestion && (
+                                            <div className="text-sm mb-1"><span className="text-purple-400">{l.customQuestion}</span>
+                                                {l.customAnswer && <span className="text-gray-300"> — {l.customAnswer}</span>}</div>
+                                        )}
+                                        {l.gratitude?.length > 0 && (
+                                            <div className="text-xs text-pink-400 mb-1">Благодарность: {l.gratitude.join(', ')}</div>
+                                        )}
+                                        {l.helped?.length > 0 && <div className="text-xs text-green-400">Помогло: {l.helped.join(', ')}</div>}
+                                        {l.hindered?.length > 0 && <div className="text-xs text-red-400">Мешало: {l.hindered.join(', ')}</div>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* AI interpretation layer */}
                     <div className="glass-card p-6 rounded-2xl mb-6 border border-purple-400/30 bg-purple-400/5">

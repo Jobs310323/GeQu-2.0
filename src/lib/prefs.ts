@@ -17,19 +17,16 @@ export const DASHBOARD_WIDGETS = [
     { id: 'mainEvent', label: 'Главное событие дня', icon: '📝' },
     { id: 'testTomorrow', label: 'Что проверить завтра', icon: '🔬' },
     { id: 'gratitude', label: 'Благодарность', icon: '💖' },
+    { id: 'customQuestion', label: 'Свой вопрос', icon: '❓' },
 ] as const;
 
 export type Prefs = {
     hiddenTabs: string[];
     collapsedGroups: string[];
     hiddenWidgets: string[];
-    /** Pages moved onto the dashboard, where they render as mini-apps. */
-    asWidget: string[];
-    /** Dashboard widgets promoted to their own page in the menu. */
-    asPage: string[];
 };
 
-const DEFAULTS: Prefs = { hiddenTabs: [], collapsedGroups: [], hiddenWidgets: [], asWidget: [], asPage: [] };
+const DEFAULTS: Prefs = { hiddenTabs: [], collapsedGroups: [], hiddenWidgets: [] };
 
 export function loadPrefs(): Prefs {
     const raw = DB.get('prefs', null);
@@ -39,8 +36,6 @@ export function loadPrefs(): Prefs {
         hiddenTabs: arr(raw.hiddenTabs),
         collapsedGroups: arr(raw.collapsedGroups),
         hiddenWidgets: arr(raw.hiddenWidgets),
-        asWidget: arr(raw.asWidget),
-        asPage: arr(raw.asPage),
     };
 }
 
@@ -52,6 +47,3 @@ export function savePrefs(p: Prefs) {
 export function toggleIn(list: string[], id: string): string[] {
     return list.includes(id) ? list.filter(x => x !== id) : [...list, id];
 }
-
-/** Pages that must stay in the menu — moving them would strand the user. */
-export const UNMOVABLE_PAGES = new Set(['dashboard', 'settings']);

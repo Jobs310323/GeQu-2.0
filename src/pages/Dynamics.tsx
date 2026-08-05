@@ -215,7 +215,7 @@ export function Dynamics({ logs, testResults, gymData }: any) {
 
                         {testsInPeriod.length === 0 ? (
                             <p className="text-gray-500 text-sm py-6 text-center">
-                                За этот период тестов нет. Загляни в раздел «Тренировки».
+                                За этот период тестов нет. Загляни в раздел «Тренажёры».
                             </p>
                         ) : (
                             <>

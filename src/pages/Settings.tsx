@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { getGroqKey, setGroqKey } from '../lib/ai';
 import { NAV_GROUPS, LOCKED_TABS } from '../lib/nav';
 import { DASHBOARD_WIDGETS, toggleIn } from '../lib/prefs';
-import { LayoutArranger } from '../components/LayoutArranger';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
 
@@ -94,8 +93,6 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
     return (
         <div>
             <PageHeader page="settings" title="Настройки и данные" />
-
-            <LayoutArranger prefs={prefs} setPrefs={setPrefs} />
 
             {/* Which pages appear in the sidebar */}
             <div className="glass-card p-6 rounded-2xl mb-6">

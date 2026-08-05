@@ -40,15 +40,23 @@ export function NBackTest({ setTestResults }: any) {
         if (phase !== 'playing') return;
         
         if (currentIdx >= totalTrials) {
-            let hits = 0, correctRejections = 0;
+            // Only credit trials the user actually judged: a hit is a match they
+            // caught, a false alarm is pressing on a non-match. Silently letting
+            // non-match trials pass by is not an answer, so it earns nothing —
+            // otherwise doing nothing at all would still score close to 100%.
+            let matches = 0, hits = 0, falseAlarms = 0;
             for (let i = 0; i < totalTrials; i++) {
                 const isMatch = i >= nLevel && sequence[i] === sequence[i - nLevel];
                 const userSaidMatch = answers[i] || false;
-                if (isMatch && userSaidMatch) hits++;
-                else if (!isMatch && !userSaidMatch) correctRejections++;
+                if (isMatch) {
+                    matches++;
+                    if (userSaidMatch) hits++;
+                } else if (userSaidMatch) {
+                    falseAlarms++;
+                }
             }
-            const accuracy = totalTrials > 0 ? ((hits + correctRejections) / totalTrials) * 100 : 0;
-            
+            const accuracy = matches > 0 ? Math.max(0, ((hits - falseAlarms) / matches) * 100) : 0;
+
             setFinalAccuracy(accuracy);
             saveResult(setTestResults, 'nback', accuracy); // Твоя функция сохранения
             setPhase('finished');
@@ -350,22 +358,26 @@ export function StroopTest({ setTestResults }: any) {
         setWord(rndWord); setColor(rndColor);
     };
 
+    const scoreRef = useRef(0);
+    useEffect(() => { scoreRef.current = score; }, [score]);
+
+    // Keyed on isPlaying only — depending on `score` here restarted the
+    // interval on every click (a fresh answer resets `score`), which kept
+    // clearing the running timer before it ever ticked down.
     useEffect(() => {
-        if (isPlaying) {
-            timerRef.current = setInterval(() => {
-                setTime(t => {
-                    if (t <= 1) { 
-                        clearInterval(timerRef.current); 
-                        setIsPlaying(false); 
-                        saveResult(setTestResults, 'stroop', score); 
-                        return 0; 
-                    }
-                    return t - 1;
-                });
-            }, 1000);
-        } else clearInterval(timerRef.current);
+        if (!isPlaying) return;
+        timerRef.current = setInterval(() => {
+            setTime(t => (t <= 1 ? 0 : t - 1));
+        }, 1000);
         return () => clearInterval(timerRef.current);
-    }, [isPlaying, score, setTestResults]);
+    }, [isPlaying]);
+
+    useEffect(() => {
+        if (isPlaying && time <= 0) {
+            setIsPlaying(false);
+            saveResult(setTestResults, 'stroop', scoreRef.current);
+        }
+    }, [time, isPlaying, setTestResults]);
 
     const handleAnswer = (selectedColorName: string) => {
         if (!isPlaying) return;
@@ -782,26 +794,17 @@ export function GoNoGoTest({ setTestResults }: any) {
     );
 }
 
-export function PomodoroTimer() {
+/**
+ * The countdown itself lives in App (see `pomodoro`/`setPomodoro`) so it keeps
+ * running when this tab unmounts — this component is just the dial and controls.
+ */
+export function PomodoroTimer({ pomodoro, setPomodoro }: any) {
     const workDurations = [5, 10, 15, 20, 25, 30];
-    const [workTime, setWorkTime] = useState(25);
-    const [mode, setMode] = useState('work');
-    const [timeLeft, setTimeLeft] = useState(25 * 60);
-    const [isRunning, setIsRunning] = useState(false);
-    const timerRef = useRef<any>(null);
-    const changeDuration = (mins: number) => { setIsRunning(false); setMode('work'); setWorkTime(mins); setTimeLeft(mins * 60); };
+    const { workTime, mode, timeLeft, isRunning } = pomodoro;
 
-    useEffect(() => {
-        if (isRunning) {
-            timerRef.current = setInterval(() => {
-                setTimeLeft(t => {
-                    if (t <= 1) { clearInterval(timerRef.current); setIsRunning(false); const nextMode = mode === 'work' ? 'break' : 'work'; setMode(nextMode); return nextMode === 'work' ? workTime * 60 : 5 * 60; }
-                    return t - 1;
-                });
-            }, 1000);
-        } else clearInterval(timerRef.current);
-        return () => clearInterval(timerRef.current);
-    }, [isRunning, mode, workTime]);
+    const changeDuration = (mins: number) => setPomodoro({ workTime: mins, mode: 'work', timeLeft: mins * 60, isRunning: false });
+    const toggleRun = () => setPomodoro((p: any) => ({ ...p, isRunning: !p.isRunning }));
+    const reset = () => setPomodoro((p: any) => ({ ...p, isRunning: false, mode: 'work', timeLeft: p.workTime * 60 }));
 
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
@@ -816,8 +819,8 @@ export function PomodoroTimer() {
             <div className={`text-2xl mb-4 font-semibold ${mode === 'work' ? 'text-cyan-400' : 'text-green-400'}`}>{mode === 'work' ? 'Время фокусироваться' : 'Перерыв'}</div>
             <div className="text-8xl font-bold mb-8 tabular-nums">{String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}</div>
             <div className="flex gap-4">
-                <button onClick={() => setIsRunning(!isRunning)} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{isRunning ? 'Пауза' : 'Старт'}</button>
-                <button onClick={() => { setIsRunning(false); setMode('work'); setTimeLeft(workTime * 60); }} className="border border-[var(--border)] text-gray-400 px-8 py-3 rounded-lg hover:bg-white/5">Сброс</button>
+                <button onClick={toggleRun} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{isRunning ? 'Пауза' : 'Старт'}</button>
+                <button onClick={reset} className="border border-[var(--border)] text-gray-400 px-8 py-3 rounded-lg hover:bg-white/5">Сброс</button>
             </div>
             <input type="text" placeholder="Введите ОДНУ задачу сюда..." className="mt-8 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-3 w-full max-w-md text-center text-lg outline-none focus:border-cyan-400" />
         </div>

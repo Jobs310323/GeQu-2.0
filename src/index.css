@@ -102,6 +102,14 @@ body {
 @keyframes breathGlow { 0%,100% { box-shadow: 0 0 0 2px var(--accent-cyan); } 50% { box-shadow: 0 0 0 8px rgba(126,154,171,0.18); } }
 .breath-dot { animation: breathGlow 2s ease-in-out infinite; }
 
+/* Snowman confetti burst */
+@keyframes confettiFall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
+.anim-confetti-fall { animation: confettiFall linear forwards; }
+
+/* Snowman circles growing when a sphere gains points */
+@keyframes snowGrow { 0% { transform: scale(0.85); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.anim-snow-grow { animation: snowGrow 0.5s ease-out; }
+
 input, textarea, button { color: var(--text-main); }
 input[type="range"] { accent-color: var(--accent-purple); }
 input[type="checkbox"] { accent-color: var(--accent-cyan); }

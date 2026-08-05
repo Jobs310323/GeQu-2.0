@@ -1,15 +1,7 @@
 import { useState } from 'react';
 import { calculateStreak } from '../lib/helpers';
-import { DASHBOARD_WIDGETS } from '../lib/prefs';
-import { ALL_TABS, STANDALONE_TABS } from '../lib/nav';
 import { Icon } from '../components/Icons';
 import { RadialGauge } from '../components/RadialGauge';
-
-const WIDGET_TITLES: Record<string, string> = Object.fromEntries(
-    DASHBOARD_WIDGETS.map(w => [w.id, w.label]));
-
-const WIDGET_PAGE_LABEL: Record<string, string> = Object.fromEntries(
-    [...ALL_TABS, ...STANDALONE_TABS].map(t => [t.id, t.icon + ' ' + t.label]));
 
 const HELPED_TAGS = ['Кофе', 'Спорт', 'Сон', 'Pomodoro', 'Интерес к задаче', 'Медитация'];
 const HINDERED_TAGS = ['Телефон', 'Усталость', 'Шум', 'Скука', 'Голод', 'Откладывание'];
@@ -60,35 +52,36 @@ function StatTile({ icon, value, label, hint, tone = 'text-[var(--text-main)]', 
 }
 
 export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults,
-                            prefs, habits, setHabits, setPage, levelInfo, energy,
-                            onlyWidget, renderPage }: any) {
+                            prefs, habits, setHabits, setPage, levelInfo, energy }: any) {
     const [sleep, setSleep] = useState(5);
     const [focus, setFocus] = useState(5);
     const [mood, setMood] = useState(5);
     const [helped, setHelped] = useState<string[]>([]);
     const [hindered, setHindered] = useState<string[]>([]);
+    const [customHelped, setCustomHelped] = useState<string[]>([]);
+    const [customHindered, setCustomHindered] = useState<string[]>([]);
+    const [newHelpedTag, setNewHelpedTag] = useState('');
+    const [newHinderedTag, setNewHinderedTag] = useState('');
     const [mainEvent, setMainEvent] = useState('');
     const [testTomorrow, setTestTomorrow] = useState('');
     const [gratitude, setGratitude] = useState<string[]>(['', '', '']);
+    const [customQuestion, setCustomQuestion] = useState('');
+    const [customAnswer, setCustomAnswer] = useState('');
     const [toast, setToast] = useState('');
 
     // Only the day rating is open by default — the rest announce themselves
     // with a summary line and unfold on demand.
     const [openSections, setOpenSections] = useState<string[]>(['ratings']);
-    const isOpen = (id: string) => onlyWidget ? true : openSections.includes(id);
+    const isOpen = (id: string) => openSections.includes(id);
     const toggle = (id: string) =>
         setOpenSections(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
 
     const streak = calculateStreak(logs);
     const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
-    const asPage: string[] = prefs?.asPage ?? [];
-    const asWidget: string[] = prefs?.asWidget ?? [];
-    // In single-widget mode this component *is* the promoted page, so it shows
-    // only that block. Otherwise: everything visible and not moved to the menu.
-    const show = (id: string) =>
-        onlyWidget ? id === onlyWidget : !hiddenWidgets.includes(id) && !asPage.includes(id);
+    const show = (id: string) => !hiddenWidgets.includes(id);
 
     const todayStr = new Date().toISOString().split('T')[0];
+    const [entryDate, setEntryDate] = useState(todayStr);
     const todayGym = gymData.history.some((w: any) => w.date.split('T')[0] === todayStr);
     const todayTest = testResults.some((t: any) => t.date.split('T')[0] === todayStr);
 
@@ -131,6 +124,14 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
         const set = type === 'helped' ? setHelped : setHindered;
         set(prev => prev.includes(tag) ? prev.filter(s => s !== tag) : [...prev, tag]);
     };
+    const addCustomTag = (type: 'helped' | 'hindered') => {
+        const raw = (type === 'helped' ? newHelpedTag : newHinderedTag).trim();
+        if (!raw) return;
+        const setList = type === 'helped' ? setCustomHelped : setCustomHindered;
+        setList(prev => prev.includes(raw) ? prev : [...prev, raw]);
+        toggleTag(raw, type);
+        (type === 'helped' ? setNewHelpedTag : setNewHinderedTag)('');
+    };
 
     /** Same toggle the Habits page uses, so ticking here is the same action. */
     const toggleHabit = (id: number) => {
@@ -146,16 +147,21 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     const alreadyClosed = logs.some((l: any) => l.date.split('T')[0] === todayStr);
 
     const handleSave = () => {
+        const isToday = entryDate === todayStr;
+        const dateISO = isToday ? new Date().toISOString() : new Date(`${entryDate}T12:00:00`).toISOString();
         setLogs([...logs, {
             id: Date.now(),
-            date: new Date().toISOString(),
+            date: dateISO,
             sleep, focus, mood,
             helped: [...helped, ...bodyScan],
             hindered, mainEvent, testTomorrow,
             gratitude: gratitude.filter(g => g.trim() !== ''),
+            customQuestion: customQuestion.trim() || undefined,
+            customAnswer: customQuestion.trim() ? customAnswer.trim() : undefined,
         }]);
         setSleep(5); setFocus(5); setMood(5); setHelped([]); setHindered([]);
         setMainEvent(''); setTestTomorrow(''); setGratitude(['', '', '']);
+        setCustomQuestion(''); setCustomAnswer(''); setEntryDate(todayStr);
         setToast('День закрыт! Запись сохранена.');
         setTimeout(() => setToast(''), 2500);
     };
@@ -179,15 +185,11 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
         <div className="max-w-4xl mx-auto pb-24">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <div>
-                    <h1 className="text-2xl font-bold leading-tight">
-                        {onlyWidget ? (WIDGET_TITLES[onlyWidget] ?? 'Сегодня') : 'Сегодня'}
-                    </h1>
-                    {!onlyWidget && (
-                        <p className="text-sm text-[var(--text-muted)]">
-                            {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
-                            {alreadyClosed && ' · день закрыт'}
-                        </p>
-                    )}
+                    <h1 className="text-2xl font-bold leading-tight">Сегодня</h1>
+                    <p className="text-sm text-[var(--text-muted)]">
+                        {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        {alreadyClosed && ' · день закрыт'}
+                    </p>
                 </div>
                 {show('hyperfocus') && (
                     <button onClick={startHyper}
@@ -292,11 +294,21 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 </div>
             )}
 
-            {alreadyClosed && !onlyWidget && (
+            {alreadyClosed && (
                 <div className="glass-card rounded-xl px-4 py-2.5 mb-4 text-sm text-green-400 border border-green-400/30">
                     Сегодняшний день уже закрыт — новая запись добавится отдельно.
                 </div>
             )}
+
+            <div className="glass-card rounded-2xl px-5 py-3.5 mb-3 flex items-center gap-3">
+                <Icon name="calendar" size={16} className="text-[var(--text-muted)] shrink-0" />
+                <span className="text-sm font-medium">Дата записи</span>
+                <input type="date" value={entryDate} max={todayStr} onChange={e => setEntryDate(e.target.value || todayStr)}
+                    className="bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:border-cyan-400" />
+                {entryDate !== todayStr && (
+                    <span className="text-xs text-[var(--text-muted)]">закрываем прошлый день задним числом</span>
+                )}
+            </div>
 
             {/* ---- The day-closing form ------------------------------------ */}
             <div className="space-y-3">
@@ -342,8 +354,8 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3">
                             <div>
                                 <div className="text-sm text-gray-400 mb-2">Помогло</div>
-                                <div className="flex flex-wrap gap-2">
-                                    {HELPED_TAGS.map(tag => (
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {[...HELPED_TAGS, ...customHelped].map(tag => (
                                         <button key={tag} onClick={() => toggleTag(tag, 'helped')}
                                             className={`px-3 py-1 rounded-full text-sm border transition ${
                                                 helped.includes(tag) ? 'bg-green-400/20 border-green-400 text-green-400'
@@ -351,17 +363,33 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                                             }`}>{tag}</button>
                                     ))}
                                 </div>
+                                <div className="flex gap-2">
+                                    <input type="text" value={newHelpedTag} onChange={e => setNewHelpedTag(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomTag('helped'))}
+                                        placeholder="Свой вариант..."
+                                        className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-sm outline-none focus:border-green-400 text-white" />
+                                    <button onClick={() => addCustomTag('helped')}
+                                        className="px-3 py-1 rounded-lg text-sm border border-green-400/40 text-green-400 hover:bg-green-400/10">+</button>
+                                </div>
                             </div>
                             <div>
                                 <div className="text-sm text-gray-400 mb-2">Мешало</div>
-                                <div className="flex flex-wrap gap-2">
-                                    {HINDERED_TAGS.map(tag => (
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {[...HINDERED_TAGS, ...customHindered].map(tag => (
                                         <button key={tag} onClick={() => toggleTag(tag, 'hindered')}
                                             className={`px-3 py-1 rounded-full text-sm border transition ${
                                                 hindered.includes(tag) ? 'bg-red-400/20 border-red-400 text-red-400'
                                                                        : 'border-[var(--border)] text-gray-400 hover:border-red-400'
                                             }`}>{tag}</button>
                                     ))}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input type="text" value={newHinderedTag} onChange={e => setNewHinderedTag(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomTag('hindered'))}
+                                        placeholder="Свой вариант..."
+                                        className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-sm outline-none focus:border-red-400 text-white" />
+                                    <button onClick={() => addCustomTag('hindered')}
+                                        className="px-3 py-1 rounded-lg text-sm border border-red-400/40 text-red-400 hover:bg-red-400/10">+</button>
                                 </div>
                             </div>
                         </div>
@@ -403,21 +431,21 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         </div>
                     </Section>
                 )}
-            </div>
 
-            {/* Pages dragged onto the dashboard render here as mini-apps. */}
-            {!onlyWidget && renderPage && asWidget.map((id: string) => {
-                const el = renderPage(id);
-                if (!el) return null;
-                return (
-                    <div key={id} className="glass-card rounded-2xl mt-4 overflow-hidden border border-purple-400/25">
-                        <div className="px-4 py-2 text-xs uppercase tracking-wider text-purple-400 border-b border-[var(--border)] bg-purple-400/5">
-                            {WIDGET_PAGE_LABEL[id] ?? id}
-                        </div>
-                        <div className="p-4 max-h-[520px] overflow-y-auto">{el}</div>
-                    </div>
-                );
-            })}
+                {show('customQuestion') && (
+                    <Section icon="edit" title="Свой вопрос" open={isOpen('customQuestion')} onToggle={() => toggle('customQuestion')}
+                        filled={!!customQuestion.trim()}
+                        summary={customQuestion.trim() ? customQuestion.trim().slice(0, 40) : 'не заполнено'}>
+                        <p className="text-gray-500 text-xs mt-3 mb-2">Задай себе любой свой вопрос — он сохранится вместе с записью.</p>
+                        <input type="text" value={customQuestion} onChange={e => setCustomQuestion(e.target.value)}
+                            placeholder="Например: Что я откладывал сегодня?"
+                            className="w-full mb-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 outline-none focus:border-cyan-400 text-white" />
+                        <textarea value={customAnswer} onChange={e => setCustomAnswer(e.target.value)}
+                            placeholder="Ответ..." disabled={!customQuestion.trim()}
+                            className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 min-h-[60px] text-white disabled:opacity-50" />
+                    </Section>
+                )}
+            </div>
 
             {/* Save stays reachable without scrolling back down the page. */}
             <div className="sticky bottom-0 -mx-1 mt-5 pt-3 pb-1 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)] to-transparent">

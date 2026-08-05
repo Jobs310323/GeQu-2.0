@@ -22,6 +22,8 @@ import { loadPrefs, savePrefs, type Prefs } from './lib/prefs';
 import { CirclesOfInfluence } from './pages/CirclesOfInfluence';
 import { Finance, DEFAULT_FINANCE } from './pages/Finance';
 import { GymApp } from './features/gym/Gym';
+import { Snowman } from './features/snowman/Snowman';
+import type { ActivityLabel, DayRecord } from './features/snowman/types';
 import { DopamineRoulette } from './features/dopamine/DopamineRoulette';
 import { HyperfocusOverlay } from './features/hyperfocus/HyperfocusOverlay';
 import { computeXp, levelFromXp } from './lib/xp';
@@ -48,7 +50,26 @@ function GequApp() {
     const [clinicalResults, setClinicalResults] = useState(DB.get('clinical', []));
     const [cbtRecords, setCbtRecords] = useState(DB.get('cbt', []));
     const [finance, setFinance] = useState(DB.get('finance', DEFAULT_FINANCE));
+    const [snowmanLabels, setSnowmanLabels] = useState<ActivityLabel[]>(DB.get('snowmanLabels', []));
+    const [snowmanDays, setSnowmanDays] = useState<DayRecord[]>(DB.get('snowmanDays', []));
     const [prefs, setPrefs] = useState<Prefs>(() => loadPrefs());
+    // Lives here (not inside the Pomodoro tab) so switching pages never pauses
+    // or resets a running timer — only the tab is unmounted, not the app.
+    const [pomodoro, setPomodoro] = useState({ workTime: 25, mode: 'work' as 'work' | 'break', timeLeft: 25 * 60, isRunning: false });
+
+    useEffect(() => {
+        if (!pomodoro.isRunning) return;
+        const id = setInterval(() => {
+            setPomodoro(p => {
+                if (p.timeLeft <= 1) {
+                    const nextMode = p.mode === 'work' ? 'break' : 'work';
+                    return { ...p, mode: nextMode, timeLeft: nextMode === 'work' ? p.workTime * 60 : 5 * 60, isRunning: false };
+                }
+                return { ...p, timeLeft: p.timeLeft - 1 };
+            });
+        }, 1000);
+        return () => clearInterval(id);
+    }, [pomodoro.isRunning]);
 
     useEffect(() => { savePrefs(prefs); }, [prefs]);
 
@@ -71,6 +92,8 @@ function GequApp() {
     useEffect(() => { DB.save('ach', achievements); }, [achievements]);
     useEffect(() => { DB.save('gym', gymData); }, [gymData]);
     useEffect(() => { DB.save('finance', finance); }, [finance]);
+    useEffect(() => { DB.save('snowmanLabels', snowmanLabels); }, [snowmanLabels]);
+    useEffect(() => { DB.save('snowmanDays', snowmanDays); }, [snowmanDays]);
 
     useEffect(() => {
         DB.save('theme', theme);
@@ -95,8 +118,7 @@ function GequApp() {
 
     const levelInfo = levelFromXp(computeXp({ logs, habits, kanban, gymData, testResults }).total);
 
-    // Every page as a lookup, so a page can render either in the main area
-    // or embedded on the dashboard as a mini-app.
+    // Every page as a lookup, keyed by nav id.
     const PAGES: Record<string, any> = {
         gym: <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />,
         diary: <Diary diary={diary} setDiary={setDiary} />,
@@ -105,15 +127,17 @@ function GequApp() {
         habits: <Habits habits={habits} setHabits={setHabits} />,
         kanban: <Kanban kanban={kanban} setKanban={setKanban} />,
         hub: <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />,
-        progress: <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} diary={diary} />,
+        progress: <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} diary={diary} snowmanDays={snowmanDays} />,
+        snowman: <Snowman labels={snowmanLabels} setLabels={setSnowmanLabels} days={snowmanDays} setDays={setSnowmanDays} />,
         calendar: <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />,
-        card: <UserCard logs={logs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData}
+        card: <UserCard logs={logs} setLogs={setLogs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData}
             testResults={testResults} clinicalResults={clinicalResults} cbtRecords={cbtRecords}
             finance={finance} circles={circles} />,
         aiplan: <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />,
         clinical: <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults}
             cbtRecords={cbtRecords} setCbtRecords={setCbtRecords} />,
-        training: <Training setTestResults={setTestResults} achievements={achievements} setAchievements={setAchievements} />,
+        training: <Training setTestResults={setTestResults} testResults={testResults} achievements={achievements} setAchievements={setAchievements}
+            pomodoro={pomodoro} setPomodoro={setPomodoro} />,
         knowledge: <Knowledge setPage={setPage} />,
         settings: <Settings diary={diary} logs={logs} prefs={prefs} setPrefs={setPrefs} />,
         finance: <Finance finance={finance} setFinance={setFinance} />,
@@ -125,7 +149,6 @@ function GequApp() {
         // sidebar shows plus enough state to tick a habit without leaving.
         habits, setHabits, setPage, levelInfo, energy,
     };
-    const promotedWidget = (prefs.asPage ?? []).includes(page) ? page : null;
 
     return (
         <div className="flex h-screen overflow-hidden">
@@ -134,10 +157,7 @@ function GequApp() {
                 onRoulette={() => setRouletteOpen(true)}
                 reminderCount={reminders.filter((r: any) => !r.done && r.date >= todayStr).length} />
             <main className="flex-1 p-6 overflow-y-auto relative">
-                {page === 'dashboard' && <Dashboard {...dashProps} renderPage={(id: string) => PAGES[id]} />}
-                {promotedWidget
-                    ? <Dashboard {...dashProps} onlyWidget={promotedWidget} />
-                    : (page !== 'dashboard' && PAGES[page]) || null}
+                {page === 'dashboard' ? <Dashboard {...dashProps} /> : PAGES[page] ?? null}
             </main>
 
             {hyperfocus && <HyperfocusOverlay hyperfocus={hyperfocus} setHyperfocus={setHyperfocus} kanban={kanban} setDiary={setDiary} setLogs={setLogs} todayLog={todayLog} />}

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserButton } from '@clerk/clerk-react';
 import { NAV_GROUPS } from '../lib/nav';
-import { DASHBOARD_WIDGETS } from '../lib/prefs';
 import { Logo, LogoMark } from './Logo';
 import { Icon, NAV_ICON } from './Icons';
 
@@ -18,23 +17,10 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
     }, [collapsed]);
 
     const hidden: string[] = prefs?.hiddenTabs ?? [];
-    const asWidget: string[] = prefs?.asWidget ?? [];
-    const asPage: string[] = prefs?.asPage ?? [];
 
-    // Drop hidden entries and pages moved to the dashboard, then drop groups
-    // that end up empty. Widgets promoted from the dashboard join "Каждый день".
-    const promoted = DASHBOARD_WIDGETS
-        .filter(w => asPage.includes(w.id))
-        .map(w => ({ id: w.id, icon: w.icon, label: w.label }));
-
+    // Drop hidden entries, then drop groups that end up empty.
     const groups = NAV_GROUPS
-        .map(g => ({
-            ...g,
-            items: [
-                ...g.items.filter(i => !hidden.includes(i.id) && !asWidget.includes(i.id)),
-                ...(g.id === 'daily' ? promoted : []),
-            ],
-        }))
+        .map(g => ({ ...g, items: g.items.filter(i => !hidden.includes(i.id)) }))
         .filter(g => g.items.length > 0);
 
     const energyColor = energy >= 7 ? 'bg-green-400' : energy >= 4 ? 'bg-yellow-400' : 'bg-red-400';
