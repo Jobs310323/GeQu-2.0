@@ -1,4 +1,4 @@
-import type { MindColor } from '../../types/mindmap';
+import type { MindColor, Priority } from '../../types/mindmap';
 
 export const MIND_COLORS: MindColor[] = ['cyan', 'purple', 'pink', 'green', 'yellow', 'red'];
 
@@ -28,4 +28,13 @@ export const COLOR_OUTLINE_CLASS: Record<MindColor, string> = {
     green: 'outline-green-400',
     yellow: 'outline-yellow-400',
     red: 'outline-red-400',
+};
+
+// Eisenhower quadrant → accent color. Independent from MindColor (the user's
+// free node-grouping color) — this one is derived, not chosen.
+export const PRIORITY_HEX: Record<Priority, string> = {
+    urgent_important: '#B58080',
+    not_urgent_important: '#7D9E86',
+    urgent_not_important: '#B0A176',
+    not_urgent_not_important: '#8B8D93',
 };
