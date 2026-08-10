@@ -54,6 +54,7 @@ const paths: Record<string, string> = {
     note: 'M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z M8 8h8M8 12h5',
     activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
     snowman: 'M9.8,5 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 M9,12 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0 M8,19 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0',
+    network: 'M12 3a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM19 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM12 8v4M12 12L6.5 16M12 12L17.5 16',
 };
 
 export function Icon({ name, size = 18, className = '' }: { name: keyof typeof paths | string } & IconProps) {
@@ -76,6 +77,7 @@ export const NAV_ICON: Record<string, string> = {
     habits: 'repeat',
     kanban: 'columns',
     goals: 'flag',
+    mindmap: 'network',
     diary: 'book',
     notes: 'pin',
     finance: 'wallet',

@@ -22,6 +22,7 @@ export const NAV_GROUPS: NavGroup[] = [
         id: 'tasks', title: 'Дела', items: [
             { id: 'kanban', icon: '📋', label: 'Канбан' },
             { id: 'goals', icon: '🚩', label: 'Цели' },
+            { id: 'mindmap', icon: '🧠', label: 'MindMap' },
             { id: 'diary', icon: '📓', label: 'Дневник' },
         ],
     },

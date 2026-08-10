@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { SignedIn, SignedOut } from '@clerk/clerk-react';
 import { DB } from './lib/db';
 import { CloudSync } from './components/CloudSync';
@@ -8,6 +8,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Kanban } from './pages/Kanban';
 import { Habits } from './pages/Habits';
 import { Goals } from './pages/Goals';
+import { MindMap } from './pages/MindMap';
 import { Diary } from './pages/Diary';
 import { Training } from './pages/Training';
 import { Knowledge } from './pages/Knowledge';
@@ -38,6 +39,7 @@ function GequApp() {
     const [logs, setLogs] = useState(DB.get('logs'));
     const [diary, setDiary] = useState(DB.get('diary'));
     const [goals, setGoals] = useState(DB.get('goals'));
+    const goalsSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [habits, setHabits] = useState(DB.get('habits'));
     const [kanban, setKanban] = useState(DB.get('kanban'));
     const [testResults, setTestResults] = useState(DB.get('tests', []));
@@ -85,7 +87,11 @@ function GequApp() {
     useEffect(() => { DB.save('logs', logs); }, [logs]);
     useEffect(() => { DB.save('dopamineMenu', dopamineMenu); }, [dopamineMenu]);
     useEffect(() => { DB.save('diary', diary); }, [diary]);
-    useEffect(() => { DB.save('goals', goals); }, [goals]);
+    useEffect(() => {
+        if (goalsSaveTimer.current) clearTimeout(goalsSaveTimer.current);
+        goalsSaveTimer.current = setTimeout(() => DB.save('goals', goals), 500);
+        return () => { if (goalsSaveTimer.current) clearTimeout(goalsSaveTimer.current); };
+    }, [goals]);
     useEffect(() => { DB.save('habits', habits); }, [habits]);
     useEffect(() => { DB.save('kanban', kanban); }, [kanban]);
     useEffect(() => { DB.save('tests', testResults); }, [testResults]);
@@ -123,6 +129,7 @@ function GequApp() {
         gym: <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />,
         diary: <Diary diary={diary} setDiary={setDiary} />,
         goals: <Goals goals={goals} setGoals={setGoals} />,
+        mindmap: <MindMap />,
         circles: <CirclesOfInfluence circles={circles} setCircles={setCircles} />,
         habits: <Habits habits={habits} setHabits={setHabits} />,
         kanban: <Kanban kanban={kanban} setKanban={setKanban} />,

@@ -12,6 +12,7 @@
     --accent-cyan: #7E9AAB;
     --accent-purple: #9490AE;
     --accent-pink: #AE8E9B;
+    --accent-red: #B58080;
 }
 
 :root.light {
@@ -24,6 +25,7 @@
     --accent-cyan: #3F5A6B;
     --accent-purple: #5B5473;
     --accent-pink: #7A5764;
+    --accent-red: #8A4A4A;
 }
 
 body {
@@ -113,6 +115,11 @@ body {
 input, textarea, button { color: var(--text-main); }
 input[type="range"] { accent-color: var(--accent-purple); }
 input[type="checkbox"] { accent-color: var(--accent-cyan); }
+
+/* Overdue MindMap node — pulses outline-color only, since .glass-card's shorthand
+   `border`/`box-shadow` would otherwise clobber a border-* or ring-* utility. */
+@keyframes pulseOutline { 0%,100% { outline-color: var(--accent-red); } 50% { outline-color: rgba(181,128,128,0.35); } }
+.node-overdue { outline: 2px solid var(--accent-red); outline-offset: 2px; animation: pulseOutline 1.5s ease-in-out infinite; }
 
 .markdown-content h1 { font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem; }
 .markdown-content h2 { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; }
