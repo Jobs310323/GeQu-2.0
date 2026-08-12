@@ -920,7 +920,7 @@ export function GymAI({ gymData, logs }: any) {
             {(output || loading) && (
                 <div className="glass-card p-6 rounded-2xl">
                     {output
-                        ? <div className="text-gray-200 markdown-content" dangerouslySetInnerHTML={{ __html: marked.parse(output) as string }} />
+                        ? <div className="text-gray-200 markdown-content" dangerouslySetInnerHTML={{ __html: marked.parse(output, { breaks: true, async: false }) as string }} />
                         : <div className="text-gray-500 text-sm animate-pulse">Анализирую данные…</div>}
                 </div>
             )}

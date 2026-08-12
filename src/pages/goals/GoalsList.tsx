@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Icon } from '../../components/Icons';
 import { useDragReorder } from '../../lib/useDragReorder';
-import { addSubtask, createTask, mapTask, removeTask } from '../../lib/taskTree';
+import { addSubtask, createTask, mapTask, removeTask, sortGoals, sortTasksByTag } from '../../lib/taskTree';
+import { copyText, downloadTextFile, formatAllGoalsText, formatGoalText } from '../../lib/exportGoals';
 import type { Goal, Task } from '../../types/goals';
 import { GoalDescription } from './GoalDescription';
 import { StepRow } from './StepRow';
 import { TaskInput } from './TaskInput';
+import { TagChips } from '../../components/TagChips';
 
 type GoalsListProps = {
     goals: Goal[];
@@ -15,10 +17,11 @@ type GoalsListProps = {
 export function GoalsList({ goals, setGoals }: GoalsListProps) {
     const [newGoal, setNewGoal] = useState('');
     const [openIds, setOpenIds] = useState<number[]>([]);
+    const [copiedAll, setCopiedAll] = useState(false);
 
     const addGoal = () => {
         if (!newGoal.trim()) return;
-        const goal: Goal = { id: Date.now(), title: newGoal, tasks: [] };
+        const goal: Goal = { id: Date.now(), title: newGoal, tasks: [], tags: [] };
         setGoals([...goals, goal]);
         setOpenIds(prev => [...prev, goal.id]);
         setNewGoal('');
@@ -30,7 +33,16 @@ export function GoalsList({ goals, setGoals }: GoalsListProps) {
     const toggleOpen = (goalId: number) =>
         setOpenIds(prev => (prev.includes(goalId) ? prev.filter(id => id !== goalId) : [...prev, goalId]));
 
-    const drag = useDragReorder(goals, setGoals);
+    const sortedGoals = useMemo(() => sortGoals(goals), [goals]);
+    const drag = useDragReorder(sortedGoals, setGoals);
+
+    const copyAll = async () => {
+        if (await copyText(formatAllGoalsText(sortedGoals))) {
+            setCopiedAll(true);
+            setTimeout(() => setCopiedAll(false), 1500);
+        }
+    };
+    const downloadAll = () => downloadTextFile(`goals-${new Date().toISOString().slice(0, 10)}.txt`, formatAllGoalsText(sortedGoals));
 
     return (
         <div>
@@ -38,6 +50,19 @@ export function GoalsList({ goals, setGoals }: GoalsListProps) {
                 <input type="text" value={newGoal} onChange={e => setNewGoal(e.target.value)} onKeyDown={e => e.key === 'Enter' && addGoal()} placeholder="Новая большая цель..." className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-cyan-400" />
                 <button onClick={addGoal} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-xl">Добавить цель</button>
             </div>
+
+            {goals.length > 0 && (
+                <div className="flex items-center gap-2 mb-4">
+                    <button onClick={copyAll} title="Скопировать все цели и шаги для промта"
+                        className="flex items-center gap-1.5 text-xs glass-card rounded-full px-3 py-1.5 text-[var(--text-main)] hover:text-cyan-400 transition">
+                        <Icon name={copiedAll ? 'check' : 'clipboard'} size={13} /> {copiedAll ? 'Скопировано' : 'Скопировать всё'}
+                    </button>
+                    <button onClick={downloadAll} title="Скачать все цели и шаги .txt"
+                        className="flex items-center gap-1.5 text-xs glass-card rounded-full px-3 py-1.5 text-[var(--text-main)] hover:text-cyan-400 transition">
+                        <Icon name="download" size={13} /> Скачать всё .txt
+                    </button>
+                </div>
+            )}
 
             {goals.length === 0 ? (
                 <div className="glass-card p-10 rounded-2xl text-center text-gray-500">
@@ -47,11 +72,11 @@ export function GoalsList({ goals, setGoals }: GoalsListProps) {
                 <>
                     {goals.length > 1 && (
                         <p className="text-xs text-[var(--text-muted)] mb-3 flex items-center gap-1.5">
-                            <Icon name="grip" size={13} /> Перетащи за ручку, чтобы поменять порядок
+                            <Icon name="grip" size={13} /> Перетащи за ручку, чтобы поменять порядок · выполненные цели опускаются вниз, остальные группируются по тегу
                         </p>
                     )}
                     <div className="space-y-3">
-                        {goals.map((goal, i) => (
+                        {sortedGoals.map((goal, i) => (
                             <GoalCard
                                 key={goal.id}
                                 goal={goal}
@@ -60,6 +85,7 @@ export function GoalsList({ goals, setGoals }: GoalsListProps) {
                                 onDelete={() => deleteGoal(goal.id)}
                                 setTasks={(tasks: Task[]) => setTasks(goal.id, tasks)}
                                 setDescription={(description: string) => patchGoal(goal.id, { description })}
+                                setTags={(tags: string[]) => patchGoal(goal.id, { tags })}
                                 gripProps={drag.handleProps}
                                 itemProps={drag.itemProps(i)}
                                 itemClass={drag.itemClass(i)}
@@ -79,22 +105,33 @@ type GoalCardProps = {
     onDelete: () => void;
     setTasks: (tasks: Task[]) => void;
     setDescription: (description: string) => void;
+    setTags: (tags: string[]) => void;
     gripProps: ReturnType<typeof useDragReorder>['handleProps'];
     itemProps: ReturnType<ReturnType<typeof useDragReorder>['itemProps']>;
     itemClass: string;
 };
 
-function GoalCard({ goal, isOpen, onToggle, onDelete, setTasks, setDescription, gripProps, itemProps, itemClass }: GoalCardProps) {
-    const tasks = goal.tasks ?? [];
-    const doneCount = tasks.filter(t => t.done).length;
-    const progress = tasks.length > 0 ? (doneCount / tasks.length) * 100 : 0;
+function GoalCard({ goal, isOpen, onToggle, onDelete, setTasks, setDescription, setTags, gripProps, itemProps, itemClass }: GoalCardProps) {
+    const [copied, setCopied] = useState(false);
+    const rawTasks = goal.tasks ?? [];
+    const doneCount = rawTasks.filter(t => t.done).length;
+    const progress = rawTasks.length > 0 ? (doneCount / rawTasks.length) * 100 : 0;
+    const tasks = useMemo(() => sortTasksByTag(rawTasks), [rawTasks]);
 
-    const addTask = (text: string) => setTasks([...tasks, createTask(text)]);
-    const patchTask = (taskId: number, patch: Partial<Task>) => setTasks(mapTask(tasks, taskId, t => ({ ...t, ...patch })));
-    const deleteTask = (taskId: number) => setTasks(removeTask(tasks, taskId));
-    const addChildTask = (parentId: number, text: string) => setTasks(addSubtask(tasks, parentId, createTask(text)));
+    const addTask = (text: string) => setTasks([...rawTasks, createTask(text)]);
+    const patchTask = (taskId: number, patch: Partial<Task>) => setTasks(mapTask(rawTasks, taskId, t => ({ ...t, ...patch })));
+    const deleteTask = (taskId: number) => setTasks(removeTask(rawTasks, taskId));
+    const addChildTask = (parentId: number, text: string) => setTasks(addSubtask(rawTasks, parentId, createTask(text)));
 
     const drag = useDragReorder(tasks, setTasks);
+
+    const copyGoal = async () => {
+        if (await copyText(formatGoalText(goal))) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        }
+    };
+    const downloadGoal = () => downloadTextFile(`${goal.title.slice(0, 40).replace(/[^\p{L}\p{N}]+/gu, '-')}.txt`, formatGoalText(goal));
 
     return (
         <div {...itemProps} className={`glass-card rounded-2xl overflow-hidden transition-all duration-300 ${itemClass}`}>
@@ -114,11 +151,22 @@ function GoalCard({ goal, isOpen, onToggle, onDelete, setTasks, setDescription, 
             <div className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                 <div className="overflow-hidden">
                     <div className="px-5 pb-5">
-                        <div className="flex justify-end mb-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                            <div className="flex items-center gap-2">
+                                <button onClick={copyGoal} title="Скопировать цель и шаги для промта"
+                                    className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-cyan-400 transition">
+                                    <Icon name={copied ? 'check' : 'clipboard'} size={13} /> {copied ? 'Скопировано' : 'Скопировать'}
+                                </button>
+                                <button onClick={downloadGoal} title="Скачать цель и шаги .txt"
+                                    className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-cyan-400 transition">
+                                    <Icon name="download" size={13} /> Скачать .txt
+                                </button>
+                            </div>
                             <button onClick={onDelete} className="flex items-center gap-1.5 text-red-400 hover:text-red-300 text-sm transition">
                                 <Icon name="trash" size={14} /> Удалить цель
                             </button>
                         </div>
+                        <TagChips tags={goal.tags ?? []} onChange={setTags} className="mb-4" />
                         <GoalDescription description={goal.description} onSave={setDescription} />
                         <div className="w-full bg-black/30 h-2 rounded-full mb-6 sm:hidden"><div className="bg-gradient-to-r from-cyan-400 to-purple-400 h-2 rounded-full transition-all" style={{ width: `${progress}%` }}></div></div>
                         <TaskInput addTask={addTask} />

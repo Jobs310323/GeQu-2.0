@@ -205,25 +205,16 @@ function MindMapCanvas() {
     const captureToInbox = () => {
         const text = inboxDraft.trim();
         if (!text) return;
-        let inbox = nodes.find(n => n.data.text === 'Inbox');
-        const toAddNodes: StoredFlowNode[] = [];
-        if (!inbox) {
-            const d = createNode('Inbox', -260, 0, 'yellow');
-            inbox = { id: d.id, type: 'mind', position: { x: d.x, y: d.y }, data: { ...stripDomain(d), ...callbacks } };
-            toAddNodes.push(inbox);
-        }
-        const taskDomain = createNode(text, inbox.position.x + 220, inbox.position.y + (Math.random() * 160 - 80), 'yellow');
-        const taskNode: StoredFlowNode = {
-            id: taskDomain.id, type: 'mind', position: { x: taskDomain.x, y: taskDomain.y },
-            data: { ...stripDomain(taskDomain), status: 'backlog', ...callbacks },
-        };
-        toAddNodes.push(taskNode);
-        setNodes(nds => [...nds, ...toAddNodes]);
-        setEdges(eds => [...eds, {
-            id: crypto.randomUUID(), source: inbox!.id, target: taskNode.id,
-            sourceHandle: 'right-source', targetHandle: 'left-target',
-            style: edgeStyle('yellow'),
-        }]);
+        const rect = wrapperRef.current?.getBoundingClientRect();
+        const point = rect
+            ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+            : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        const flowPos = screenToFlowPosition(point);
+        const jitter = () => Math.random() * 70 - 35;
+        setNodes(nds => {
+            const domain = createNode(text, flowPos.x + jitter(), flowPos.y + jitter(), 'yellow');
+            return [...nds, { id: domain.id, type: 'mind', position: { x: domain.x, y: domain.y }, data: { ...stripDomain(domain), status: 'backlog', ...callbacks } }];
+        });
         setInboxDraft('');
         setInboxOpen(false);
     };

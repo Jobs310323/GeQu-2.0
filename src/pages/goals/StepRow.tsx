@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Icon } from '../../components/Icons';
 import { CollapsibleMarkdown, autoGrow } from '../../components/CollapsibleMarkdown';
+import { TagChips } from '../../components/TagChips';
 import { useDragReorder } from '../../lib/useDragReorder';
 import type { Task } from '../../types/goals';
 import { TaskInput } from './TaskInput';
@@ -20,9 +21,11 @@ export function StepRow({ task, depth = 0, onPatch, onDelete, onAddChild, gripPr
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(task.text);
     const [noteOpen, setNoteOpen] = useState(false);
+    const [tagsOpen, setTagsOpen] = useState(false);
     const [addingChild, setAddingChild] = useState(false);
     const noteRef = useRef<HTMLTextAreaElement>(null);
     const hasNote = Boolean(task.note?.trim());
+    const hasTags = Boolean(task.tags?.length);
 
     const patch = (p: Partial<Task>) => onPatch(task.id, p);
 
@@ -74,6 +77,10 @@ export function StepRow({ task, depth = 0, onPatch, onDelete, onAddChild, gripPr
                         className={`shrink-0 p-1.5 rounded-lg transition ${hasNote || noteOpen ? 'text-cyan-400 bg-cyan-400/10' : 'text-[var(--text-muted)] hover:text-cyan-400'}`}>
                         <Icon name="note" size={14} />
                     </button>
+                    <button onClick={() => setTagsOpen(o => !o)} title={hasTags ? 'Теги шага' : 'Добавить теги'}
+                        className={`shrink-0 p-1.5 rounded-lg transition ${hasTags || tagsOpen ? 'text-purple-400 bg-purple-400/10' : 'text-[var(--text-muted)] hover:text-purple-400'}`}>
+                        <Icon name="tag" size={14} />
+                    </button>
                     <button onClick={startEdit} title="Изменить шаг"
                         className="shrink-0 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-purple-400 transition">
                         <Icon name="edit" size={14} />
@@ -100,6 +107,12 @@ export function StepRow({ task, depth = 0, onPatch, onDelete, onAddChild, gripPr
                 ) : hasNote && (
                     <div className="px-3 pb-3 -mt-1 cursor-pointer" onClick={() => setNoteOpen(true)}>
                         <CollapsibleMarkdown text={task.note} collapsedHeight={80} />
+                    </div>
+                )}
+
+                {(tagsOpen || hasTags) && (
+                    <div className="px-3 pb-3 -mt-1">
+                        <TagChips tags={task.tags ?? []} onChange={tags => patch({ tags })} />
                     </div>
                 )}
 

@@ -4,6 +4,7 @@ export interface Task {
     done: boolean;
     note: string;
     subtasks: Task[];
+    tags: string[];
 }
 
 export interface Goal {
@@ -12,4 +13,5 @@ export interface Goal {
     description?: string;
     tasks: Task[];
     order?: number;
+    tags: string[];
 }
