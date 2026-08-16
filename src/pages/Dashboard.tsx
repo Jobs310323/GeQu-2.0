@@ -20,13 +20,13 @@ function countRecent(items: any[], days: number) {
  */
 function Section({ icon, title, summary, filled, children, open, onToggle }: any) {
     return (
-        <div className="glass-card rounded-2xl overflow-hidden">
+        <div className="gq-glass overflow-hidden">
             <button onClick={onToggle}
                 className="w-full px-5 py-3.5 flex items-center gap-3 text-left hover:bg-white/5 transition">
                 <Icon name={icon} size={18} className="text-[var(--text-muted)] shrink-0" />
                 <span className="font-medium flex-1">{title}</span>
                 {filled
-                    ? <span className="text-xs text-green-400 truncate max-w-[45%]">{summary}</span>
+                    ? <span className="text-xs text-[var(--gq-good)] truncate max-w-[45%]">{summary}</span>
                     : <span className="text-xs text-gray-600">{summary}</span>}
                 <Icon name={open ? 'chevronDown' : 'chevronRight'} size={14} className="text-[var(--text-muted)] shrink-0" />
             </button>
@@ -40,7 +40,7 @@ function StatTile({ icon, value, label, hint, tone = 'text-[var(--text-main)]', 
     const Tag: any = onClick ? 'button' : 'div';
     return (
         <Tag onClick={onClick}
-            className={`glass-card rounded-2xl p-3 flex flex-col gap-1 text-left ${onClick ? 'hover:bg-white/5 transition' : ''}`}>
+            className={`gq-stat flex flex-col gap-1 text-left ${onClick ? 'hover:bg-white/5 transition' : ''}`}>
             <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
                 <Icon name={icon} size={13} />
                 <span className="text-[11px] uppercase tracking-wide truncate">{label}</span>
@@ -50,6 +50,9 @@ function StatTile({ icon, value, label, hint, tone = 'text-[var(--text-main)]', 
         </Tag>
     );
 }
+
+/** Rating threshold color, shared by the energy ring and each slider's live value. */
+function ratingTone(v: number) { return v >= 7 ? 'var(--gq-good)' : v >= 4 ? 'var(--gq-warn)' : 'var(--gq-bad)'; }
 
 export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults,
                             prefs, habits, setHabits, setPage, levelInfo, energy }: any) {
@@ -171,21 +174,33 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
         setHyperfocus({ status: 'setup', duration: 25, task: todoTasks[0]?.text || 'Своя задача', todoTasks });
     };
 
-    const Slider = ({ label, value, onChange }: any) => (
-        <div>
-            <div className="flex justify-between text-sm text-gray-400 mb-1.5">
-                <span>{label}</span><span className="text-cyan-400 font-bold">{value}/10</span>
+    const Slider = ({ label, icon, value, onChange }: any) => (
+        <div className="flex items-center gap-3">
+            <span className="text-[13px] text-[var(--text-main)] flex items-center gap-1.5 w-28 shrink-0">
+                <Icon name={icon} size={14} className="text-[var(--text-muted)]" />{label}
+            </span>
+            <div className="relative flex-1 h-4 flex items-center">
+                <div className="absolute left-0 right-0 h-1 rounded-full bg-[var(--border)]" />
+                <input type="range" min="0" max="10" value={value}
+                    onChange={e => onChange(Number(e.target.value))} className="gq-slider relative w-full" />
             </div>
-            <input type="range" min="0" max="10" value={value}
-                onChange={e => onChange(Number(e.target.value))} className="w-full accent-cyan-400" />
+            <span className="font-bold text-sm w-10 text-right shrink-0" style={{ color: ratingTone(value) }}>{value}/10</span>
         </div>
     );
 
+    // Live ring above the ratings form — recomputed from the sliders as they move,
+    // separate from `energyValue` (the app-level figure shown in the overview tile).
+    const liveEnergy = (sleep + focus + mood) / 3;
+
     return (
-        <div className="max-w-4xl mx-auto pb-24">
+        <div className="max-w-4xl mx-auto pb-24 relative">
+            <div className="gq-blob1" />
+            <div className="gq-blob2" />
+            <div className="relative" style={{ zIndex: 1 }}>
             <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <div>
-                    <h1 className="text-2xl font-bold leading-tight">Сегодня</h1>
+                    <div className="opacity-60 text-xs text-[var(--text-muted)] uppercase tracking-wide">Ежедневный чекин</div>
+                    <h1 className="text-2xl font-bold leading-tight gq-heading">Сегодня</h1>
                     <p className="text-sm text-[var(--text-muted)]">
                         {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
                         {alreadyClosed && ' · день закрыт'}
@@ -193,9 +208,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 </div>
                 {show('hyperfocus') && (
                     <button onClick={startHyper}
-                        className="glass-card rounded-xl px-4 py-2.5 flex items-center gap-2.5 border border-cyan-400/30 hover:bg-cyan-400/10 transition">
-                        <Icon name="rocket" size={18} className="text-cyan-400" />
-                        <span className="font-medium text-cyan-400 text-sm">Гиперфокус</span>
+                        className="gq-glass rounded-xl px-4 py-2.5 flex items-center gap-2.5 hover:bg-white/5 transition">
+                        <Icon name="rocket" size={18} className="text-[var(--gq-grad-a)]" />
+                        <span className="font-medium text-sm" style={{ color: 'var(--gq-grad-a)' }}>Гиперфокус</span>
                     </button>
                 )}
             </div>
@@ -203,7 +218,16 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
             {/* ---- Overview: how the last day / week actually went ---------- */}
             {show('overview') && (
                 <div className="mb-4 space-y-3">
-                    <div className="glass-card rounded-2xl p-4">
+                    <div className="gq-glass p-5 flex items-center gap-5">
+                        <RadialGauge value={liveEnergy} label="" size={74} color={ratingTone(liveEnergy)} />
+                        <div>
+                            <div className="text-[11px] uppercase tracking-wide text-[var(--text-muted)] mb-0.5">Энергия сейчас</div>
+                            <div className="text-sm text-[var(--text-main)]">
+                                Считается из сна, настроения и фокуса ниже — обновляется вживую.
+                            </div>
+                        </div>
+                    </div>
+                    <div className="gq-glass p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Состояние</h3>
                             <span className="text-[11px] text-[var(--text-muted)]">{gaugeCaption}</span>
@@ -211,8 +235,8 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         {gaugeSource ? (
                             <div className="grid grid-cols-3 gap-2">
                                 <RadialGauge value={Number(gaugeSource.sleep)} label="Сон" size={80} />
-                                <RadialGauge value={Number(gaugeSource.focus)} label="Фокус" size={80} color="var(--accent-purple)" />
-                                <RadialGauge value={Number(gaugeSource.mood)} label="Настроение" size={80} color="var(--accent-pink)" />
+                                <RadialGauge value={Number(gaugeSource.focus)} label="Фокус" size={80} color="var(--gq-grad-a)" />
+                                <RadialGauge value={Number(gaugeSource.mood)} label="Настроение" size={80} color="var(--gq-grad-b)" />
                             </div>
                         ) : (
                             <p className="text-sm text-[var(--text-muted)] py-4 text-center">
@@ -247,7 +271,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
             {show('today') && (habitList.length > 0 || openTasks.length > 0) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                     {habitList.length > 0 && (
-                        <div className="glass-card rounded-2xl p-4">
+                        <div className="gq-glass p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Привычки сегодня</h3>
                                 <span className="text-[11px] text-[var(--text-muted)]">{habitsDone} из {habitList.length}</span>
@@ -271,7 +295,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     )}
 
                     {openTasks.length > 0 && (
-                        <div className="glass-card rounded-2xl p-4">
+                        <div className="gq-glass p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Ближайшие задачи</h3>
                                 {setPage && (
@@ -295,16 +319,16 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
             )}
 
             {alreadyClosed && (
-                <div className="glass-card rounded-xl px-4 py-2.5 mb-4 text-sm text-green-400 border border-green-400/30">
+                <div className="gq-glass px-4 py-2.5 mb-4 text-sm" style={{ color: 'var(--gq-good)' }}>
                     Сегодняшний день уже закрыт — новая запись добавится отдельно.
                 </div>
             )}
 
-            <div className="glass-card rounded-2xl px-5 py-3.5 mb-3 flex items-center gap-3">
+            <div className="gq-glass px-5 py-3.5 mb-3 flex items-center gap-3">
                 <Icon name="calendar" size={16} className="text-[var(--text-muted)] shrink-0" />
                 <span className="text-sm font-medium">Дата записи</span>
                 <input type="date" value={entryDate} max={todayStr} onChange={e => setEntryDate(e.target.value || todayStr)}
-                    className="bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:border-cyan-400" />
+                    className="gq-input w-auto" />
                 {entryDate !== todayStr && (
                     <span className="text-xs text-[var(--text-muted)]">закрываем прошлый день задним числом</span>
                 )}
@@ -316,9 +340,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     <Section icon="chart" title="Оценка дня" open={isOpen('ratings')} onToggle={() => toggle('ratings')}
                         filled summary={`сон ${sleep} · фокус ${focus} · настроение ${mood}`}>
                         <div className="space-y-3 mt-3">
-                            <Slider label="Сон" value={sleep} onChange={setSleep} />
-                            <Slider label="Фокус" value={focus} onChange={setFocus} />
-                            <Slider label="Настроение" value={mood} onChange={setMood} />
+                            <Slider label="Сон" icon="moon" value={sleep} onChange={setSleep} />
+                            <Slider label="Фокус" icon="target" value={focus} onChange={setFocus} />
+                            <Slider label="Настроение" icon="smile" value={mood} onChange={setMood} />
                         </div>
                     </Section>
                 )}
@@ -353,43 +377,35 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                             ? `+${helped.length} / −${hindered.length}` : 'не отмечено'}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3">
                             <div>
-                                <div className="text-sm text-gray-400 mb-2">Помогло</div>
+                                <div className="text-sm text-[var(--text-muted)] mb-2 font-semibold">Помогло</div>
                                 <div className="flex flex-wrap gap-2 mb-2">
                                     {[...HELPED_TAGS, ...customHelped].map(tag => (
                                         <button key={tag} onClick={() => toggleTag(tag, 'helped')}
-                                            className={`px-3 py-1 rounded-full text-sm border transition ${
-                                                helped.includes(tag) ? 'bg-green-400/20 border-green-400 text-green-400'
-                                                                     : 'border-[var(--border)] text-gray-400 hover:border-green-400'
-                                            }`}>{tag}</button>
+                                            className={`gq-chip ${helped.includes(tag) ? 'active-good' : ''}`}>{tag}</button>
                                     ))}
                                 </div>
                                 <div className="flex gap-2">
                                     <input type="text" value={newHelpedTag} onChange={e => setNewHelpedTag(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomTag('helped'))}
-                                        placeholder="Свой вариант..."
-                                        className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-sm outline-none focus:border-green-400 text-white" />
+                                        placeholder="Свой вариант..." className="gq-input flex-1 py-1" />
                                     <button onClick={() => addCustomTag('helped')}
-                                        className="px-3 py-1 rounded-lg text-sm border border-green-400/40 text-green-400 hover:bg-green-400/10">+</button>
+                                        className="gq-chip active-good">+</button>
                                 </div>
                             </div>
                             <div>
-                                <div className="text-sm text-gray-400 mb-2">Мешало</div>
+                                <div className="text-sm text-[var(--text-muted)] mb-2 font-semibold">Мешало</div>
                                 <div className="flex flex-wrap gap-2 mb-2">
                                     {[...HINDERED_TAGS, ...customHindered].map(tag => (
                                         <button key={tag} onClick={() => toggleTag(tag, 'hindered')}
-                                            className={`px-3 py-1 rounded-full text-sm border transition ${
-                                                hindered.includes(tag) ? 'bg-red-400/20 border-red-400 text-red-400'
-                                                                       : 'border-[var(--border)] text-gray-400 hover:border-red-400'
-                                            }`}>{tag}</button>
+                                            className={`gq-chip ${hindered.includes(tag) ? 'active-bad' : ''}`}>{tag}</button>
                                     ))}
                                 </div>
                                 <div className="flex gap-2">
                                     <input type="text" value={newHinderedTag} onChange={e => setNewHinderedTag(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomTag('hindered'))}
-                                        placeholder="Свой вариант..."
-                                        className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-sm outline-none focus:border-red-400 text-white" />
+                                        placeholder="Свой вариант..." className="gq-input flex-1 py-1" />
                                     <button onClick={() => addCustomTag('hindered')}
-                                        className="px-3 py-1 rounded-lg text-sm border border-red-400/40 text-red-400 hover:bg-red-400/10">+</button>
+                                        className="gq-chip active-bad">+</button>
                                 </div>
                             </div>
                         </div>
@@ -402,7 +418,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         summary={mainEvent.trim() ? mainEvent.trim().slice(0, 40) : 'не заполнено'}>
                         <textarea value={mainEvent} onChange={e => setMainEvent(e.target.value)}
                             placeholder="Что было самым важным сегодня?"
-                            className="w-full mt-3 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 min-h-[80px] text-white" />
+                            className="gq-input mt-3 min-h-[80px]" />
                     </Section>
                 )}
 
@@ -412,7 +428,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         summary={testTomorrow.trim() ? testTomorrow.trim().slice(0, 40) : 'не заполнено'}>
                         <textarea value={testTomorrow} onChange={e => setTestTomorrow(e.target.value)}
                             placeholder="Идея для эксперимента над собой..."
-                            className="w-full mt-3 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 min-h-[80px] text-white" />
+                            className="gq-input mt-3 min-h-[80px]" />
                     </Section>
                 )}
 
@@ -426,7 +442,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                                 <input key={i} type="text" value={g}
                                     onChange={e => setGratitude(prev => prev.map((item, idx) => idx === i ? e.target.value : item))}
                                     placeholder={`Момент ${i + 1}...`}
-                                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 outline-none focus:border-pink-400 text-white" />
+                                    className="gq-input" />
                             ))}
                         </div>
                     </Section>
@@ -439,27 +455,28 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         <p className="text-gray-500 text-xs mt-3 mb-2">Задай себе любой свой вопрос — он сохранится вместе с записью.</p>
                         <input type="text" value={customQuestion} onChange={e => setCustomQuestion(e.target.value)}
                             placeholder="Например: Что я откладывал сегодня?"
-                            className="w-full mb-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 outline-none focus:border-cyan-400 text-white" />
+                            className="gq-input mb-2" />
                         <textarea value={customAnswer} onChange={e => setCustomAnswer(e.target.value)}
                             placeholder="Ответ..." disabled={!customQuestion.trim()}
-                            className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 min-h-[60px] text-white disabled:opacity-50" />
+                            className="gq-input min-h-[60px] disabled:opacity-50" />
                     </Section>
                 )}
             </div>
 
             {/* Save stays reachable without scrolling back down the page. */}
             <div className="sticky bottom-0 -mx-1 mt-5 pt-3 pb-1 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)] to-transparent">
-                <button onClick={handleSave}
-                    className="w-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold py-3 rounded-xl text-lg">
+                <button onClick={handleSave} className="gq-btn w-full justify-center py-3 text-lg">
+                    <Icon name="check" size={18} />
                     Закрыть день
                 </button>
             </div>
 
             {toast && (
-                <div className="fixed bottom-8 right-8 bg-[var(--bg-card)] border border-cyan-400 px-6 py-3 rounded-xl text-white shadow-xl anim-fade-in">
+                <div className="fixed bottom-8 right-8 gq-glass px-6 py-3 shadow-xl anim-fade-in">
                     {toast}
                 </div>
             )}
+            </div>
         </div>
     );
 }
