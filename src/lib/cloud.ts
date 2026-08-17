@@ -47,7 +47,7 @@ export function clearLocalData(): void {
 async function request(token: string, init?: RequestInit) {
     const res = await fetch('/api/state', {
         ...init,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(init?.headers ?? {}) },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...init?.headers },
     });
     if (!res.ok) throw new Error(`/api/state ${res.status}`);
     return res.json();

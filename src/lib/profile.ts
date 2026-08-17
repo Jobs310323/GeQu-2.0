@@ -4,6 +4,9 @@
 // exact, costs no tokens, and keeps the AI's job to interpretation only.
 
 import { computeXp, levelFromXp, evaluateAchievements, type GameData } from './xp';
+// Was reimplemented here character for character; the dashboard and the profile
+// card have to agree on what "streak" means, so they share one implementation.
+import { calculateStreak } from './helpers';
 
 /** Cognitive tests where a LOWER value is better (times/latency). */
 export const LOWER_IS_BETTER = new Set(['schulte', 'reaction', 'tmt']);
@@ -40,19 +43,6 @@ function tagCounts(logs: any[], field: 'helped' | 'hindered') {
     const counts: Record<string, number> = {};
     logs.forEach(l => (l[field] ?? []).forEach((t: string) => { counts[t] = (counts[t] || 0) + 1; }));
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([tag, n]) => ({ tag, n }));
-}
-
-function currentStreak(logs: any[]): number {
-    const days = [...new Set(logs.map(l => new Date(l.date).setHours(0, 0, 0, 0)))].sort((a, b) => b - a);
-    if (!days.length) return 0;
-    const today = new Date().setHours(0, 0, 0, 0);
-    if (days[0] !== today && days[0] !== today - 86400000) return 0;
-    let streak = 1;
-    for (let i = 0; i < days.length - 1; i++) {
-        if (days[i] - days[i + 1] === 86400000) streak++;
-        else break;
-    }
-    return streak;
 }
 
 export function buildProfile(d: {
@@ -224,7 +214,7 @@ export function buildProfile(d: {
                 focus: round(avg(nums(recent, 'focus'))),
                 mood: round(avg(nums(recent, 'mood'))),
             },
-            currentStreak: currentStreak(logs),
+            currentStreak: calculateStreak(logs),
         },
         helpedTop: tagCounts(sorted, 'helped'),
         hinderedTop: tagCounts(sorted, 'hindered'),

@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { SignedIn, SignedOut } from '@clerk/clerk-react';
 import { DB } from './lib/db';
+import { usePersisted } from './lib/usePersisted';
 import { CloudSync } from './components/CloudSync';
 import { AuthGate } from './components/AuthGate';
 import { isGuestMode, exitGuestMode } from './lib/guest';
@@ -81,26 +82,28 @@ function GequApp({ guestMode, onExitGuest }: { guestMode?: boolean; onExitGuest?
         if (prefs.hiddenTabs.includes(page)) setPage('dashboard');
     }, [prefs.hiddenTabs, page]);
 
-    useEffect(() => { DB.save('circles', circles); }, [circles]);
-    useEffect(() => { DB.save('reminders', reminders); }, [reminders]);
-    useEffect(() => { DB.save('clinical', clinicalResults); }, [clinicalResults]);
-    useEffect(() => { DB.save('cbt', cbtRecords); }, [cbtRecords]);
-    useEffect(() => { DB.save('logs', logs); }, [logs]);
-    useEffect(() => { DB.save('dopamineMenu', dopamineMenu); }, [dopamineMenu]);
-    useEffect(() => { DB.save('diary', diary); }, [diary]);
+    usePersisted('circles', circles);
+    usePersisted('reminders', reminders);
+    usePersisted('clinical', clinicalResults);
+    usePersisted('cbt', cbtRecords);
+    usePersisted('logs', logs);
+    usePersisted('dopamineMenu', dopamineMenu);
+    usePersisted('diary', diary);
+    // Goals stay on their own debounced effect: they are edited character by
+    // character in the tree editor, so they need coalescing the others don't.
     useEffect(() => {
         if (goalsSaveTimer.current) clearTimeout(goalsSaveTimer.current);
         goalsSaveTimer.current = setTimeout(() => DB.save('goals', goals), 500);
         return () => { if (goalsSaveTimer.current) clearTimeout(goalsSaveTimer.current); };
     }, [goals]);
-    useEffect(() => { DB.save('habits', habits); }, [habits]);
-    useEffect(() => { DB.save('kanban', kanban); }, [kanban]);
-    useEffect(() => { DB.save('tests', testResults); }, [testResults]);
-    useEffect(() => { DB.save('ach', achievements); }, [achievements]);
-    useEffect(() => { DB.save('gym', gymData); }, [gymData]);
-    useEffect(() => { DB.save('finance', finance); }, [finance]);
-    useEffect(() => { DB.save('snowmanLabels', snowmanLabels); }, [snowmanLabels]);
-    useEffect(() => { DB.save('snowmanDays', snowmanDays); }, [snowmanDays]);
+    usePersisted('habits', habits);
+    usePersisted('kanban', kanban);
+    usePersisted('tests', testResults);
+    usePersisted('ach', achievements);
+    usePersisted('gym', gymData);
+    usePersisted('finance', finance);
+    usePersisted('snowmanLabels', snowmanLabels);
+    usePersisted('snowmanDays', snowmanDays);
 
     useEffect(() => {
         DB.save('theme', theme);
@@ -113,17 +116,25 @@ function GequApp({ guestMode, onExitGuest }: { guestMode?: boolean; onExitGuest?
     const todayGym = gymData.history.some((w: any) => w.date.split('T')[0] === todayStr);
     const todayTest = testResults.some((t: any) => t.date.split('T')[0] === todayStr);
 
-    let energy = 5;
-    if (todayLog) {
-        energy = (todayLog.sleep * 0.4) + (todayLog.mood * 0.3) + (todayLog.focus * 0.3);
-        if (todayGym) energy += 0.3;
-        if (todayTest) energy += 0.2;
-        if (todayLog.hindered?.includes('Телефон')) energy -= 0.3;
-        if (todayLog.hindered?.includes('Усталость')) energy -= 0.3;
-    }
-    energy = Math.max(0, Math.min(10, energy));
+    const energy = useMemo(() => {
+        let e = 5;
+        if (todayLog) {
+            e = (todayLog.sleep * 0.4) + (todayLog.mood * 0.3) + (todayLog.focus * 0.3);
+            if (todayGym) e += 0.3;
+            if (todayTest) e += 0.2;
+            if (todayLog.hindered?.includes('Телефон')) e -= 0.3;
+            if (todayLog.hindered?.includes('Усталость')) e -= 0.3;
+        }
+        return Math.max(0, Math.min(10, e));
+    }, [todayLog, todayGym, todayTest]);
 
-    const levelInfo = levelFromXp(computeXp({ logs, habits, kanban, gymData, testResults }).total);
+    // Every slice of app state lives in this component, so it re-renders on any
+    // change anywhere — a keystroke in Finance used to re-walk every log, habit,
+    // task, workout and test result, and hand Sidebar a brand-new `levelInfo`.
+    const levelInfo = useMemo(
+        () => levelFromXp(computeXp({ logs, habits, kanban, gymData, testResults }).total),
+        [logs, habits, kanban, gymData, testResults],
+    );
 
     // Every page as a lookup, keyed by nav id.
     const PAGES: Record<string, any> = {
@@ -140,7 +151,7 @@ function GequApp({ guestMode, onExitGuest }: { guestMode?: boolean; onExitGuest?
         calendar: <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />,
         card: <UserCard logs={logs} setLogs={setLogs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData}
             testResults={testResults} clinicalResults={clinicalResults} cbtRecords={cbtRecords}
-            finance={finance} circles={circles} />,
+            finance={finance} circles={circles} setPage={setPage} />,
         aiplan: <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />,
         clinical: <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults}
             cbtRecords={cbtRecords} setCbtRecords={setCbtRecords} />,

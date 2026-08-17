@@ -8,6 +8,28 @@ import { PageHeader } from '../components/PageHeader';
 /** Former «Про СДВГ» page — kept as a fixed entry point at the top of the list. */
 const INTRO_IDS = ['adhd-what', 'adhd-symptoms', 'adhd-impact', 'adhd-not-a-sentence'];
 
+/**
+ * Article tile. At module scope on purpose: declared inside `Knowledge` it was a
+ * new component type on every render, so typing in the search box tore down and
+ * rebuilt every card in the list instead of updating the ones that changed.
+ */
+function Card({ a, isSaved, isRead, onOpen }: { a: Article; isSaved: boolean; isRead: boolean; onOpen: (a: Article) => void }) {
+    return (
+        <button onClick={() => onOpen(a)}
+            className="glass-card p-5 rounded-2xl text-left border border-transparent hover:border-cyan-400/40 transition flex flex-col">
+            <div className="flex items-start justify-between gap-2 mb-1">
+                <h3 className="font-bold flex-1">{a.title}</h3>
+                {isSaved && <Icon name="star" size={14} className="text-yellow-400 fill-current shrink-0 mt-0.5" />}
+            </div>
+            <p className="text-sm text-gray-400 flex-1 mb-3">{a.summary}</p>
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+                <span>{a.minutes} мин</span>
+                {isRead && <span className="text-green-400">✓ прочитано</span>}
+            </div>
+        </button>
+    );
+}
+
 function loadSet(key: string): string[] {
     const v = DB.get(key, []);
     return Array.isArray(v) ? v : [];
@@ -98,19 +120,8 @@ export function Knowledge({ setPage }: any) {
     const savedArticles = ARTICLES.filter(a => saved.includes(a.id));
     const intro = ARTICLES.filter(a => INTRO_IDS.includes(a.id));
 
-    const Card = ({ a }: { a: Article }) => (
-        <button onClick={() => openArticle(a)}
-            className="glass-card p-5 rounded-2xl text-left border border-transparent hover:border-cyan-400/40 transition flex flex-col">
-            <div className="flex items-start justify-between gap-2 mb-1">
-                <h3 className="font-bold flex-1">{a.title}</h3>
-                {saved.includes(a.id) && <Icon name="star" size={14} className="text-yellow-400 fill-current shrink-0 mt-0.5" />}
-            </div>
-            <p className="text-sm text-gray-400 flex-1 mb-3">{a.summary}</p>
-            <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span>{a.minutes} мин</span>
-                {read.includes(a.id) && <span className="text-green-400">✓ прочитано</span>}
-            </div>
-        </button>
+    const card = (a: Article) => (
+        <Card key={a.id} a={a} isSaved={saved.includes(a.id)} isRead={read.includes(a.id)} onOpen={openArticle} />
     );
 
     return (
@@ -135,7 +146,7 @@ export function Knowledge({ setPage }: any) {
                         {results.length === 0 ? 'Ничего не найдено' : `Найдено: ${results.length}`}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {results.map(a => <Card key={a.id} a={a} />)}
+                        {results.map(card)}
                     </div>
                 </>
             ) : category ? (
@@ -148,7 +159,7 @@ export function Knowledge({ setPage }: any) {
                         {CATEGORIES.find(c => c.id === category)?.icon} {CATEGORIES.find(c => c.id === category)?.title}
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {listed!.map(a => <Card key={a.id} a={a} />)}
+                        {listed!.map(card)}
                     </div>
                 </>
             ) : (
@@ -186,7 +197,7 @@ export function Knowledge({ setPage }: any) {
                                 <Icon name="star" size={12} className="text-yellow-400 fill-current" /> Закладки
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {savedArticles.map(a => <Card key={a.id} a={a} />)}
+                                {savedArticles.map(card)}
                             </div>
                         </div>
                     )}

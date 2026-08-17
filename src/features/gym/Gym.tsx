@@ -503,7 +503,7 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
         const newExercises = [...activeWorkout.exercises];
         newExercises[activeExIdx] = {
             ...newExercises[activeExIdx],
-            sets: [{ ...(newExercises[activeExIdx].sets[0] ?? {}), ...patch }],
+            sets: [{ ...newExercises[activeExIdx].sets[0], ...patch }],
         };
         setActiveWorkout({ ...activeWorkout, exercises: newExercises });
     };

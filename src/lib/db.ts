@@ -28,6 +28,10 @@ export const DB = {
             localStorage.setItem(`${PREFIX}${key}`, JSON.stringify(data));
         } catch {
             // Storage full or unavailable (private mode): ignore silently.
+            // Do NOT notify — a listener that pushes to the cloud would upload a
+            // snapshot taken from storage that never received this write, and the
+            // server would end up confirming data the user thinks they saved.
+            return;
         }
         listeners.forEach(fn => fn());
     },
