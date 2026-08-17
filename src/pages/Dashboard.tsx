@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { calculateStreak } from '../lib/helpers';
 import { Icon } from '../components/Icons';
 import { RadialGauge } from '../components/RadialGauge';
+import { GqTabs, GqPageHead } from '../components/GqTabs';
 
 const HELPED_TAGS = ['Кофе', 'Спорт', 'Сон', 'Pomodoro', 'Интерес к задаче', 'Медитация'];
 const HINDERED_TAGS = ['Телефон', 'Усталость', 'Шум', 'Скука', 'Голод', 'Откладывание'];
@@ -22,37 +23,59 @@ function Section({ icon, title, summary, filled, children, open, onToggle }: any
     return (
         <div className="gq-glass overflow-hidden">
             <button onClick={onToggle}
-                className="w-full px-5 py-3.5 flex items-center gap-3 text-left hover:bg-white/5 transition">
-                <Icon name={icon} size={18} className="text-[var(--text-muted)] shrink-0" />
-                <span className="font-medium flex-1">{title}</span>
-                {filled
-                    ? <span className="text-xs text-[var(--gq-good)] truncate max-w-[45%]">{summary}</span>
-                    : <span className="text-xs text-gray-600">{summary}</span>}
-                <Icon name={open ? 'chevronDown' : 'chevronRight'} size={14} className="text-[var(--text-muted)] shrink-0" />
+                className="w-full px-5 py-3.5 flex items-center gap-3 text-left transition hover:bg-[var(--gq-row-hover)]">
+                <Icon name={icon} size={18} className="shrink-0 text-[var(--gq-text-muted)]" />
+                <span className="font-medium flex-1" style={{ color: 'var(--gq-text)' }}>{title}</span>
+                <span className="text-xs truncate max-w-[45%]"
+                    style={{ color: filled ? 'var(--gq-good)' : 'var(--gq-text-muted)', opacity: filled ? 1 : 0.7 }}>
+                    {summary}
+                </span>
+                <Icon name={open ? 'chevronDown' : 'chevronRight'} size={14} className="shrink-0 text-[var(--gq-text-muted)]" />
             </button>
-            {open && <div className="px-5 pb-5 pt-1 border-t border-[var(--border)]">{children}</div>}
+            {open && <div className="px-5 pb-5 pt-1" style={{ borderTop: '1px solid var(--gq-divider)' }}>{children}</div>}
         </div>
     );
 }
 
 /** One number plus its caption, the building block of the overview grid. */
-function StatTile({ icon, value, label, hint, tone = 'text-[var(--text-main)]', onClick }: any) {
+function StatTile({ icon, value, label, hint, tone = 'var(--gq-text)', onClick }: any) {
     const Tag: any = onClick ? 'button' : 'div';
     return (
         <Tag onClick={onClick}
-            className={`gq-stat flex flex-col gap-1 text-left ${onClick ? 'hover:bg-white/5 transition' : ''}`}>
-            <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
+            className={`gq-stat flex flex-col gap-1 text-left ${onClick ? 'transition hover:bg-[var(--gq-row-hover)]' : ''}`}>
+            <div className="flex items-center gap-1.5" style={{ color: 'var(--gq-text-muted)' }}>
                 <Icon name={icon} size={13} />
                 <span className="text-[11px] uppercase tracking-wide truncate">{label}</span>
             </div>
-            <div className={`text-2xl font-semibold leading-none ${tone}`}>{value}</div>
-            {hint && <div className="text-[11px] text-[var(--text-muted)]">{hint}</div>}
+            <div className="gq-display text-2xl font-bold leading-none" style={{ color: tone }}>{value}</div>
+            {hint && <div className="text-[11px]" style={{ color: 'var(--gq-text-muted)' }}>{hint}</div>}
         </Tag>
     );
 }
 
 /** Rating threshold color, shared by the energy ring and each slider's live value. */
 function ratingTone(v: number) { return v >= 7 ? 'var(--gq-good)' : v >= 4 ? 'var(--gq-warn)' : 'var(--gq-bad)'; }
+
+/**
+ * One labelled 0–10 slider. Lives at module scope on purpose: declared inside
+ * `Dashboard` it was a fresh component type on every render, so React threw the
+ * `<input type="range">` away and remounted it mid-drag.
+ */
+function Slider({ label, icon, value, onChange }: any) {
+    return (
+        <div className="flex items-center gap-2.5">
+            <span className="text-[12.5px] flex items-center gap-1.5 w-24 shrink-0" style={{ color: 'var(--gq-text)' }}>
+                <Icon name={icon} size={13} className="text-[var(--gq-text-muted)]" />{label}
+            </span>
+            <div className="relative flex-1 h-4 flex items-center">
+                <div className="absolute left-0 right-0 h-1 rounded-full" style={{ background: 'var(--gq-track-off)' }} />
+                <input type="range" min="0" max="10" value={value}
+                    onChange={e => onChange(Number(e.target.value))} className="gq-slider relative w-full" />
+            </div>
+            <span className="font-bold text-[12.5px] w-[38px] text-right shrink-0" style={{ color: ratingTone(value) }}>{value}/10</span>
+        </div>
+    );
+}
 
 export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults,
                             prefs, habits, setHabits, setPage, levelInfo, energy }: any) {
@@ -174,87 +197,69 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
         setHyperfocus({ status: 'setup', duration: 25, task: todoTasks[0]?.text || 'Своя задача', todoTasks });
     };
 
-    const Slider = ({ label, icon, value, onChange }: any) => (
-        <div className="flex items-center gap-3">
-            <span className="text-[13px] text-[var(--text-main)] flex items-center gap-1.5 w-28 shrink-0">
-                <Icon name={icon} size={14} className="text-[var(--text-muted)]" />{label}
-            </span>
-            <div className="relative flex-1 h-4 flex items-center">
-                <div className="absolute left-0 right-0 h-1 rounded-full bg-[var(--border)]" />
-                <input type="range" min="0" max="10" value={value}
-                    onChange={e => onChange(Number(e.target.value))} className="gq-slider relative w-full" />
-            </div>
-            <span className="font-bold text-sm w-10 text-right shrink-0" style={{ color: ratingTone(value) }}>{value}/10</span>
-        </div>
-    );
-
     // Live ring above the ratings form — recomputed from the sliders as they move,
     // separate from `energyValue` (the app-level figure shown in the overview tile).
     const liveEnergy = (sleep + focus + mood) / 3;
 
     return (
-        <div className="max-w-4xl mx-auto pb-24 relative">
+        <div className="gq-page">
             <div className="gq-blob1" />
             <div className="gq-blob2" />
-            <div className="relative" style={{ zIndex: 1 }}>
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-                <div>
-                    <div className="opacity-60 text-xs text-[var(--text-muted)] uppercase tracking-wide">Ежедневный чекин</div>
-                    <h1 className="text-2xl font-bold leading-tight gq-heading">Сегодня</h1>
-                    <p className="text-sm text-[var(--text-muted)]">
-                        {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
-                        {alreadyClosed && ' · день закрыт'}
-                    </p>
-                </div>
-                {show('hyperfocus') && (
-                    <button onClick={startHyper}
-                        className="gq-glass rounded-xl px-4 py-2.5 flex items-center gap-2.5 hover:bg-white/5 transition">
-                        <Icon name="rocket" size={18} className="text-[var(--gq-grad-a)]" />
-                        <span className="font-medium text-sm" style={{ color: 'var(--gq-grad-a)' }}>Гиперфокус</span>
-                    </button>
-                )}
-            </div>
+            <div className="gq-page-inner gq-fade">
+            <GqPageHead title="Ежедневный чекин" action={show('hyperfocus') && (
+                <button onClick={startHyper}
+                    className="gq-glass rounded-xl px-4 py-2.5 flex items-center gap-2.5 transition hover:bg-[var(--gq-row-hover)]">
+                    <Icon name="rocket" size={18} className="text-[var(--gq-grad-a)]" />
+                    <span className="font-medium text-sm" style={{ color: 'var(--gq-grad-a)' }}>Гиперфокус</span>
+                </button>
+            )} />
+            <GqTabs page="dashboard" setPage={setPage} />
+
+            <p className="text-sm -mt-3 mb-5" style={{ color: 'var(--gq-text-muted)' }}>
+                {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
+                {alreadyClosed && ' · день закрыт'}
+            </p>
 
             {/* ---- Overview: how the last day / week actually went ---------- */}
             {show('overview') && (
                 <div className="mb-4 space-y-3">
-                    <div className="gq-glass p-5 flex items-center gap-5">
-                        <RadialGauge value={liveEnergy} label="" size={74} color={ratingTone(liveEnergy)} />
+                    <div className="gq-glass px-6 py-[22px] flex items-center gap-5">
+                        <RadialGauge value={liveEnergy} label="" size={74} stroke={6} glow color={ratingTone(liveEnergy)} />
                         <div>
-                            <div className="text-[11px] uppercase tracking-wide text-[var(--text-muted)] mb-0.5">Энергия сейчас</div>
-                            <div className="text-sm text-[var(--text-main)]">
+                            <div className="text-[11px] uppercase tracking-wide mb-0.5" style={{ color: 'var(--gq-text-muted)', letterSpacing: '0.06em' }}>Энергия сейчас</div>
+                            <div className="text-sm" style={{ color: 'var(--gq-text)' }}>
                                 Считается из сна, настроения и фокуса ниже — обновляется вживую.
                             </div>
                         </div>
                     </div>
                     <div className="gq-glass p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Состояние</h3>
-                            <span className="text-[11px] text-[var(--text-muted)]">{gaugeCaption}</span>
+                            <h3 className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--gq-text-muted)' }}>Состояние</h3>
+                            <span className="text-[11px]" style={{ color: 'var(--gq-text-muted)' }}>{gaugeCaption}</span>
                         </div>
                         {gaugeSource ? (
                             <div className="grid grid-cols-3 gap-2">
-                                <RadialGauge value={Number(gaugeSource.sleep)} label="Сон" size={80} />
+                                <RadialGauge value={Number(gaugeSource.sleep)} label="Сон" size={80} color="var(--gq-good)" />
                                 <RadialGauge value={Number(gaugeSource.focus)} label="Фокус" size={80} color="var(--gq-grad-a)" />
                                 <RadialGauge value={Number(gaugeSource.mood)} label="Настроение" size={80} color="var(--gq-grad-b)" />
                             </div>
                         ) : (
-                            <p className="text-sm text-[var(--text-muted)] py-4 text-center">
+                            <p className="text-sm py-4 text-center" style={{ color: 'var(--gq-text-muted)' }}>
                                 Закрой первый день — здесь появятся твои шкалы.
                             </p>
                         )}
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <StatTile icon="trophy" label="Уровень" value={level} hint={`${levelPct}% до следующего`} tone="text-cyan-400" />
-                        <StatTile icon="flame" label="Энергия" value={energyValue.toFixed(1)}
+                        <StatTile icon="trophy" label="Уровень" value={level} hint={`${levelPct}% до следующего`} tone="var(--gq-grad-a)" />
+                        <StatTile icon="flame" label="Энергия" value={energyValue.toFixed(1)} tone={ratingTone(energyValue)}
                             hint={energyValue >= 7 ? 'полный заряд' : energyValue >= 4 ? 'средний заряд' : 'на исходе'} />
                         <StatTile icon="repeat" label="Привычки" value={`${habitsDone}/${habitList.length}`}
                             hint="отмечено сегодня" onClick={setPage ? () => setPage('habits') : undefined} />
                         <StatTile icon="columns" label="Задачи" value={openTasks.length}
                             hint="в работе" onClick={setPage ? () => setPage('kanban') : undefined} />
                         {show('streak') && (
-                            <StatTile icon="calendar" label="Серия" value={streak} hint="дней подряд" tone="text-pink-400" />
+                            <StatTile icon="calendar" label="Серия" value={streak} hint="дней подряд" tone="var(--gq-grad-b)" />
                         )}
                         {show('streak') && (
                             <StatTile icon="star" label="Ачивки" value={achievements.length} hint="получено" />
@@ -273,18 +278,15 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     {habitList.length > 0 && (
                         <div className="gq-glass p-4">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Привычки сегодня</h3>
-                                <span className="text-[11px] text-[var(--text-muted)]">{habitsDone} из {habitList.length}</span>
+                                <h3 className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--gq-text-muted)' }}>Привычки сегодня</h3>
+                                <span className="text-[11px]" style={{ color: 'var(--gq-text-muted)' }}>{habitsDone} из {habitList.length}</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {habitList.map((h: any) => {
                                     const done = h.history?.includes(todayStr);
                                     return (
                                         <button key={h.id} onClick={() => toggleHabit(h.id)}
-                                            className={`px-3 py-1.5 rounded-full text-sm border flex items-center gap-1.5 transition ${
-                                                done ? 'bg-green-400/15 border-green-400/40 text-green-400'
-                                                     : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-muted)] hover:border-green-400/40'
-                                            }`}>
+                                            className={`gq-chip ${done ? 'active-good' : ''}`}>
                                             <Icon name="check" size={13} className={done ? '' : 'opacity-30'} />
                                             {h.name}
                                         </button>
@@ -297,19 +299,18 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     {openTasks.length > 0 && (
                         <div className="gq-glass p-4">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Ближайшие задачи</h3>
+                                <h3 className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--gq-text-muted)' }}>Ближайшие задачи</h3>
                                 {setPage && (
                                     <button onClick={() => setPage('kanban')}
-                                        className="text-[11px] text-cyan-400 hover:underline">все {openTasks.length}</button>
+                                        className="text-[11px] hover:underline" style={{ color: 'var(--gq-grad-a)' }}>все {openTasks.length}</button>
                                 )}
                             </div>
                             <ul className="space-y-2">
                                 {nextTasks.map((t: any) => (
                                     <li key={t.id} className="flex items-start gap-2 text-sm">
-                                        <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${
-                                            t.status === 'doing' ? 'bg-cyan-400' : 'bg-[var(--text-muted)]'
-                                        }`} />
-                                        <span className="text-[var(--text-main)] leading-snug">{t.text}</span>
+                                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0"
+                                            style={{ background: t.status === 'doing' ? 'var(--gq-grad-a)' : 'var(--gq-text-muted)' }} />
+                                        <span className="leading-snug" style={{ color: 'var(--gq-text)' }}>{t.text}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -324,13 +325,13 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 </div>
             )}
 
-            <div className="gq-glass px-5 py-3.5 mb-3 flex items-center gap-3">
-                <Icon name="calendar" size={16} className="text-[var(--text-muted)] shrink-0" />
-                <span className="text-sm font-medium">Дата записи</span>
+            <div className="gq-glass px-5 py-3.5 mb-3 flex items-center gap-3 flex-wrap">
+                <Icon name="calendar" size={16} className="shrink-0 text-[var(--gq-text-muted)]" />
+                <span className="text-sm font-medium" style={{ color: 'var(--gq-text)' }}>Дата записи</span>
                 <input type="date" value={entryDate} max={todayStr} onChange={e => setEntryDate(e.target.value || todayStr)}
                     className="gq-input w-auto" />
                 {entryDate !== todayStr && (
-                    <span className="text-xs text-[var(--text-muted)]">закрываем прошлый день задним числом</span>
+                    <span className="text-xs" style={{ color: 'var(--gq-text-muted)' }}>закрываем прошлый день задним числом</span>
                 )}
             </div>
 
@@ -356,13 +357,13 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                                 const active = bodyScan.includes(item.id);
                                 return (
                                     <button key={item.id} onClick={() => !item.auto && toggleScan(item.id)} disabled={item.auto}
-                                        className={`p-2.5 rounded-xl border text-left transition ${
-                                            active ? 'bg-green-400/20 border-green-400 text-white'
-                                                   : 'bg-[var(--bg-input)] border-[var(--border)] text-gray-400 hover:border-green-400'
-                                        } ${item.auto ? 'cursor-not-allowed opacity-80' : ''}`}>
+                                        className={`p-2.5 rounded-xl border text-left transition ${item.auto ? 'cursor-not-allowed opacity-80' : ''}`}
+                                        style={active
+                                            ? { background: 'color-mix(in srgb, var(--gq-good) 20%, transparent)', borderColor: 'var(--gq-good)', color: 'var(--gq-text)' }
+                                            : { background: 'var(--gq-chip-bg)', borderColor: 'var(--gq-chip-border)', color: 'var(--gq-text-muted)' }}>
                                         <span className="block text-sm font-medium">{item.id}</span>
                                         <span className="text-[11px] opacity-70">{item.label}</span>
-                                        {item.auto && <span className="block text-[10px] text-green-400 mt-0.5">Авто</span>}
+                                        {item.auto && <span className="block text-[10px] mt-0.5" style={{ color: 'var(--gq-good)' }}>Авто</span>}
                                     </button>
                                 );
                             })}
@@ -377,7 +378,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                             ? `+${helped.length} / −${hindered.length}` : 'не отмечено'}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3">
                             <div>
-                                <div className="text-sm text-[var(--text-muted)] mb-2 font-semibold">Помогло</div>
+                                <div className="text-[12.5px] mb-2 font-semibold" style={{ color: 'var(--gq-text)' }}>Что помогло сегодня</div>
                                 <div className="flex flex-wrap gap-2 mb-2">
                                     {[...HELPED_TAGS, ...customHelped].map(tag => (
                                         <button key={tag} onClick={() => toggleTag(tag, 'helped')}
@@ -393,7 +394,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                                 </div>
                             </div>
                             <div>
-                                <div className="text-sm text-[var(--text-muted)] mb-2 font-semibold">Мешало</div>
+                                <div className="text-[12.5px] mb-2 font-semibold" style={{ color: 'var(--gq-text)' }}>Что мешало</div>
                                 <div className="flex flex-wrap gap-2 mb-2">
                                     {[...HINDERED_TAGS, ...customHindered].map(tag => (
                                         <button key={tag} onClick={() => toggleTag(tag, 'hindered')}
@@ -436,7 +437,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     <Section icon="heart" title="За что благодарен" open={isOpen('gratitude')} onToggle={() => toggle('gratitude')}
                         filled={gratitudeCount > 0}
                         summary={gratitudeCount ? `${gratitudeCount} из 3` : 'не заполнено'}>
-                        <p className="text-gray-500 text-xs mt-3 mb-2">Найди 3 хороших момента. В плохие дни они поддержат.</p>
+                        <p className="text-xs mt-3 mb-2" style={{ color: 'var(--gq-text-muted)' }}>Найди 3 хороших момента. В плохие дни они поддержат.</p>
                         <div className="space-y-2">
                             {gratitude.map((g, i) => (
                                 <input key={i} type="text" value={g}
@@ -452,7 +453,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     <Section icon="edit" title="Свой вопрос" open={isOpen('customQuestion')} onToggle={() => toggle('customQuestion')}
                         filled={!!customQuestion.trim()}
                         summary={customQuestion.trim() ? customQuestion.trim().slice(0, 40) : 'не заполнено'}>
-                        <p className="text-gray-500 text-xs mt-3 mb-2">Задай себе любой свой вопрос — он сохранится вместе с записью.</p>
+                        <p className="text-xs mt-3 mb-2" style={{ color: 'var(--gq-text-muted)' }}>Задай себе любой свой вопрос — он сохранится вместе с записью.</p>
                         <input type="text" value={customQuestion} onChange={e => setCustomQuestion(e.target.value)}
                             placeholder="Например: Что я откладывал сегодня?"
                             className="gq-input mb-2" />
@@ -463,16 +464,19 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 )}
             </div>
 
-            {/* Save stays reachable without scrolling back down the page. */}
-            <div className="sticky bottom-0 -mx-1 mt-5 pt-3 pb-1 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)] to-transparent">
+            {/* Save stays reachable without scrolling back down the page. The bar
+                floats over the page gradient, so it blurs what is behind it rather
+                than fading into a flat colour that no longer exists here. */}
+            <div className="sticky bottom-0 -mx-2 mt-5 px-2 pt-3 pb-2 rounded-t-2xl"
+                style={{ background: 'var(--gq-glass-bg)', backdropFilter: 'blur(20px)' }}>
                 <button onClick={handleSave} className="gq-btn w-full justify-center py-3 text-lg">
-                    <Icon name="check" size={18} />
+                    <Icon name="checkCircle" size={18} />
                     Закрыть день
                 </button>
             </div>
 
             {toast && (
-                <div className="fixed bottom-8 right-8 gq-glass px-6 py-3 shadow-xl anim-fade-in">
+                <div className="fixed bottom-8 right-8 gq-glass px-6 py-3 shadow-xl gq-fade" style={{ color: 'var(--gq-text)' }}>
                     {toast}
                 </div>
             )}

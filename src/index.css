@@ -2,39 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
+/* App-wide tokens. They are deliberately the neutral half of the
+   GeQu-Checkin-MyCard palette defined further down as `--gq-*`: surfaces and
+   text read as the same material everywhere, while `--gq-*` keeps the pieces
+   that only the redesigned screens use (page gradient, blobs, chips, glass
+   radii). `--bg-main` is the flat colour the page gradient bottoms out in, so
+   full-screen overlays that paint it (AuthGate, HyperfocusOverlay) still match
+   the page behind them. */
 :root {
-    --bg-main: #0A0B0D;
-    --bg-card: rgba(22, 24, 28, 0.72);
+    --bg-main: #05050a;
+    --bg-card: rgba(20, 16, 34, 0.66);
     --bg-input: rgba(255, 255, 255, 0.035);
-    --text-main: #E3E5E9;
-    --text-muted: #868C99;
+    --text-main: #e8e6f5;
+    --text-muted: #9a97c9;
     --border: rgba(255, 255, 255, 0.075);
-    --accent-cyan: #7E9AAB;
-    --accent-purple: #9490AE;
-    --accent-pink: #AE8E9B;
-    --accent-red: #B58080;
+    --accent-cyan: #7c6cf6;
+    --accent-purple: #c86ce0;
+    --accent-pink: #e05d8f;
+    --accent-red: #e0566e;
 }
 
 :root.light {
-    --bg-main: #F4F5F7;
-    --bg-card: rgba(255, 255, 255, 0.85);
-    --bg-input: rgba(0, 0, 0, 0.04);
-    --text-main: #1A1C20;
-    --text-muted: #5A6070;
-    --border: rgba(0, 0, 0, 0.09);
-    --accent-cyan: #3F5A6B;
-    --accent-purple: #5B5473;
-    --accent-pink: #7A5764;
-    --accent-red: #8A4A4A;
+    --bg-main: #f1ecfb;
+    --bg-card: rgba(255, 255, 255, 0.82);
+    --bg-input: rgba(30, 15, 70, 0.045);
+    --text-main: #221f3a;
+    --text-muted: #615c81;
+    --border: rgba(30, 15, 70, 0.1);
+    --accent-cyan: #5b4bd4;
+    --accent-purple: #a244bd;
+    --accent-red: #c23a52;
+    --accent-pink: #c21e63;
 }
 
 body {
-    background-color: var(--bg-main);
+    background: var(--gq-bg-grad);
+    background-attachment: fixed;
     color: var(--text-main);
     font-family: 'Inter', system-ui, sans-serif;
     margin: 0;
 }
-/* No `transition` on background-color here on purpose: the value comes from a
+/* No `transition` on background here on purpose: the value comes from a
    custom property that changes on <html> when the theme flips, and Chrome does
    not reliably invalidate a transition driven that way — the page would stay
    painted in the previous theme until something else forced a reflow. */
@@ -64,14 +72,23 @@ body {
 /* Hovering a nav item set text to white, which disappeared on light. */
 :root.light .hover\:text-white:hover { color: var(--text-main); }
 
-/* Accent text needs more contrast against a light background — kept in the
-   same restrained register as the dark palette, just darker. */
-:root.light .text-cyan-400 { color: #3A5566; }
-:root.light .text-purple-400 { color: #554F6D; }
-:root.light .text-pink-400 { color: #74515E; }
-:root.light .text-green-400 { color: #3D6049; }
-:root.light .text-yellow-400 { color: #6B5F38; }
-:root.light .text-red-400 { color: #8A4A4A; }
+/* Accent text needs more contrast against a light background — same hues as the
+   dark palette (tailwind.config.js), pushed down in lightness. Kept in step with
+   the `--gq-*-strong` tokens, which do the same job for the redesigned pages. */
+:root.light .text-cyan-400 { color: #5b4bd4; }
+:root.light .text-purple-400 { color: #a244bd; }
+:root.light .text-pink-400 { color: #c21e63; }
+:root.light .text-green-400 { color: #047857; }
+:root.light .text-yellow-400 { color: #c2650a; }
+:root.light .text-red-400 { color: #c23a52; }
+
+/* The app's stock primary button is `bg-gradient-to-r from-cyan-400
+   to-purple-400 text-black` in ~60 places. Black read fine on the old
+   desaturated fill; on the design's violet→magenta it does not. Two classes
+   (0,2,0) outrank `.text-black` (0,1,0), so this flips exactly those buttons
+   and leaves black text elsewhere alone. */
+.bg-gradient-to-r.text-black,
+.bg-gradient-to-br.text-black { color: #fff; }
 
 /* Gradient "black text on bright button" stays correct, but plain
    white-on-dark note cards need their body text darkened. */
@@ -122,63 +139,173 @@ input[type="checkbox"] { accent-color: var(--accent-cyan); }
 .node-overdue { outline: 2px solid var(--accent-red); outline-offset: 2px; animation: pulseOutline 1.5s ease-in-out infinite; }
 
 /* ---------------------------------------------------------------
-   Checkin/Card redesign — scoped `.gq-*` classes only used on the
-   Dashboard (checkin) and UserCard pages. Kept as its own vivid
-   accent pair instead of the site's desaturated --accent-* vars,
-   since this is a deliberately punchier visual pass for those two
-   screens; everything else keeps the restrained palette untouched.
+   Checkin/Card redesign — a faithful port of the GeQu-Checkin-MyCard
+   prototype (claude.ai/design). Every value below is the prototype's
+   own, carried over 1:1 and only renamed with a `--gq-` prefix so the
+   rest of the app keeps its restrained `--accent-*` palette untouched.
+
+   The prototype switches themes with `[data-theme="light"]`; this app
+   sets `document.documentElement.className = theme` (App.tsx), so the
+   light block hangs off `:root.light` instead.
    --------------------------------------------------------------- */
 :root {
-    --gq-grad-a: #7c6cf6;
-    --gq-grad-b: #c86ce0;
-    --gq-blob1: rgba(124, 108, 246, 0.32);
-    --gq-blob2: rgba(200, 108, 224, 0.26);
+    --gq-bg-grad: radial-gradient(ellipse 80% 60% at 50% -10%, #1a1230 0%, #05050a 55%);
+    --gq-blob1: rgba(124, 108, 246, 0.35);
+    --gq-blob2: rgba(200, 108, 224, 0.28);
+    --gq-text: #e8e6f5;
+    --gq-text-2: #c9c8e0;
+    --gq-text-muted: #9a97c9;
+    --gq-glass-bg: rgba(255, 255, 255, 0.035);
+    --gq-glass-border: rgba(255, 255, 255, 0.07);
+    --gq-glass-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.6);
+    --gq-input-bg: #0c0c16;
+    --gq-input-text: #f1f0fb;
+    --gq-input-ph: #6b6a86;
+    --gq-chip-bg: rgba(255, 255, 255, 0.03);
+    --gq-chip-border: rgba(255, 255, 255, 0.08);
+    --gq-chip-text: #c9c8e0;
+    --gq-chip-hover: rgba(255, 255, 255, 0.07);
+    --gq-heading-grad: linear-gradient(120deg, #fff, #c9c4ff);
+    --gq-divider: rgba(255, 255, 255, 0.06);
+    --gq-row-hover: rgba(255, 255, 255, 0.04);
+    --gq-track-off: rgba(255, 255, 255, 0.1);
     --gq-good: #4fd1a5;
     --gq-warn: #e0a95d;
     --gq-bad: #e05d8f;
+    --gq-good-strong: #4fd1a5;
+    --gq-warn-strong: #e0a95d;
+    --gq-bad-strong: #e05d8f;
+    --gq-grad-a: #7c6cf6;
+    --gq-grad-b: #c86ce0;
 }
 :root.light {
-    --gq-blob1: rgba(124, 108, 246, 0.14);
-    --gq-blob2: rgba(200, 108, 224, 0.11);
+    --gq-bg-grad: linear-gradient(160deg, #eae5f7 0%, #f1ecfb 45%, #e9eef9 100%);
+    --gq-blob1: rgba(124, 108, 246, 0.16);
+    --gq-blob2: rgba(200, 108, 224, 0.13);
+    --gq-text: #221f3a;
+    --gq-text-2: #4a4566;
+    --gq-text-muted: #615c81;
+    --gq-glass-bg: rgba(255, 255, 255, 0.78);
+    --gq-glass-border: rgba(30, 15, 70, 0.1);
+    --gq-glass-shadow: 0 20px 50px -28px rgba(60, 40, 120, 0.32);
+    --gq-input-bg: #ffffff;
+    --gq-input-text: #221f3a;
+    --gq-input-ph: #7d7796;
+    --gq-chip-bg: rgba(255, 255, 255, 0.85);
+    --gq-chip-border: rgba(30, 15, 70, 0.12);
+    --gq-chip-text: #3c3760;
+    --gq-chip-hover: rgba(30, 15, 70, 0.06);
+    --gq-heading-grad: linear-gradient(120deg, #241d4a, #7c6cf6);
+    --gq-divider: rgba(30, 15, 70, 0.1);
+    --gq-row-hover: rgba(30, 15, 70, 0.05);
+    --gq-track-off: rgba(30, 15, 70, 0.14);
     --gq-good: #059669;
     --gq-warn: #d97706;
     --gq-bad: #e0266f;
+    --gq-good-strong: #047857;
+    --gq-warn-strong: #c2650a;
+    --gq-bad-strong: #c21e63;
 }
+
+/* Page shell. `<main>` in App.tsx pads its content by 24px (`p-6`), so the
+   shell cancels that padding and re-applies the prototype's own inside —
+   otherwise the gradient would sit in an inset rectangle with the app
+   background showing around it. The -1.5rem/+3rem pair is the one place that
+   knows about `<main>`'s padding; keep them in sync if that changes.
+   `overflow-x: clip` and not `hidden`: the blobs hang past both edges, and
+   `hidden` would turn this into a scroll container nested inside `<main>`'s
+   own scroller. */
+.gq-page {
+    position: relative;
+    margin: -1.5rem;
+    min-height: calc(100% + 3rem);
+    background: var(--gq-bg-grad);
+    color: var(--gq-text);
+    overflow-x: clip;
+    transition: background 0.4s;
+}
+.gq-page-inner {
+    position: relative; z-index: 1;
+    max-width: 1100px; margin: 0 auto; padding: 40px 32px 64px;
+}
+@media (max-width: 640px) { .gq-page-inner { padding: 24px 16px 64px; } }
+
+/* Headings and big numerals are Manrope in the prototype; body copy is Inter,
+   which `body` already asks for. Both are loaded from index.html. */
+.gq-display { font-family: 'Manrope', system-ui, sans-serif; }
+
 @keyframes gqDrift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(60px, -40px) scale(1.15); } }
 @keyframes gqDrift2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-50px, 50px) scale(1.1); } }
+@keyframes gqFadeUp { from { opacity: 0; } to { opacity: 1; } }
+.gq-fade { animation: gqFadeUp 0.35s ease both; }
+
 .gq-blob1, .gq-blob2 {
     position: absolute; border-radius: 50%; filter: blur(40px); pointer-events: none; z-index: 0;
 }
 .gq-blob1 { top: -100px; left: -80px; width: 480px; height: 480px; background: radial-gradient(circle, var(--gq-blob1), transparent 70%); animation: gqDrift1 14s ease-in-out infinite; }
 .gq-blob2 { top: 200px; right: -120px; width: 420px; height: 420px; background: radial-gradient(circle, var(--gq-blob2), transparent 70%); animation: gqDrift2 16s ease-in-out infinite; }
+
 .gq-heading {
-    background: linear-gradient(120deg, var(--text-main), var(--gq-grad-a));
+    background: var(--gq-heading-grad);
     -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-:root.light .gq-heading { background: linear-gradient(120deg, var(--text-main), var(--gq-grad-a)); -webkit-background-clip: text; background-clip: text; }
+.gq-muted { color: var(--gq-text-muted); }
+.gq-divider { border-color: var(--gq-divider); }
+.gq-row { border-bottom: 1px solid var(--gq-divider); }
+.gq-row:hover { background: var(--gq-row-hover); }
+
+/* No `position`/`z-index` here even though the prototype has them: `.gq-page-inner`
+   already lifts the whole content column above the blobs, and a rule declared
+   after `@tailwind utilities` would silently beat an `absolute`/`z-50` utility
+   at equal specificity (the sidebar's hover panel is one such user). */
 .gq-glass {
-    background: var(--bg-card); border: 1px solid var(--border);
+    background: var(--gq-glass-bg); border: 1px solid var(--gq-glass-border);
     backdrop-filter: blur(20px); border-radius: 22px;
-    box-shadow: 0 20px 60px -30px rgba(0, 0, 0, 0.5); position: relative; z-index: 1;
+    box-shadow: var(--gq-glass-shadow);
 }
 .gq-tab {
-    border: none; background: transparent; color: var(--text-muted);
+    border: none; background: transparent; color: var(--gq-text-muted);
     font-size: 14px; font-weight: 600; padding: 10px 6px; cursor: pointer;
     position: relative; display: flex; align-items: center; gap: 7px;
 }
-.gq-tab.active { color: var(--text-main); }
+.gq-tab.active { color: var(--gq-text); }
 .gq-tab.active::after {
     content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
     background: linear-gradient(90deg, var(--gq-grad-a), var(--gq-grad-b)); border-radius: 2px;
 }
+/* The prototype has `transition: all 0.15s` here. It cannot come across: every
+   one of the chip's animatable properties is driven by a custom property that
+   changes on <html> when the theme flips, and Chrome does not invalidate a
+   transition driven that way — chips stayed painted in the dark palette on a
+   light page, indefinitely. Same reason `body` skips a background transition
+   (see the note near the top of this file). */
 .gq-chip {
-    border: 1px solid var(--border); background: var(--bg-input); color: var(--text-main);
+    border: 1px solid var(--gq-chip-border); background: var(--gq-chip-bg); color: var(--gq-chip-text);
     border-radius: 99px; padding: 6px 13px; font-size: 12px; cursor: pointer;
-    transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
 }
-.gq-chip:hover { background: var(--border); }
-.gq-chip.active-good { background: color-mix(in srgb, var(--gq-good) 18%, transparent); border-color: var(--gq-good); color: var(--gq-good); font-weight: 700; }
-.gq-chip.active-bad { background: color-mix(in srgb, var(--gq-bad) 18%, transparent); border-color: var(--gq-bad); color: var(--gq-bad); font-weight: 700; }
+.gq-chip:hover { background: var(--gq-chip-hover); }
+.gq-chip:disabled { cursor: default; }
+/* The prototype hardcodes the active tint; `color-mix` off the token keeps it
+   correct in light mode too, where --gq-good/bad are much darker. */
+.gq-chip.active-good { background: color-mix(in srgb, var(--gq-good) 20%, transparent); border-color: var(--gq-good); color: var(--gq-good); font-weight: 700; }
+.gq-chip.active-bad { background: color-mix(in srgb, var(--gq-bad) 20%, transparent); border-color: var(--gq-bad); color: var(--gq-bad); font-weight: 700; }
+/* Sidebar, in the same material as the tab strip above: transparent by default,
+   a violet wash plus a matching hairline when active. `color-mix` off the token
+   so the light theme gets the darker violet automatically. No `transition` —
+   same custom-property invalidation problem as `.gq-chip`. */
+.gq-nav { border: 1px solid transparent; color: var(--gq-text-muted); }
+.gq-nav:hover { background: var(--gq-row-hover); color: var(--gq-text); }
+.gq-nav.active {
+    color: var(--gq-text);
+    background: color-mix(in srgb, var(--gq-grad-a) 15%, transparent);
+    border-color: color-mix(in srgb, var(--gq-grad-a) 42%, transparent);
+}
+/* Level pip and any other small "this is the accent" disc. */
+.gq-badge { background: linear-gradient(145deg, var(--gq-grad-a), var(--gq-grad-b)); color: #fff; }
+/* Progress/energy troughs. `black/30` was invisible on the light gradient. */
+.gq-track { background: var(--gq-track-off); }
+
 .gq-btn {
     border: none; border-radius: 14px; padding: 11px 18px;
     background: linear-gradient(145deg, var(--gq-grad-a), var(--gq-grad-b)); color: #fff;
@@ -186,16 +313,19 @@ input[type="checkbox"] { accent-color: var(--accent-cyan); }
 }
 .gq-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .gq-icon-btn {
-    border: none; background: var(--bg-input); border-radius: 10px; width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-main);
+    border: none; background: var(--gq-chip-bg); border-radius: 10px; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--gq-text-2);
 }
-.gq-stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; }
+.gq-stat {
+    background: var(--gq-glass-bg); border: 1px solid var(--gq-glass-border);
+    border-radius: 16px; padding: 14px 16px;
+}
 .gq-input {
-    font-size: 14px; border: 1px solid var(--border); border-radius: 14px; padding: 11px 14px;
-    background: var(--bg-input); color: var(--text-main); width: 100%; box-sizing: border-box;
+    font-size: 14px; border: 1px solid var(--gq-glass-border); border-radius: 14px; padding: 11px 14px;
+    background: var(--gq-input-bg); color: var(--gq-input-text); width: 100%; box-sizing: border-box;
 }
-.gq-input::placeholder { color: var(--text-muted); }
-.gq-input:focus { outline: none; border-color: var(--gq-grad-a); }
+.gq-input::placeholder { color: var(--gq-input-ph); }
+.gq-input:focus { outline: none; border-color: rgba(124, 108, 246, 0.5); }
 input[type="range"].gq-slider {
     -webkit-appearance: none; appearance: none; width: 100%; height: 16px;
     background: transparent; outline: none; accent-color: var(--gq-grad-a); display: block; margin: 0;
