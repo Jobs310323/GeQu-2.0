@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SignIn, SignUp } from '@clerk/clerk-react';
 import { Logo } from './Logo';
+import { enterGuestMode } from '../lib/guest';
 
 /**
  * Shown instead of the app when nobody is signed in. Clerk's prebuilt forms
@@ -8,7 +9,7 @@ import { Logo } from './Logo';
  * what's enabled in the Clerk dashboard) — this just frames them in the app's
  * own dark, desaturated look.
  */
-export function AuthGate() {
+export function AuthGate({ onGuest }: { onGuest: () => void }) {
     const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
 
     return (
@@ -42,6 +43,13 @@ export function AuthGate() {
                         ? <SignIn routing="virtual" signUpUrl="#" appearance={CLERK_APPEARANCE} />
                         : <SignUp routing="virtual" signInUrl="#" appearance={CLERK_APPEARANCE} />}
                 </div>
+
+                <button
+                    onClick={() => { enterGuestMode(); onGuest(); }}
+                    className="block mx-auto mt-6 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] underline underline-offset-2"
+                >
+                    Продолжить как гость (без сохранения в облако)
+                </button>
             </div>
         </div>
     );

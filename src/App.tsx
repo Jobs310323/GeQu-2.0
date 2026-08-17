@@ -3,6 +3,7 @@ import { SignedIn, SignedOut } from '@clerk/clerk-react';
 import { DB } from './lib/db';
 import { CloudSync } from './components/CloudSync';
 import { AuthGate } from './components/AuthGate';
+import { isGuestMode, exitGuestMode } from './lib/guest';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './pages/Dashboard';
 import { Kanban } from './pages/Kanban';
@@ -30,7 +31,7 @@ import { HyperfocusOverlay } from './features/hyperfocus/HyperfocusOverlay';
 import { computeXp, levelFromXp } from './lib/xp';
 
 /** The real app, mounted only once Clerk confirms a signed-in user. */
-function GequApp() {
+function GequApp({ guestMode, onExitGuest }: { guestMode?: boolean; onExitGuest?: () => void }) {
     const [page, setPage] = useState('dashboard');
     const [dopamineMenu, setDopamineMenu] = useState(DB.get('dopamineMenu', [
         'Попить воды', 'Сделать растяжку', 'Посмотреть в окно 2 мин', 'Поиграть с котом', 'Закрыть глаза на 1 мин'
@@ -158,7 +159,17 @@ function GequApp() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className={`flex h-screen overflow-hidden ${guestMode ? 'pt-8' : ''} relative`}>
+            {guestMode && (
+                <div className="fixed top-0 inset-x-0 z-50 h-8 flex items-center justify-center gap-3 text-xs bg-[var(--gq-grad-a,#7c6cf6)]/20 border-b border-[var(--border)] text-[var(--text-main)]">
+                    <span>Гостевой режим — данные хранятся только в этом браузере, без облачной синхронизации</span>
+                    {onExitGuest && (
+                        <button onClick={onExitGuest} className="underline underline-offset-2 hover:text-[var(--gq-grad-a,#7c6cf6)]">
+                            Войти в аккаунт
+                        </button>
+                    )}
+                </div>
+            )}
             <Sidebar page={page} setPage={setPage} theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog}
                 prefs={prefs} setPrefs={setPrefs} levelInfo={levelInfo}
                 onRoulette={() => setRouletteOpen(true)}
@@ -183,8 +194,14 @@ function GequApp() {
     );
 }
 
-/** Gates the whole app behind auth: each account only ever sees its own data. */
+/** Gates the whole app behind auth: each account only ever sees its own data.
+ * A signed-out visitor can also continue as a guest — local-only data, no
+ * CloudSync — so the app (and any design change) can be checked without
+ * creating an account. Signing in for real always takes priority over a
+ * stale guest flag, since <SignedIn> is checked first. */
 function App() {
+    const [guestMode, setGuestMode] = useState(isGuestMode());
+
     return (
         <>
             <SignedIn>
@@ -192,7 +209,9 @@ function App() {
                 <GequApp />
             </SignedIn>
             <SignedOut>
-                <AuthGate />
+                {guestMode
+                    ? <GequApp guestMode onExitGuest={() => { exitGuestMode(); setGuestMode(false); }} />
+                    : <AuthGate onGuest={() => setGuestMode(true)} />}
             </SignedOut>
         </>
     );
