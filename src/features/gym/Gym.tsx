@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { streamAI } from '../../lib/ai';
+import { dayISO } from '../../lib/date';
 import { ProgramImport } from './ProgramImport';
 import { marked } from 'marked';
 import { PageHeader } from '../../components/PageHeader';
@@ -829,7 +830,7 @@ function buildGymContext(activeProgram: any, gymData: any, logs: any): any[] {
             }));
 
     const getDayLog = (dateStr: string) =>
-        logs.find((l: any) => l.date.split('T')[0] === dateStr.split('T')[0]);
+        logs.find((l: any) => dayISO(l.date) === dayISO(dateStr));
 
     const items: any[] = [];
     planned.forEach((plan, name) => {
@@ -841,7 +842,7 @@ function buildGymContext(activeProgram: any, gymData: any, logs: any): any[] {
         const targetReps = cardio ? null : (parseInt(repRange[1] ?? repRange[0]) || 10);
 
         const summarize = (entry: any) => ({
-            date: entry.date.split('T')[0],
+            date: dayISO(entry.date),
             sets: entry.sets.map((s: any) => cardio
                 ? { durationMin: s.duration, distanceKm: s.distance, intensity: s.intensity }
                 : { weight: s.weight, reps: s.reps }),

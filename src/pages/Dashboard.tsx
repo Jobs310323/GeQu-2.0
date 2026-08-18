@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { calculateStreak } from '../lib/helpers';
+import { dayISO, todayISO, DAY_MS } from '../lib/date';
 import { Icon } from '../components/Icons';
 import { RadialGauge } from '../components/RadialGauge';
 import { GqTabs, GqPageHead } from '../components/GqTabs';
@@ -7,7 +8,6 @@ import { GqTabs, GqPageHead } from '../components/GqTabs';
 const HELPED_TAGS = ['Кофе', 'Спорт', 'Сон', 'Pomodoro', 'Интерес к задаче', 'Медитация'];
 const HINDERED_TAGS = ['Телефон', 'Усталость', 'Шум', 'Скука', 'Голод', 'Откладывание'];
 
-const DAY_MS = 86400000;
 /** How many entries in `items` fall inside the last `days` days. */
 function countRecent(items: any[], days: number) {
     const from = Date.now() - days * DAY_MS;
@@ -106,15 +106,15 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
     const show = (id: string) => !hiddenWidgets.includes(id);
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayISO();
     const [entryDate, setEntryDate] = useState(todayStr);
-    const todayGym = gymData.history.some((w: any) => w.date.split('T')[0] === todayStr);
-    const todayTest = testResults.some((t: any) => t.date.split('T')[0] === todayStr);
+    const todayGym = gymData.history.some((w: any) => dayISO(w.date) === todayStr);
+    const todayTest = testResults.some((t: any) => dayISO(t.date) === todayStr);
 
     // --- Overview figures --------------------------------------------------
     // Gauges show today's numbers once the day is closed, and the running
     // 7-day average before that — so the block is never empty.
-    const todayLog = logs.find((l: any) => l.date.split('T')[0] === todayStr);
+    const todayLog = logs.find((l: any) => dayISO(l.date) === todayStr);
     const recentLogs = logs.filter((l: any) => new Date(l.date).getTime() >= Date.now() - 7 * DAY_MS);
     const avg = (key: string) => recentLogs.length
         ? recentLogs.reduce((s: number, l: any) => s + Number(l[key] ?? 0), 0) / recentLogs.length
@@ -170,7 +170,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     };
 
     const gratitudeCount = gratitude.filter(g => g.trim()).length;
-    const alreadyClosed = logs.some((l: any) => l.date.split('T')[0] === todayStr);
+    const alreadyClosed = logs.some((l: any) => dayISO(l.date) === todayStr);
 
     const handleSave = () => {
         const isToday = entryDate === todayStr;

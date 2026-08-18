@@ -69,3 +69,12 @@ export const ALL_TABS: NavItem[] = NAV_GROUPS.flatMap(g => g.items);
 export function findTab(id: string) {
     return [...ALL_TABS, ...STANDALONE_TABS].find(t => t.id === id);
 }
+
+/**
+ * The group a page sits in, by title. The page header uses it as an eyebrow, so
+ * a page states where it lives in the app, not just what it is called.
+ * Standalone pages (see the note at the top) have no group.
+ */
+export function groupTitleOf(id: string): string | null {
+    return NAV_GROUPS.find(g => g.items.some(i => i.id === id))?.title ?? null;
+}

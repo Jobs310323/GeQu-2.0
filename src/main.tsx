@@ -4,7 +4,6 @@ import { ClerkProvider } from '@clerk/clerk-react'
 import { ruRU } from '@clerk/localizations'
 import './index.css'
 import App from './App.tsx'
-import { ConceptV2App } from './concept-v2/ConceptV2App.tsx'
 
 const isConceptV2 = window.location.pathname.startsWith('/concept-v2')
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined
@@ -13,11 +12,15 @@ const root = createRoot(document.getElementById('root')!)
 
 if (isConceptV2) {
   // The design preview stays open, unauthenticated — it holds no user data.
-  root.render(
-    <StrictMode>
-      <ConceptV2App />
-    </StrictMode>,
-  )
+  // Imported here rather than at the top so its whole tree stays out of the
+  // bundle every real user downloads.
+  import('./concept-v2/ConceptV2App.tsx').then(({ ConceptV2App }) => {
+    root.render(
+      <StrictMode>
+        <ConceptV2App />
+      </StrictMode>,
+    )
+  })
 } else if (!clerkKey) {
   root.render(
     <div style={{ padding: 40, fontFamily: 'system-ui', color: '#E3E5E9', background: '#0A0B0D', minHeight: '100vh' }}>

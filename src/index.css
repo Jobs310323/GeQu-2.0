@@ -98,11 +98,15 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
+/* The card surface used by every page that predates the checkin/card redesign.
+   Pointing it at the `--gq-glass-*` tokens is what makes those pages read as the
+   same material as the redesigned ones — one rule, seventeen pages. Call sites
+   set their own radius, so none is imposed here. */
 .glass-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    background: var(--gq-glass-bg);
+    border: 1px solid var(--gq-glass-border);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--gq-glass-shadow);
 }
 @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 .note-card { animation: popIn 0.3s ease-out; }

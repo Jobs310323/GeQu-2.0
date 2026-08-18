@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { callAIJson } from '../lib/ai';
 import { DB } from '../lib/db';
+import { dayISO, todayISO } from '../lib/date';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
 
@@ -43,7 +44,7 @@ const PLANNER_SYSTEM = `Ты — проактивный ассистент по 
 Весь текст — по-русски и строго на «ты» (никаких «вы», «давайте», «ваш»). Тон тёплый и поддерживающий. Никакого текста вне JSON.`;
 
 function todayKey() {
-    return new Date().toISOString().split('T')[0];
+    return todayISO();
 }
 
 export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, energy }: any) {
@@ -71,7 +72,7 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
 
     const buildContext = () => {
         const today = todayKey();
-        const todayLog = logs.find((l: any) => l.date.split('T')[0] === today);
+        const todayLog = logs.find((l: any) => dayISO(l.date) === today);
         const openTasks = kanban
             .filter((t: any) => t.status === 'todo' || t.status === 'doing')
             .map((t: any) => ({ id: t.id, text: t.text, priority: t.priority, status: t.status }));

@@ -7,6 +7,7 @@ import { computeXp, levelFromXp, evaluateAchievements, type GameData } from './x
 // Was reimplemented here character for character; the dashboard and the profile
 // card have to agree on what "streak" means, so they share one implementation.
 import { calculateStreak } from './helpers';
+import { dayISO } from './date';
 
 /** Cognitive tests where a LOWER value is better (times/latency). */
 export const LOWER_IS_BETTER = new Set(['schulte', 'reaction', 'tmt']);
@@ -137,7 +138,7 @@ export function buildProfile(d: {
             testId, count: chrono.length,
             firstScore: first, latestScore: Number(latest.score) || 0,
             latestLabel: latest.label ?? null,
-            latestDate: String(latest.date).split('T')[0],
+            latestDate: dayISO(String(latest.date)),
             changeSinceFirst: chrono.length > 1 ? round((Number(latest.score) || 0) - first, 0) : null,
         };
     });
@@ -146,9 +147,9 @@ export function buildProfile(d: {
     const cbt = d.cbtRecords ?? [];
     const cbtSummary = {
         records: cbt.length,
-        lastDate: cbt[0]?.date ? String(cbt[0].date).split('T')[0] : null,
+        lastDate: cbt[0]?.date ? dayISO(String(cbt[0].date)) : null,
         recentThoughts: cbt.slice(0, 4).map((r: any) => ({
-            date: String(r.date ?? '').split('T')[0],
+            date: dayISO(String(r.date ?? '')),
             situation: String(r.situation ?? '').slice(0, 160),
             thought: String(r.thought ?? '').slice(0, 160),
             alternative: String(r.alternative ?? '').slice(0, 160),
@@ -197,8 +198,8 @@ export function buildProfile(d: {
 
     return {
         period: {
-            firstEntry: sorted[0]?.date?.split('T')[0] ?? null,
-            lastEntry: sorted[sorted.length - 1]?.date?.split('T')[0] ?? null,
+            firstEntry: sorted[0]?.date ? dayISO(sorted[0].date) : null,
+            lastEntry: sorted[sorted.length - 1]?.date ? dayISO(sorted[sorted.length - 1].date) : null,
             daysTracked: logs.length,
             spanDays,
         },
@@ -243,7 +244,7 @@ export function buildProfile(d: {
             gratitudeEntries: logs.reduce((s: number, l: any) => s + (l.gratitude?.length ?? 0), 0),
             // A few recent excerpts give the model qualitative colour without a token blowout.
             recentExcerpts: (d.diary ?? []).slice(0, 6).map((e: any) => ({
-                date: e.date?.split('T')[0],
+                date: e.date ? dayISO(e.date) : null,
                 text: String(e.content ?? '').slice(0, 300),
             })),
         },
