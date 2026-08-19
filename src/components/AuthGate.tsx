@@ -1,19 +1,26 @@
 import { useState } from 'react';
 import { SignIn, SignUp } from '@clerk/clerk-react';
 import { Logo } from './Logo';
+import { enterGuestMode } from '../lib/guest';
 
 /**
  * Shown instead of the app when nobody is signed in. Clerk's prebuilt forms
  * handle the actual auth flow (password, OAuth, email code, etc. depending on
  * what's enabled in the Clerk dashboard) — this just frames them in the app's
- * own dark, desaturated look.
+ * own look: the page gradient comes from `body`, the drifting blobs are the
+ * same pair the checkin/card screens use, so the first screen already reads as
+ * the app.
  */
-export function AuthGate() {
+export function AuthGate({ onGuest }: { onGuest: () => void }) {
     const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
 
+    // `overflow: clip` on both axes: the blobs hang past every edge, and
+    // `hidden` would make this a scroll container.
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-main)] p-4">
-            <div className="w-full max-w-md">
+        <div className="min-h-screen flex items-center justify-center p-4 relative" style={{ overflow: 'clip' }}>
+            <div className="gq-blob1" />
+            <div className="gq-blob2" />
+            <div className="w-full max-w-md relative z-[1]">
                 <div className="flex justify-center mb-8">
                     <Logo />
                 </div>
@@ -42,6 +49,13 @@ export function AuthGate() {
                         ? <SignIn routing="virtual" signUpUrl="#" appearance={CLERK_APPEARANCE} />
                         : <SignUp routing="virtual" signInUrl="#" appearance={CLERK_APPEARANCE} />}
                 </div>
+
+                <button
+                    onClick={() => { enterGuestMode(); onGuest(); }}
+                    className="block mx-auto mt-6 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] underline underline-offset-2"
+                >
+                    Продолжить как гость (без сохранения в облако)
+                </button>
             </div>
         </div>
     );
@@ -49,12 +63,15 @@ export function AuthGate() {
 
 const CLERK_APPEARANCE = {
     variables: {
-        colorPrimary: '#7E9AAB',
+        // Literal values, not tokens: Clerk injects these into its own shadow
+        // DOM. They mirror the dark palette, which is the only one this screen
+        // ever shows — the theme class is set inside GequApp, after sign-in.
+        colorPrimary: '#7c6cf6',
         colorBackground: 'transparent',
-        colorText: '#E3E5E9',
-        colorTextSecondary: '#868C99',
+        colorText: '#e8e6f5',
+        colorTextSecondary: '#9a97c9',
         colorInputBackground: 'rgba(255,255,255,0.035)',
-        colorInputText: '#E3E5E9',
+        colorInputText: '#f1f0fb',
         borderRadius: '0.75rem',
     },
     elements: {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getGroqKey, setGroqKey } from '../lib/ai';
+import { todayISO } from '../lib/date';
 import { NAV_GROUPS, LOCKED_TABS } from '../lib/nav';
 import { DASHBOARD_WIDGETS, toggleIn } from '../lib/prefs';
 import { Icon } from '../components/Icons';
@@ -62,7 +63,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `gequ_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `gequ_backup_${todayISO()}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

@@ -29,6 +29,39 @@ const SYSTEM = `Ты — внимательный собеседник в при
 const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const r1 = (n: number) => Number(n.toFixed(1));
 
+// Both live at module scope, not inside WeekSummary: declared in the render body
+// they would be a new component type on every render, so React would unmount and
+// rebuild all eight of these nodes each time the summary state changed.
+function Tile({ label, value, change }: any) {
+    return (
+        <div className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
+            <div className="text-xs text-gray-400 mb-0.5">{label}</div>
+            <div className="text-xl font-bold text-white tabular-nums">{value || '—'}</div>
+            {change !== null && change !== 0 && Number.isFinite(change) && (
+                <div className={`text-[11px] tabular-nums ${change > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {change > 0 ? '▲' : '▼'} {Math.abs(change)}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function List({ title, items, tone, icon }: any) {
+    if (!items?.length) return null;
+    return (
+        <div>
+            <div className={`text-sm font-bold mb-2 ${tone}`}>{icon} {title}</div>
+            <ul className="space-y-1.5">
+                {items.map((t: string, i: number) => (
+                    <li key={i} className="text-sm text-gray-300 flex gap-2">
+                        <span className={tone}>•</span><span>{t}</span>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
 /** Everything that happened inside a [from, to) window, as plain numbers. */
 function windowStats(from: number, to: number, d: any) {
     const inRange = (iso: string) => {
@@ -110,32 +143,6 @@ export function WeekSummary(props: any) {
             setLoading(false);
         }
     };
-
-    const Tile = ({ label, value, change }: any) => (
-        <div className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
-            <div className="text-xs text-gray-400 mb-0.5">{label}</div>
-            <div className="text-xl font-bold text-white tabular-nums">{value || '—'}</div>
-            {change !== null && change !== 0 && Number.isFinite(change) && (
-                <div className={`text-[11px] tabular-nums ${change > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {change > 0 ? '▲' : '▼'} {Math.abs(change)}
-                </div>
-            )}
-        </div>
-    );
-
-    const List = ({ title, items, tone, icon }: any) =>
-        items?.length ? (
-            <div>
-                <div className={`text-sm font-bold mb-2 ${tone}`}>{icon} {title}</div>
-                <ul className="space-y-1.5">
-                    {items.map((t: string, i: number) => (
-                        <li key={i} className="text-sm text-gray-300 flex gap-2">
-                            <span className={tone}>•</span><span>{t}</span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        ) : null;
 
     return (
         <div className="glass-card p-6 rounded-2xl">

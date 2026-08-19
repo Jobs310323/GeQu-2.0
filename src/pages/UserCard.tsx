@@ -4,7 +4,7 @@ import { callAIJson, streamAI } from '../lib/ai';
 import { DB } from '../lib/db';
 import { buildProfile, hasEnoughData } from '../lib/profile';
 import { Icon } from '../components/Icons';
-import { PageHeader } from '../components/PageHeader';
+import { GqTabs, GqPageHead } from '../components/GqTabs';
 
 type AiCard = {
     headline?: string;
@@ -60,10 +60,10 @@ const REPORT_SYSTEM = `Ты — внимательный аналитик в п�
 
 function Stat({ label, value, hint }: { label: string; value: any; hint?: string }) {
     return (
-        <div className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
-            <div className="text-xs text-gray-400 mb-1">{label}</div>
-            <div className="text-2xl font-bold text-white tabular-nums">{value}</div>
-            {hint && <div className="text-[11px] text-gray-500 mt-0.5">{hint}</div>}
+        <div className="gq-stat">
+            <div className="text-xs text-[var(--gq-text-muted)] mb-1">{label}</div>
+            <div className="gq-display text-2xl font-bold text-[var(--gq-text)] tabular-nums">{value}</div>
+            {hint && <div className="text-[11px] text-[var(--gq-text-muted)] mt-0.5">{hint}</div>}
         </div>
     );
 }
@@ -71,15 +71,15 @@ function Stat({ label, value, hint }: { label: string; value: any; hint?: string
 function Section({ title, items, icon, tone }: { title: string; items?: string[]; icon: string; tone: string }) {
     if (!items?.length) return null;
     return (
-        <div className="glass-card p-5 rounded-2xl">
-            <h3 className={`font-bold mb-3 flex items-center gap-2 ${tone}`}>
+        <div className="gq-glass p-5">
+            <h3 className="gq-display font-bold mb-3 flex items-center gap-2" style={{ color: tone }}>
                 <Icon name={icon} size={16} />
                 {title}
             </h3>
             <ul className="space-y-2">
                 {items.map((t, i) => (
-                    <li key={i} className="text-sm text-gray-300 flex gap-2">
-                        <span className={tone}>•</span><span>{t}</span>
+                    <li key={i} className="text-sm text-[var(--gq-text)] flex gap-2">
+                        <span style={{ color: tone }}>•</span><span>{t}</span>
                     </li>
                 ))}
             </ul>
@@ -88,7 +88,7 @@ function Section({ title, items, icon, tone }: { title: string; items?: string[]
 }
 
 export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData, testResults,
-                           clinicalResults, cbtRecords, finance, circles }: any) {
+                           clinicalResults, cbtRecords, finance, circles, setPage }: any) {
     const [card, setCard] = useState<AiCard | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -164,24 +164,27 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
             : 'без изменений';
 
     return (
-        <div className="max-w-5xl">
-            <PageHeader page="card" title="Карточка пользователя"
-                subtitle="Сводка по всем твоим данным: состояние, привычки, задачи, зал, когнитивные тесты и дневник." />
+        <div className="gq-page">
+            <div className="gq-blob1" />
+            <div className="gq-blob2" />
+            <div className="gq-page-inner gq-fade">
+            <GqPageHead title="Моя карточка" />
+            <GqTabs page="card" setPage={setPage} />
 
             {!enough ? (
-                <div className="glass-card p-10 rounded-2xl text-center text-gray-500">
+                <div className="gq-glass p-10 text-center text-[var(--gq-text-muted)]">
                     Пока нет данных для карточки. Закрой первый день, пройди тест или сделай запись в дневнике.
                 </div>
             ) : (
                 <>
                     {/* Factual layer — always available, no AI or network needed */}
-                    <div className="glass-card p-6 rounded-2xl mb-6">
+                    <div className="gq-glass p-6 mb-6">
                         <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
-                            <h2 className="text-xl font-bold flex items-center gap-2">
-                                <Icon name="idcard" size={18} className="text-cyan-400" />
+                            <h2 className="gq-display text-xl font-bold text-[var(--gq-text)] flex items-center gap-2">
+                                <Icon name="idcard" size={18} className="text-[var(--gq-text-muted)]" />
                                 Факты
                             </h2>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-[var(--gq-text-muted)]">
                                 {profile.period.firstEntry
                                     ? `${profile.period.firstEntry} — ${profile.period.lastEntry} · ${profile.period.daysTracked} записей`
                                     : 'нет закрытых дней'}
@@ -209,13 +212,13 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                         </div>
 
                         {(profile.helpedTop.length > 0 || profile.hinderedTop.length > 0) && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-5 border-t border-[var(--border)]">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-5 border-t border-[var(--gq-divider)]">
                                 {profile.helpedTop.length > 0 && (
                                     <div>
-                                        <div className="text-sm text-gray-400 mb-2">Чаще всего помогало</div>
+                                        <div className="text-sm text-[var(--gq-text-muted)] mb-2">Чаще всего помогало</div>
                                         <div className="flex flex-wrap gap-2">
                                             {profile.helpedTop.map(t => (
-                                                <span key={t.tag} className="text-xs px-2 py-1 rounded-full bg-green-400/10 text-green-400 border border-green-400/30">
+                                                <span key={t.tag} className="gq-chip active-good" style={{ padding: '4px 10px', fontSize: 11 }}>
                                                     {t.tag} · {t.n}
                                                 </span>
                                             ))}
@@ -224,10 +227,10 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                                 )}
                                 {profile.hinderedTop.length > 0 && (
                                     <div>
-                                        <div className="text-sm text-gray-400 mb-2">Чаще всего мешало</div>
+                                        <div className="text-sm text-[var(--gq-text-muted)] mb-2">Чаще всего мешало</div>
                                         <div className="flex flex-wrap gap-2">
                                             {profile.hinderedTop.map(t => (
-                                                <span key={t.tag} className="text-xs px-2 py-1 rounded-full bg-red-400/10 text-red-400 border border-red-400/30">
+                                                <span key={t.tag} className="gq-chip active-bad" style={{ padding: '4px 10px', fontSize: 11 }}>
                                                     {t.tag} · {t.n}
                                                 </span>
                                             ))}
@@ -238,19 +241,23 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                         )}
 
                         {profile.cognitive.length > 0 && (
-                            <div className="mt-5 pt-5 border-t border-[var(--border)]">
-                                <div className="text-sm text-gray-400 mb-2">Когнитивная динамика</div>
+                            <div className="mt-5 pt-5 border-t border-[var(--gq-divider)]">
+                                <div className="text-sm font-bold text-[var(--gq-text)] mb-2 flex items-center gap-2">
+                                    <Icon name="flask" size={15} className="text-[var(--gq-text-muted)]" />
+                                    Когнитивная динамика
+                                </div>
                                 <div className="space-y-2">
                                     {profile.cognitive.map(t => (
-                                        <div key={t.type} className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-[var(--bg-input)] px-3 py-2 rounded-lg border border-[var(--border)]">
-                                            <span className="text-sm text-gray-300 flex-1 min-w-[160px]">{t.label}</span>
-                                            <span className="text-xs text-gray-500">{t.count} раз</span>
-                                            <span className="text-xs text-gray-400 tabular-nums">лучший {t.best}</span>
-                                            <span className={`text-xs font-bold ${
-                                                t.improvedPct === null ? 'text-gray-500'
-                                                    : t.improvedPct > 0 ? 'text-green-400'
-                                                    : t.improvedPct < 0 ? 'text-red-400' : 'text-gray-400'
-                                            }`}>{trendText(t)}</span>
+                                        <div key={t.type} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2"
+                                            style={{ borderBottom: '1px solid var(--gq-divider)' }}>
+                                            <span className="text-sm text-[var(--gq-text)] flex-1 min-w-[160px]">{t.label}</span>
+                                            <span className="text-xs text-[var(--gq-text-muted)]">{t.count} раз</span>
+                                            <span className="text-xs text-[var(--gq-text-muted)] tabular-nums">лучший {t.best}</span>
+                                            <span className="text-xs font-bold" style={{
+                                                color: t.improvedPct === null ? 'var(--gq-text-muted)'
+                                                    : t.improvedPct > 0 ? 'var(--gq-good)'
+                                                    : t.improvedPct < 0 ? 'var(--gq-bad)' : 'var(--gq-text-muted)',
+                                            }}>{trendText(t)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -261,35 +268,35 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                     {/* Raw history of closed days — moved here from the daily-close screen so
                         closing a day doesn't also mean scrolling through every past one. */}
                     {sortedLogs.length > 0 && (
-                        <div className="glass-card p-6 rounded-2xl mb-6">
+                        <div className="gq-glass p-6 mb-6">
                             <div className="flex items-baseline justify-between mb-4">
-                                <h2 className="text-xl font-bold flex items-center gap-2">
-                                    <Icon name="calendar" size={18} className="text-cyan-400" />
+                                <h2 className="gq-display text-xl font-bold text-[var(--gq-text)] flex items-center gap-2">
+                                    <Icon name="calendar" size={18} className="text-[var(--gq-text-muted)]" />
                                     История записей
                                 </h2>
-                                <span className="text-xs text-gray-500">{sortedLogs.length}</span>
+                                <span className="text-xs text-[var(--gq-text-muted)]">{sortedLogs.length}</span>
                             </div>
                             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                                 {sortedLogs.map((l: any) => (
-                                    <div key={l.id ?? l.date} className="border-b border-[var(--border)] pb-4 anim-fade-in">
+                                    <div key={l.id ?? l.date} className="border-b border-[var(--gq-divider)] pb-4 gq-fade">
                                         <div className="flex items-baseline justify-between gap-3 mb-2">
-                                            <span className="text-xs text-cyan-400">
+                                            <span className="text-xs" style={{ color: 'var(--gq-grad-a)' }}>
                                                 {new Date(l.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
                                             </span>
-                                            <button onClick={() => deleteLog(l.id)} className="text-red-400 text-xs hover:underline shrink-0">Удалить</button>
+                                            <button onClick={() => deleteLog(l.id)} className="text-xs hover:underline shrink-0" style={{ color: 'var(--gq-bad)' }}>Удалить</button>
                                         </div>
-                                        <div className="text-sm text-gray-300 mb-1">Сон {l.sleep} · Фокус {l.focus} · Настроение {l.mood}</div>
-                                        {l.mainEvent && <div className="text-sm text-gray-400 mb-1">Главное: {l.mainEvent}</div>}
-                                        {l.testTomorrow && <div className="text-sm text-gray-400 mb-1">Проверить завтра: {l.testTomorrow}</div>}
+                                        <div className="text-sm text-[var(--gq-text)] mb-1">Сон {l.sleep} · Фокус {l.focus} · Настроение {l.mood}</div>
+                                        {l.mainEvent && <div className="text-sm text-[var(--gq-text-muted)] mb-1">Главное: {l.mainEvent}</div>}
+                                        {l.testTomorrow && <div className="text-sm text-[var(--gq-text-muted)] mb-1">Проверить завтра: {l.testTomorrow}</div>}
                                         {l.customQuestion && (
-                                            <div className="text-sm mb-1"><span className="text-purple-400">{l.customQuestion}</span>
-                                                {l.customAnswer && <span className="text-gray-300"> — {l.customAnswer}</span>}</div>
+                                            <div className="text-sm mb-1"><span style={{ color: 'var(--gq-grad-a)' }}>{l.customQuestion}</span>
+                                                {l.customAnswer && <span className="text-[var(--gq-text-muted)]"> — {l.customAnswer}</span>}</div>
                                         )}
                                         {l.gratitude?.length > 0 && (
-                                            <div className="text-xs text-pink-400 mb-1">Благодарность: {l.gratitude.join(', ')}</div>
+                                            <div className="text-xs mb-1" style={{ color: 'var(--gq-grad-b)' }}>Благодарность: {l.gratitude.join(', ')}</div>
                                         )}
-                                        {l.helped?.length > 0 && <div className="text-xs text-green-400">Помогло: {l.helped.join(', ')}</div>}
-                                        {l.hindered?.length > 0 && <div className="text-xs text-red-400">Мешало: {l.hindered.join(', ')}</div>}
+                                        {l.helped?.length > 0 && <div className="text-xs" style={{ color: 'var(--gq-good)' }}>Помогло: {l.helped.join(', ')}</div>}
+                                        {l.hindered?.length > 0 && <div className="text-xs" style={{ color: 'var(--gq-bad)' }}>Мешало: {l.hindered.join(', ')}</div>}
                                     </div>
                                 ))}
                             </div>
@@ -297,92 +304,95 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                     )}
 
                     {/* AI interpretation layer */}
-                    <div className="glass-card p-6 rounded-2xl mb-6 border border-purple-400/30 bg-purple-400/5">
+                    <div className="gq-glass p-6 mb-6" style={{
+                        borderColor: 'rgba(200,108,224,0.25)',
+                        background: 'color-mix(in srgb, var(--gq-grad-b) 5%, var(--gq-glass-bg))',
+                    }}>
                         <div className="flex flex-col md:flex-row md:items-center gap-4">
                             <div className="flex-1">
-                                <h2 className="text-lg font-bold text-purple-400 mb-1 flex items-center gap-2">
+                                <h2 className="gq-display text-lg font-bold mb-1 flex items-center gap-2" style={{ color: 'var(--gq-grad-b)' }}>
                                     <Icon name="sparkle" size={16} />
                                     Разбор от ИИ
                                 </h2>
-                                <p className="text-sm text-gray-400">
+                                <p className="text-sm text-[var(--gq-text-muted)]">
                                     Соберу из этих цифр портрет: сильные стороны, узкие места и закономерности.
                                 </p>
-                                {madeAt && <p className="text-xs text-gray-500 mt-1">Составлено: {madeAt}</p>}
+                                {madeAt && <p className="text-xs text-[var(--gq-text-muted)] mt-1">Составлено: {madeAt}</p>}
                             </div>
-                            <button onClick={generate} disabled={loading}
-                                className="bg-gradient-to-r from-purple-400 to-pink-400 text-black font-bold px-6 py-3 rounded-lg disabled:opacity-40 whitespace-nowrap">
+                            <button onClick={generate} disabled={loading} className="gq-btn px-6 py-3">
+                                <Icon name="refresh" size={14} />
                                 {loading ? 'Анализирую…' : card ? 'Обновить разбор' : 'Составить карточку'}
                             </button>
                         </div>
-                        {error && <div className="mt-4 p-3 rounded-xl border border-red-400/30 text-red-400 text-sm">{error}</div>}
-                        {loading && !card && <div className="mt-4 text-sm text-gray-500 animate-pulse">Свожу данные воедино…</div>}
+                        {error && <div className="mt-4 p-3 rounded-xl border text-sm" style={{ borderColor: 'var(--gq-bad)', color: 'var(--gq-bad)' }}>{error}</div>}
+                        {loading && !card && <div className="mt-4 text-sm text-[var(--gq-text-muted)] animate-pulse">Свожу данные воедино…</div>}
                     </div>
 
                     {card && (
-                        <div className="space-y-5 anim-fade-in">
+                        <div className="space-y-5 gq-fade">
                             {(card.headline || card.summary) && (
-                                <div className="glass-card p-6 rounded-2xl border border-cyan-400/25">
+                                <div className="gq-glass p-6">
                                     {card.headline && (
-                                        <div className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-2">
+                                        <div className="text-xl font-bold gq-heading gq-display mb-2">
                                             {card.headline}
                                         </div>
                                     )}
-                                    {card.summary && <p className="text-gray-300">{card.summary}</p>}
+                                    {card.summary && <p className="text-[var(--gq-text)]">{card.summary}</p>}
                                 </div>
                             )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <Section title="Сильные стороны" items={card.strengths} icon="flame" tone="text-green-400" />
-                                <Section title="Узкие места" items={card.challenges} icon="alertTriangle" tone="text-yellow-400" />
+                                <Section title="Сильные стороны" items={card.strengths} icon="flame" tone="var(--gq-good-strong)" />
+                                <Section title="Узкие места" items={card.challenges} icon="alertTriangle" tone="var(--gq-warn-strong)" />
                             </div>
 
-                            <Section title="Замеченные закономерности" items={card.patterns} icon="search" tone="text-cyan-400" />
+                            <Section title="Замеченные закономерности" items={card.patterns} icon="search" tone="var(--gq-grad-a)" />
 
                             {card.cognitiveProfile && (
-                                <div className="glass-card p-5 rounded-2xl">
-                                    <h3 className="font-bold text-purple-400 mb-2 flex items-center gap-2">
+                                <div className="gq-glass p-5">
+                                    <h3 className="gq-display font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--gq-grad-b)' }}>
                                         <Icon name="library" size={16} />
                                         Когнитивный профиль
                                     </h3>
-                                    <p className="text-sm text-gray-300">{card.cognitiveProfile}</p>
+                                    <p className="text-sm text-[var(--gq-text)]">{card.cognitiveProfile}</p>
                                 </div>
                             )}
 
-                            <Section title="Что можно сделать" items={card.recommendations} icon="target" tone="text-pink-400" />
+                            <Section title="Что можно сделать" items={card.recommendations} icon="target" tone="var(--gq-grad-b)" />
                         </div>
                     )}
 
                     {/* Long-form report over every data source, not just the summary card */}
-                    <div className="glass-card p-6 rounded-2xl mt-6 border border-cyan-400/30 bg-cyan-400/5">
+                    <div className="gq-glass p-6 mt-6">
                         <div className="flex flex-col md:flex-row md:items-center gap-4">
                             <div className="flex-1">
-                                <h2 className="text-lg font-bold text-cyan-400 mb-1 flex items-center gap-2">
+                                <h2 className="gq-display text-lg font-bold mb-1 flex items-center gap-2" style={{ color: 'var(--gq-grad-a)' }}>
                                     <Icon name="library" size={16} />
                                     Полный анализ
                                 </h2>
-                                <p className="text-sm text-gray-400">
+                                <p className="text-sm text-[var(--gq-text-muted)]">
                                     Развёрнутый отчёт по всем данным сразу: состояние, ритм, дела, тело, когнитивные
                                     и скрининговые тесты, КПТ-записи, деньги и связи между ними.
                                 </p>
-                                {reportAt && <p className="text-xs text-gray-500 mt-1">Составлено: {reportAt}</p>}
+                                {reportAt && <p className="text-xs text-[var(--gq-text-muted)] mt-1">Составлено: {reportAt}</p>}
                             </div>
-                            <button onClick={generateReport} disabled={reportLoading}
-                                className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg disabled:opacity-40 whitespace-nowrap">
+                            <button onClick={generateReport} disabled={reportLoading} className="gq-btn px-6 py-3">
                                 {reportLoading ? 'Анализирую…' : report ? 'Обновить отчёт' : 'Провести полный анализ'}
                             </button>
                         </div>
-                        {reportError && <div className="mt-4 p-3 rounded-xl border border-red-400/30 text-red-400 text-sm">{reportError}</div>}
-                        {reportLoading && !report && <div className="mt-4 text-sm text-gray-500 animate-pulse">Читаю все твои данные…</div>}
+                        {reportError && <div className="mt-4 p-3 rounded-xl border text-sm" style={{ borderColor: 'var(--gq-bad)', color: 'var(--gq-bad)' }}>{reportError}</div>}
+                        {reportLoading && !report && <div className="mt-4 text-sm text-[var(--gq-text-muted)] animate-pulse">Читаю все твои данные…</div>}
                     </div>
 
                     {report && (
-                        <div className="glass-card p-6 rounded-2xl mt-5 anim-fade-in">
-                            <div className="text-gray-200 markdown-content"
+                        <div className="gq-glass p-6 mt-5 gq-fade">
+                            <div className="text-[var(--gq-text)] markdown-content"
                                 dangerouslySetInnerHTML={{ __html: marked.parse(report) as string }} />
                         </div>
                     )}
                 </>
             )}
+            </div>
         </div>
     );
 }

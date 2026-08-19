@@ -1,8 +1,9 @@
 // Pure scoring/aggregation logic for the Snowman feature — no JSX, no state,
 // so it stays easy to reason about and reuse from both the page and analytics.
+import { dayISO, shiftDays } from '../../lib/date';
 import { DIFFICULTY_MULTIPLIER, SPHERES, type Activity, type DayRecord, type Difficulty, type Sphere } from './types';
 
-export const todayStr = () => new Date().toISOString().split('T')[0];
+export const todayStr = () => dayISO();
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
@@ -100,8 +101,7 @@ export function mostHarmoniousDay(days: DayRecord[]): DayRecord | null {
     return days.reduce((best, d) => (!best || d.totalHarmony > best.totalHarmony) ? d : best, null as DayRecord | null);
 }
 
-const DAY_MS = 86400000;
-const prevDate = (date: string) => new Date(new Date(date).getTime() - DAY_MS).toISOString().split('T')[0];
+const prevDate = (date: string) => shiftDays(-1, date);
 
 /** Consecutive days (walking back from the most recent) where every sphere ≥ 8. */
 export function currentStreak(days: DayRecord[]): number {

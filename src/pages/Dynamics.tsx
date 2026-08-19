@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { StateChart, TestChart, SERIES } from '../features/charts';
 import { LOWER_IS_BETTER, TEST_LABELS } from '../lib/profile';
+import { dayISO } from '../lib/date';
 import { Icon } from '../components/Icons';
 
 const PERIODS = [
@@ -122,9 +123,9 @@ export function Dynamics({ logs, testResults, gymData }: any) {
             });
         }
 
-        const gymDates = new Set((gymData?.history ?? []).map((w: any) => w.date.split('T')[0]));
-        const withGym = scoped.filter(l => gymDates.has(l.date.split('T')[0])).map(l => Number(l.mood)).filter(n => Number.isFinite(n));
-        const noGym = scoped.filter(l => !gymDates.has(l.date.split('T')[0])).map(l => Number(l.mood)).filter(n => Number.isFinite(n));
+        const gymDates = new Set((gymData?.history ?? []).map((w: any) => dayISO(w.date)));
+        const withGym = scoped.filter(l => gymDates.has(dayISO(l.date))).map(l => Number(l.mood)).filter(n => Number.isFinite(n));
+        const noGym = scoped.filter(l => !gymDates.has(dayISO(l.date))).map(l => Number(l.mood)).filter(n => Number.isFinite(n));
         if (withGym.length && noGym.length) {
             const d = round(avg(withGym) - avg(noGym));
             out.push({

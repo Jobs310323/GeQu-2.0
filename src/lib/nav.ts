@@ -7,11 +7,13 @@
 // They are still real pages, they just have their own entry points.
 
 export type NavItem = { id: string; icon: string; label: string };
-export type NavGroup = { id: string; title: string; items: NavItem[] };
+// A group's `glyph` is an Icons.tsx name (the sidebar draws it as an SVG);
+// a NavItem's `icon` is an emoji, used by Settings. Different things.
+export type NavGroup = { id: string; glyph: string; title: string; items: NavItem[] };
 
 export const NAV_GROUPS: NavGroup[] = [
     {
-        id: 'daily', title: 'Каждый день', items: [
+        id: 'daily', glyph: 'sun', title: 'Каждый день', items: [
             { id: 'aiplan', icon: '✨', label: 'ИИ-план дня' },
             { id: 'calendar', icon: '📅', label: 'Календарь' },
             { id: 'habits', icon: '♻️', label: 'Привычки' },
@@ -19,7 +21,7 @@ export const NAV_GROUPS: NavGroup[] = [
         ],
     },
     {
-        id: 'tasks', title: 'Дела', items: [
+        id: 'tasks', glyph: 'columns', title: 'Дела', items: [
             { id: 'kanban', icon: '📋', label: 'Канбан' },
             { id: 'goals', icon: '🚩', label: 'Цели' },
             { id: 'mindmap', icon: '🧠', label: 'MindMap' },
@@ -27,12 +29,12 @@ export const NAV_GROUPS: NavGroup[] = [
         ],
     },
     {
-        id: 'finance', title: 'Финансы', items: [
+        id: 'finance', glyph: 'wallet', title: 'Финансы', items: [
             { id: 'finance', icon: '💰', label: 'Финансы' },
         ],
     },
     {
-        id: 'body', title: 'Тело и мозг', items: [
+        id: 'body', glyph: 'dumbbell', title: 'Тело и мозг', items: [
             { id: 'gym', icon: '🏋️', label: 'Зал' },
             { id: 'training', icon: '🎯', label: 'Тренажёры' },
             { id: 'circles', icon: '⭕', label: 'Круги' },
@@ -40,13 +42,13 @@ export const NAV_GROUPS: NavGroup[] = [
         ],
     },
     {
-        id: 'analysis', title: 'Анализ', items: [
+        id: 'analysis', glyph: 'chart', title: 'Анализ', items: [
             { id: 'progress', icon: '🏆', label: 'Прогресс' },
             { id: 'hub', icon: '📊', label: 'Хаб' },
         ],
     },
     {
-        id: 'help', title: 'Справка', items: [
+        id: 'help', glyph: 'library', title: 'Справка', items: [
             { id: 'knowledge', icon: '📚', label: 'База знаний' },
         ],
     },
@@ -66,4 +68,13 @@ export const ALL_TABS: NavItem[] = NAV_GROUPS.flatMap(g => g.items);
 
 export function findTab(id: string) {
     return [...ALL_TABS, ...STANDALONE_TABS].find(t => t.id === id);
+}
+
+/**
+ * The group a page sits in, by title. The page header uses it as an eyebrow, so
+ * a page states where it lives in the app, not just what it is called.
+ * Standalone pages (see the note at the top) have no group.
+ */
+export function groupTitleOf(id: string): string | null {
+    return NAV_GROUPS.find(g => g.items.some(i => i.id === id))?.title ?? null;
 }

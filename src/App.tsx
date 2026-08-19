@@ -1,36 +1,60 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense, type ReactNode } from 'react'
 import { SignedIn, SignedOut } from '@clerk/clerk-react';
 import { DB } from './lib/db';
+import { dayISO, todayISO } from './lib/date';
+import { usePersisted } from './lib/usePersisted';
 import { CloudSync } from './components/CloudSync';
 import { AuthGate } from './components/AuthGate';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { isGuestMode, exitGuestMode } from './lib/guest';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './pages/Dashboard';
-import { Kanban } from './pages/Kanban';
-import { Habits } from './pages/Habits';
-import { Goals } from './pages/Goals';
-import { MindMap } from './pages/MindMap';
-import { Diary } from './pages/Diary';
-import { Training } from './pages/Training';
-import { Knowledge } from './pages/Knowledge';
-import { Settings } from './pages/Settings';
-import { UnifiedStats } from './pages/UnifiedStats';
-import { Progress } from './pages/Progress';
-import { AiPlan } from './pages/AiPlan';
-import { UserCard } from './pages/UserCard';
-import { CalendarPage } from './pages/CalendarPage';
-import { ClinicalTests } from './pages/ClinicalTests';
 import { loadPrefs, savePrefs, type Prefs } from './lib/prefs';
-import { CirclesOfInfluence } from './pages/CirclesOfInfluence';
-import { Finance, DEFAULT_FINANCE } from './pages/Finance';
-import { GymApp } from './features/gym/Gym';
-import { Snowman } from './features/snowman/Snowman';
+import { DEFAULT_FINANCE } from './lib/financeData';
+import { findTab } from './lib/nav';
 import type { ActivityLabel, DayRecord } from './features/snowman/types';
 import { DopamineRoulette } from './features/dopamine/DopamineRoulette';
 import { HyperfocusOverlay } from './features/hyperfocus/HyperfocusOverlay';
 import { computeXp, levelFromXp } from './lib/xp';
 
+// Pages load on demand. Every page used to be in the first bundle, so opening
+// the app downloaded and parsed Chart.js (Finance), the whole knowledge base,
+// the clinical test bank and all seven trainers before it could draw the
+// dashboard. Only the dashboard is eager now — it is what the app opens on.
+const lazyPage = <T extends Record<string, any>>(load: () => Promise<T>, name: keyof T) =>
+    lazy(() => load().then(m => ({ default: m[name] })));
+
+const Kanban = lazyPage(() => import('./pages/Kanban'), 'Kanban');
+const Habits = lazyPage(() => import('./pages/Habits'), 'Habits');
+const Goals = lazyPage(() => import('./pages/Goals'), 'Goals');
+const MindMap = lazyPage(() => import('./pages/MindMap'), 'MindMap');
+const Diary = lazyPage(() => import('./pages/Diary'), 'Diary');
+const Training = lazyPage(() => import('./pages/Training'), 'Training');
+const Knowledge = lazyPage(() => import('./pages/Knowledge'), 'Knowledge');
+const Settings = lazyPage(() => import('./pages/Settings'), 'Settings');
+const UnifiedStats = lazyPage(() => import('./pages/UnifiedStats'), 'UnifiedStats');
+const Progress = lazyPage(() => import('./pages/Progress'), 'Progress');
+const AiPlan = lazyPage(() => import('./pages/AiPlan'), 'AiPlan');
+const UserCard = lazyPage(() => import('./pages/UserCard'), 'UserCard');
+const CalendarPage = lazyPage(() => import('./pages/CalendarPage'), 'CalendarPage');
+const ClinicalTests = lazyPage(() => import('./pages/ClinicalTests'), 'ClinicalTests');
+const CirclesOfInfluence = lazyPage(() => import('./pages/CirclesOfInfluence'), 'CirclesOfInfluence');
+const Finance = lazyPage(() => import('./pages/Finance'), 'Finance');
+const GymApp = lazyPage(() => import('./features/gym/Gym'), 'GymApp');
+const Snowman = lazyPage(() => import('./features/snowman/Snowman'), 'Snowman');
+
+/** Shown while a page's chunk is in flight. Deliberately quiet. */
+function PageSkeleton() {
+    return (
+        <div className="gq-fade max-w-3xl">
+            <div className="gq-glass p-6 mb-4" style={{ height: 96 }} />
+            <div className="gq-glass p-6" style={{ height: 220 }} />
+        </div>
+    );
+}
+
 /** The real app, mounted only once Clerk confirms a signed-in user. */
-function GequApp() {
+function GequApp({ guestMode, onExitGuest }: { guestMode?: boolean; onExitGuest?: () => void }) {
     const [page, setPage] = useState('dashboard');
     const [dopamineMenu, setDopamineMenu] = useState(DB.get('dopamineMenu', [
         'Попить воды', 'Сделать растяжку', 'Посмотреть в окно 2 мин', 'Поиграть с котом', 'Закрыть глаза на 1 мин'
@@ -39,7 +63,6 @@ function GequApp() {
     const [logs, setLogs] = useState(DB.get('logs'));
     const [diary, setDiary] = useState(DB.get('diary'));
     const [goals, setGoals] = useState(DB.get('goals'));
-    const goalsSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [habits, setHabits] = useState(DB.get('habits'));
     const [kanban, setKanban] = useState(DB.get('kanban'));
     const [testResults, setTestResults] = useState(DB.get('tests', []));
@@ -80,26 +103,22 @@ function GequApp() {
         if (prefs.hiddenTabs.includes(page)) setPage('dashboard');
     }, [prefs.hiddenTabs, page]);
 
-    useEffect(() => { DB.save('circles', circles); }, [circles]);
-    useEffect(() => { DB.save('reminders', reminders); }, [reminders]);
-    useEffect(() => { DB.save('clinical', clinicalResults); }, [clinicalResults]);
-    useEffect(() => { DB.save('cbt', cbtRecords); }, [cbtRecords]);
-    useEffect(() => { DB.save('logs', logs); }, [logs]);
-    useEffect(() => { DB.save('dopamineMenu', dopamineMenu); }, [dopamineMenu]);
-    useEffect(() => { DB.save('diary', diary); }, [diary]);
-    useEffect(() => {
-        if (goalsSaveTimer.current) clearTimeout(goalsSaveTimer.current);
-        goalsSaveTimer.current = setTimeout(() => DB.save('goals', goals), 500);
-        return () => { if (goalsSaveTimer.current) clearTimeout(goalsSaveTimer.current); };
-    }, [goals]);
-    useEffect(() => { DB.save('habits', habits); }, [habits]);
-    useEffect(() => { DB.save('kanban', kanban); }, [kanban]);
-    useEffect(() => { DB.save('tests', testResults); }, [testResults]);
-    useEffect(() => { DB.save('ach', achievements); }, [achievements]);
-    useEffect(() => { DB.save('gym', gymData); }, [gymData]);
-    useEffect(() => { DB.save('finance', finance); }, [finance]);
-    useEffect(() => { DB.save('snowmanLabels', snowmanLabels); }, [snowmanLabels]);
-    useEffect(() => { DB.save('snowmanDays', snowmanDays); }, [snowmanDays]);
+    usePersisted('circles', circles);
+    usePersisted('reminders', reminders);
+    usePersisted('clinical', clinicalResults);
+    usePersisted('cbt', cbtRecords);
+    usePersisted('logs', logs);
+    usePersisted('dopamineMenu', dopamineMenu);
+    usePersisted('diary', diary);
+    usePersisted('goals', goals);
+    usePersisted('habits', habits);
+    usePersisted('kanban', kanban);
+    usePersisted('tests', testResults);
+    usePersisted('ach', achievements);
+    usePersisted('gym', gymData);
+    usePersisted('finance', finance);
+    usePersisted('snowmanLabels', snowmanLabels);
+    usePersisted('snowmanDays', snowmanDays);
 
     useEffect(() => {
         DB.save('theme', theme);
@@ -107,47 +126,57 @@ function GequApp() {
     }, [theme]);
 
     // Логика расчета Энергетической Батарейки
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todayLog = logs.find((l: any) => l.date.split('T')[0] === todayStr);
-    const todayGym = gymData.history.some((w: any) => w.date.split('T')[0] === todayStr);
-    const todayTest = testResults.some((t: any) => t.date.split('T')[0] === todayStr);
+    const todayStr = todayISO();
+    const todayLog = logs.find((l: any) => dayISO(l.date) === todayStr);
+    const todayGym = gymData.history.some((w: any) => dayISO(w.date) === todayStr);
+    const todayTest = testResults.some((t: any) => dayISO(t.date) === todayStr);
 
-    let energy = 5;
-    if (todayLog) {
-        energy = (todayLog.sleep * 0.4) + (todayLog.mood * 0.3) + (todayLog.focus * 0.3);
-        if (todayGym) energy += 0.3;
-        if (todayTest) energy += 0.2;
-        if (todayLog.hindered?.includes('Телефон')) energy -= 0.3;
-        if (todayLog.hindered?.includes('Усталость')) energy -= 0.3;
-    }
-    energy = Math.max(0, Math.min(10, energy));
+    const energy = useMemo(() => {
+        let e = 5;
+        if (todayLog) {
+            e = (todayLog.sleep * 0.4) + (todayLog.mood * 0.3) + (todayLog.focus * 0.3);
+            if (todayGym) e += 0.3;
+            if (todayTest) e += 0.2;
+            if (todayLog.hindered?.includes('Телефон')) e -= 0.3;
+            if (todayLog.hindered?.includes('Усталость')) e -= 0.3;
+        }
+        return Math.max(0, Math.min(10, e));
+    }, [todayLog, todayGym, todayTest]);
 
-    const levelInfo = levelFromXp(computeXp({ logs, habits, kanban, gymData, testResults }).total);
+    // Every slice of app state lives in this component, so it re-renders on any
+    // change anywhere — a keystroke in Finance used to re-walk every log, habit,
+    // task, workout and test result, and hand Sidebar a brand-new `levelInfo`.
+    const levelInfo = useMemo(
+        () => levelFromXp(computeXp({ logs, habits, kanban, gymData, testResults }).total),
+        [logs, habits, kanban, gymData, testResults],
+    );
 
-    // Every page as a lookup, keyed by nav id.
-    const PAGES: Record<string, any> = {
-        gym: <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />,
-        diary: <Diary diary={diary} setDiary={setDiary} />,
-        goals: <Goals goals={goals} setGoals={setGoals} />,
-        mindmap: <MindMap />,
-        circles: <CirclesOfInfluence circles={circles} setCircles={setCircles} />,
-        habits: <Habits habits={habits} setHabits={setHabits} />,
-        kanban: <Kanban kanban={kanban} setKanban={setKanban} />,
-        hub: <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />,
-        progress: <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} diary={diary} snowmanDays={snowmanDays} />,
-        snowman: <Snowman labels={snowmanLabels} setLabels={setSnowmanLabels} days={snowmanDays} setDays={setSnowmanDays} />,
-        calendar: <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />,
-        card: <UserCard logs={logs} setLogs={setLogs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData}
+    // Every page as a lookup, keyed by nav id. Thunks, not elements: only the
+    // page being shown builds its tree, instead of all eighteen on every
+    // keystroke anywhere in the app.
+    const PAGES: Record<string, () => ReactNode> = {
+        gym: () => <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />,
+        diary: () => <Diary diary={diary} setDiary={setDiary} />,
+        goals: () => <Goals goals={goals} setGoals={setGoals} />,
+        mindmap: () => <MindMap />,
+        circles: () => <CirclesOfInfluence circles={circles} setCircles={setCircles} />,
+        habits: () => <Habits habits={habits} setHabits={setHabits} />,
+        kanban: () => <Kanban kanban={kanban} setKanban={setKanban} />,
+        hub: () => <UnifiedStats logs={logs} testResults={testResults} gymData={gymData} />,
+        progress: () => <Progress logs={logs} habits={habits} kanban={kanban} gymData={gymData} testResults={testResults} diary={diary} snowmanDays={snowmanDays} />,
+        snowman: () => <Snowman labels={snowmanLabels} setLabels={setSnowmanLabels} days={snowmanDays} setDays={setSnowmanDays} />,
+        calendar: () => <CalendarPage logs={logs} diary={diary} gymData={gymData} reminders={reminders} setReminders={setReminders} />,
+        card: () => <UserCard logs={logs} setLogs={setLogs} diary={diary} habits={habits} kanban={kanban} goals={goals} gymData={gymData}
             testResults={testResults} clinicalResults={clinicalResults} cbtRecords={cbtRecords}
-            finance={finance} circles={circles} />,
-        aiplan: <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />,
-        clinical: <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults}
+            finance={finance} circles={circles} setPage={setPage} />,
+        aiplan: () => <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />,
+        clinical: () => <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults}
             cbtRecords={cbtRecords} setCbtRecords={setCbtRecords} />,
-        training: <Training setTestResults={setTestResults} testResults={testResults} achievements={achievements} setAchievements={setAchievements}
+        training: () => <Training setTestResults={setTestResults} testResults={testResults} achievements={achievements} setAchievements={setAchievements}
             pomodoro={pomodoro} setPomodoro={setPomodoro} />,
-        knowledge: <Knowledge setPage={setPage} />,
-        settings: <Settings diary={diary} logs={logs} prefs={prefs} setPrefs={setPrefs} />,
-        finance: <Finance finance={finance} setFinance={setFinance} />,
+        knowledge: () => <Knowledge setPage={setPage} />,
+        settings: () => <Settings diary={diary} logs={logs} prefs={prefs} setPrefs={setPrefs} />,
+        finance: () => <Finance finance={finance} setFinance={setFinance} />,
     };
 
     const dashProps = {
@@ -158,13 +187,30 @@ function GequApp() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className={`flex h-screen overflow-hidden ${guestMode ? 'pt-8' : ''} relative`}>
+            {guestMode && (
+                <div className="fixed top-0 inset-x-0 z-50 h-8 flex items-center justify-center gap-3 text-xs bg-[var(--gq-grad-a,#7c6cf6)]/20 border-b border-[var(--border)] text-[var(--text-main)]">
+                    <span>Гостевой режим — данные хранятся только в этом браузере, без облачной синхронизации</span>
+                    {onExitGuest && (
+                        <button onClick={onExitGuest} className="underline underline-offset-2 hover:text-[var(--gq-grad-a,#7c6cf6)]">
+                            Войти в аккаунт
+                        </button>
+                    )}
+                </div>
+            )}
             <Sidebar page={page} setPage={setPage} theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog}
                 prefs={prefs} setPrefs={setPrefs} levelInfo={levelInfo}
                 onRoulette={() => setRouletteOpen(true)}
                 reminderCount={reminders.filter((r: any) => !r.done && r.date >= todayStr).length} />
             <main className="flex-1 p-6 overflow-y-auto relative">
-                {page === 'dashboard' ? <Dashboard {...dashProps} /> : PAGES[page] ?? null}
+                {/* Keyed on the page so a crash or a pending chunk belongs to
+                    that page only — leaving it clears the state and the next
+                    page mounts fresh. */}
+                <ErrorBoundary key={page} label={findTab(page)?.label} onReset={() => setPage('dashboard')}>
+                    <Suspense fallback={<PageSkeleton />}>
+                        {page === 'dashboard' ? <Dashboard {...dashProps} /> : PAGES[page]?.() ?? null}
+                    </Suspense>
+                </ErrorBoundary>
             </main>
 
             {hyperfocus && <HyperfocusOverlay hyperfocus={hyperfocus} setHyperfocus={setHyperfocus} kanban={kanban} setDiary={setDiary} setLogs={setLogs} todayLog={todayLog} />}
@@ -183,8 +229,14 @@ function GequApp() {
     );
 }
 
-/** Gates the whole app behind auth: each account only ever sees its own data. */
+/** Gates the whole app behind auth: each account only ever sees its own data.
+ * A signed-out visitor can also continue as a guest — local-only data, no
+ * CloudSync — so the app (and any design change) can be checked without
+ * creating an account. Signing in for real always takes priority over a
+ * stale guest flag, since <SignedIn> is checked first. */
 function App() {
+    const [guestMode, setGuestMode] = useState(isGuestMode());
+
     return (
         <>
             <SignedIn>
@@ -192,7 +244,9 @@ function App() {
                 <GequApp />
             </SignedIn>
             <SignedOut>
-                <AuthGate />
+                {guestMode
+                    ? <GequApp guestMode onExitGuest={() => { exitGuestMode(); setGuestMode(false); }} />
+                    : <AuthGate onGuest={() => setGuestMode(true)} />}
             </SignedOut>
         </>
     );
