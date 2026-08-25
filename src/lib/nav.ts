@@ -39,6 +39,7 @@ export const NAV_GROUPS: NavGroup[] = [
             { id: 'training', icon: '🎯', label: 'Тренажёры' },
             { id: 'circles', icon: '⭕', label: 'Круги' },
             { id: 'clinical', icon: '📝', label: 'Тесты и КПТ' },
+            { id: 'brainiq', icon: '🧠', label: 'Мозг и IQ' },
         ],
     },
     {

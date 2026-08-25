@@ -38,6 +38,7 @@ const AiPlan = lazyPage(() => import('./pages/AiPlan'), 'AiPlan');
 const UserCard = lazyPage(() => import('./pages/UserCard'), 'UserCard');
 const CalendarPage = lazyPage(() => import('./pages/CalendarPage'), 'CalendarPage');
 const ClinicalTests = lazyPage(() => import('./pages/ClinicalTests'), 'ClinicalTests');
+const BrainIq = lazyPage(() => import('./pages/BrainIq'), 'BrainIq');
 const CirclesOfInfluence = lazyPage(() => import('./pages/CirclesOfInfluence'), 'CirclesOfInfluence');
 const Finance = lazyPage(() => import('./pages/Finance'), 'Finance');
 const GymApp = lazyPage(() => import('./features/gym/Gym'), 'GymApp');
@@ -73,6 +74,7 @@ function GequApp({ guestMode, onExitGuest }: { guestMode?: boolean; onExitGuest?
     const [circles, setCircles] = useState(DB.get('circles', []));
     const [reminders, setReminders] = useState(DB.get('reminders', []));
     const [clinicalResults, setClinicalResults] = useState(DB.get('clinical', []));
+    const [brainIqResults, setBrainIqResults] = useState(DB.get('brainiq', []));
     const [cbtRecords, setCbtRecords] = useState(DB.get('cbt', []));
     const [finance, setFinance] = useState(DB.get('finance', DEFAULT_FINANCE));
     const [snowmanLabels, setSnowmanLabels] = useState<ActivityLabel[]>(DB.get('snowmanLabels', []));
@@ -106,6 +108,7 @@ function GequApp({ guestMode, onExitGuest }: { guestMode?: boolean; onExitGuest?
     usePersisted('circles', circles);
     usePersisted('reminders', reminders);
     usePersisted('clinical', clinicalResults);
+    usePersisted('brainiq', brainIqResults);
     usePersisted('cbt', cbtRecords);
     usePersisted('logs', logs);
     usePersisted('dopamineMenu', dopamineMenu);
@@ -172,6 +175,7 @@ function GequApp({ guestMode, onExitGuest }: { guestMode?: boolean; onExitGuest?
         aiplan: () => <AiPlan logs={logs} kanban={kanban} setKanban={setKanban} habits={habits} gymData={gymData} testResults={testResults} energy={energy} />,
         clinical: () => <ClinicalTests clinicalResults={clinicalResults} setClinicalResults={setClinicalResults}
             cbtRecords={cbtRecords} setCbtRecords={setCbtRecords} />,
+        brainiq: () => <BrainIq brainIqResults={brainIqResults} setBrainIqResults={setBrainIqResults} />,
         training: () => <Training setTestResults={setTestResults} testResults={testResults} achievements={achievements} setAchievements={setAchievements}
             pomodoro={pomodoro} setPomodoro={setPomodoro} />,
         knowledge: () => <Knowledge setPage={setPage} />,

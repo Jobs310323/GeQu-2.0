@@ -90,6 +90,7 @@ export const NAV_ICON: Record<string, string> = {
     circles: 'circle',
     cbt: 'thought',
     clinical: 'clipboard',
+    brainiq: 'brain',
     progress: 'trophy',
     snowman: 'snowman',
     dynamics: 'chart',
