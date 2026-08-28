@@ -6,6 +6,7 @@ import { ConfettiBurst } from './Confetti';
 import { playAddSound } from './sound';
 import { addActivity, computePoints, findRecord, isClosedDay, removeActivity, updateActivity } from './logic';
 import { DIFFICULTY_OPTIONS, SPHERES, type Activity, type ActivityLabel, type DayRecord, type Difficulty, type Sphere } from './types';
+import { nowInstant } from '../../lib/datetime';
 
 type Props = {
     date: string;
@@ -90,7 +91,7 @@ export function SnowmanDay({ date, labels, setLabels, days, setDays }: Props) {
         const points = computePoints(minutes, difficulty);
         const activity: Activity = {
             id: `act_${Date.now()}`, labelId: pendingLabel.id, label: pendingLabel.label, sphere: pendingLabel.sphere,
-            minutes, difficulty, points, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+            minutes, difficulty, points, createdAt: nowInstant(), updatedAt: nowInstant(),
         };
         setDays(prev => addActivity(prev, date, activity));
         fireSuccess(points, pendingLabel.sphere);

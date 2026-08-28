@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import { todayKey } from '../lib/datetime';
 
 export function Habits({ habits, setHabits }: any) {
     const [name, setName] = useState('');
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayKey();
 
     const addHabit = () => {
         if (!name.trim()) return;

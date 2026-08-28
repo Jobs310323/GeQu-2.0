@@ -1,6 +1,7 @@
 import { Icon } from '../../components/Icons';
 import type { EffortType, MindNode, NodeStatus, Priority } from '../../types/mindmap';
 import { EFFORT_LABEL, PRIORITY_LABEL } from '../../lib/mindTree';
+import { nowInstant } from '../../lib/datetime';
 
 type Props = {
     node: MindNode;
@@ -25,7 +26,7 @@ const fieldLabel = 'text-xs font-medium text-[var(--text-muted)] mb-1 block';
 const fieldInput = 'w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-main)] outline-none focus:border-cyan-400';
 
 export function NodeInspector({ node, hasChildren, effectiveProgress, subtreeHours, onPatch, onClose }: Props) {
-    const patch = (p: Partial<MindNode>) => onPatch(node.id, { ...p, updatedAt: new Date().toISOString() });
+    const patch = (p: Partial<MindNode>) => onPatch(node.id, { ...p, updatedAt: nowInstant() });
 
     return (
         <div className="glass-card rounded-2xl p-4 w-full sm:w-80 shrink-0 flex flex-col gap-4 max-h-[75vh] overflow-y-auto">

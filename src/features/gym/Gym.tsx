@@ -5,6 +5,7 @@ import { marked } from 'marked';
 import { PageHeader } from '../../components/PageHeader';
 import { Icon } from '../../components/Icons';
 import { useDragReorder } from '../../lib/useDragReorder';
+import { todayKey, instantForDateKey, nowInstant } from '../../lib/datetime';
 
 const MUSCLES = ['Грудь', 'Спина', 'Ноги', 'Плечи', 'Руки', 'Пресс', 'Всё тело'];
 const INTENSITIES = ['Низкая', 'Средняя', 'Высокая', 'Интервалы'];
@@ -60,7 +61,7 @@ export function GymApp({ gymData, setGymData, logs }: any) {
             dayName: day.name,
             // Back-dated sessions keep the chosen day but a midday timestamp,
             // so they land on the right day in every local-time view.
-            date: dateISO ?? new Date().toISOString(),
+            date: dateISO ?? nowInstant(),
             exercises,
             startTime: Date.now(),
             endTime: null
@@ -148,18 +149,17 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) 
     })();
 
     const [dayId, setDayId] = useState<number | null>(days[suggestedIndex]?.id ?? null);
-    const [date, setDate] = useState(() => new Date().toLocaleDateString('sv-SE')); // local YYYY-MM-DD
+    const [date, setDate] = useState(() => todayKey());
 
     const selectedDay = days.find((d: any) => d.id === dayId) ?? days[suggestedIndex];
-    const todayKey = new Date().toLocaleDateString('sv-SE');
-    const isToday = date === todayKey;
-    const isFuture = date > todayKey;
+    const today = todayKey();
+    const isToday = date === today;
+    const isFuture = date > today;
 
     const begin = () => {
         if (!selectedDay) return;
         // Midday keeps a back-dated session on the intended day in every view.
-        const iso = isToday ? new Date().toISOString() : new Date(`${date}T12:00:00`).toISOString();
-        startWorkout(selectedDay, iso);
+        startWorkout(selectedDay, instantForDateKey(date));
     };
 
     return (
@@ -207,11 +207,11 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) 
 
                         <label className="block text-sm text-gray-400 mb-2">Дата тренировки</label>
                         <div className="flex flex-wrap items-center gap-3 mb-5">
-                            <input type="date" value={date} max={todayKey}
+                            <input type="date" value={date} max={today}
                                 onChange={e => setDate(e.target.value)}
                                 className="bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-white outline-none focus:border-cyan-400" />
                             {!isToday && (
-                                <button onClick={() => setDate(todayKey)} className="text-xs text-cyan-400 hover:underline">
+                                <button onClick={() => setDate(today)} className="text-xs text-cyan-400 hover:underline">
                                     Вернуть сегодня
                                 </button>
                             )}

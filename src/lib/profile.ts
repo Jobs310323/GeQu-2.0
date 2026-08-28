@@ -4,6 +4,7 @@
 // exact, costs no tokens, and keeps the AI's job to interpretation only.
 
 import { computeXp, levelFromXp, evaluateAchievements, type GameData } from './xp';
+import { streakLength, startOfLocalDay } from './datetime';
 
 /** Cognitive tests where a LOWER value is better (times/latency). */
 export const LOWER_IS_BETTER = new Set(['schulte', 'reaction', 'tmt']);
@@ -42,18 +43,7 @@ function tagCounts(logs: any[], field: 'helped' | 'hindered') {
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([tag, n]) => ({ tag, n }));
 }
 
-function currentStreak(logs: any[]): number {
-    const days = [...new Set(logs.map(l => new Date(l.date).setHours(0, 0, 0, 0)))].sort((a, b) => b - a);
-    if (!days.length) return 0;
-    const today = new Date().setHours(0, 0, 0, 0);
-    if (days[0] !== today && days[0] !== today - 86400000) return 0;
-    let streak = 1;
-    for (let i = 0; i < days.length - 1; i++) {
-        if (days[i] - days[i + 1] === 86400000) streak++;
-        else break;
-    }
-    return streak;
-}
+const currentStreak = (logs: any[]): number => streakLength(logs.map(l => l.date));
 
 export function buildProfile(d: {
     logs: any[]; diary: any[]; habits: any[]; kanban: any[];
@@ -168,7 +158,7 @@ export function buildProfile(d: {
     // --- money: aggregates only, never the PIN or raw entry list ---
     const fin = d.finance ?? null;
     const finEntries: any[] = fin?.entries ?? [];
-    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+    const monthStart = startOfLocalDay(new Date()); monthStart.setDate(1);
     const sum = (list: any[], type: string) =>
         list.filter(e => e.type === type).reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const thisMonth = finEntries.filter(e => new Date(e.date).getTime() >= monthStart.getTime());

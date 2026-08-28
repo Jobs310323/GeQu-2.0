@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CLINICAL_TESTS, scoreTest, bandFor, TONE_CLASS, type ClinicalTest } from '../lib/clinicalTests';
 import { PageHeader } from '../components/PageHeader';
 import { Cbt } from './Cbt';
+import { nowInstant } from '../lib/datetime';
 
 /** One completed run, kept so trends over time are visible. */
 type Result = { id: number; testId: string; date: string; score: number; label: string };
@@ -79,7 +80,7 @@ function ClinicalTestsView({ clinicalResults, setClinicalResults }: any) {
         const band = bandFor(test, score);
         setClinicalResults([
             ...results,
-            { id: Date.now(), testId: test.id, date: new Date().toISOString(), score, label: band.label },
+            { id: Date.now(), testId: test.id, date: nowInstant(), score, label: band.label },
         ]);
         setRunning(null);
         setJustFinished({ test, score });

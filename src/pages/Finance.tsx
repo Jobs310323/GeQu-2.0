@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Chart from 'chart.js/auto';
 import { PageHeader } from '../components/PageHeader';
 import { Icon } from '../components/Icons';
+import { todayKey, toLocalDateKey, daysBetween, isToday, nowInstant } from '../lib/datetime';
 
 export type Category = { id: string; icon: string; label: string; color: string };
 export type FinanceEntry = { id: number; type: 'expense' | 'income'; categoryId: string; amount: number; date: string };
@@ -46,21 +47,22 @@ export const DEFAULT_FINANCE: FinanceData = {
 
 const PALETTE = ['#0284C7', '#EA580C', '#7C3AED', '#DB2777', '#16A34A', '#CA8A04', '#64748B', '#0EA5E9', '#F43F5E'];
 
+// Periods are counted in the user's calendar days, not in elapsed hours: "this
+// week" means the last seven days including today, so an entry made yesterday
+// evening still counts as yesterday rather than dropping out 168 hours later.
 function inPeriod(dateStr: string, period: 'day' | 'week' | 'month') {
+    if (period === 'day') return isToday(dateStr);
+    if (period === 'week') {
+        const age = daysBetween(toLocalDateKey(dateStr), todayKey());
+        return age >= 0 && age < 7;
+    }
     const d = new Date(dateStr);
     const now = new Date();
-    if (period === 'day') return d.toDateString() === now.toDateString();
-    if (period === 'week') {
-        const diff = (now.getTime() - d.getTime()) / 86400000;
-        return diff >= 0 && diff < 7;
-    }
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
 }
 
 function daysUntil(dateStr: string) {
-    const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
-    const now = new Date(); now.setHours(0, 0, 0, 0);
-    return Math.round((d.getTime() - now.getTime()) / 86400000);
+    return daysBetween(todayKey(), toLocalDateKey(dateStr));
 }
 
 function useLightTick() {
@@ -367,7 +369,7 @@ function SubscriptionsPanel({ subs, addSub, markPaid, deleteSub, updateSub, fmt 
 }) {
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
-    const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+    const [date, setDate] = useState(() => todayKey());
 
     const submit = () => {
         const val = parseFloat(amount);
@@ -460,7 +462,7 @@ export function Finance({ finance, setFinance }: { finance: FinanceData; setFina
     const confirmQuickAdd = () => {
         const val = parseFloat(amount.replace(',', '.'));
         if (!val || val <= 0 || !quickCat) return;
-        const entry: FinanceEntry = { id: Date.now(), type: tab, categoryId: quickCat.id, amount: val, date: new Date().toISOString() };
+        const entry: FinanceEntry = { id: Date.now(), type: tab, categoryId: quickCat.id, amount: val, date: nowInstant() };
         setFinance({ ...data, entries: [entry, ...entries] });
         setAmount(''); setQuickCat(null);
     };
@@ -477,7 +479,7 @@ export function Finance({ finance, setFinance }: { finance: FinanceData; setFina
     const switchTab = (t: 'expense' | 'income') => { setTab(t); setQuickCat(null); setEditingCatId(null); setManageCats(false); setShowAddCat(false); };
 
     const addDebt = (title: string, amount: number, direction: Debt['direction']) => {
-        const debt: Debt = { id: Date.now(), title: title.trim(), amount, direction, status: 'active', createdAt: new Date().toISOString() };
+        const debt: Debt = { id: Date.now(), title: title.trim(), amount, direction, status: 'active', createdAt: nowInstant() };
         setFinance({ ...data, debts: [debt, ...data.debts] });
     };
     // Repaying a debt moves real money: settling what I owe is an expense,
@@ -490,12 +492,12 @@ export function Finance({ finance, setFinance }: { finance: FinanceData; setFina
             type: debt.direction === 'i_owe' ? 'expense' : 'income',
             categoryId: 'debt',
             amount: debt.amount,
-            date: new Date().toISOString(),
+            date: nowInstant(),
         };
         setFinance({
             ...data,
             entries: [entry, ...data.entries],
-            debts: data.debts.map(d => d.id === id ? { ...d, status: 'paid' as const, paidAt: new Date().toISOString() } : d),
+            debts: data.debts.map(d => d.id === id ? { ...d, status: 'paid' as const, paidAt: nowInstant() } : d),
         });
     };
     const deleteDebt = (id: number) => setFinance({ ...data, debts: data.debts.filter(d => d.id !== id) });
@@ -512,11 +514,11 @@ export function Finance({ finance, setFinance }: { finance: FinanceData; setFina
         if (!sub) return;
         const next = new Date(sub.nextPaymentDate);
         next.setMonth(next.getMonth() + 1);
-        const entry: FinanceEntry = { id: Date.now(), type: 'expense', categoryId: 'subscription', amount: sub.amount, date: new Date().toISOString() };
+        const entry: FinanceEntry = { id: Date.now(), type: 'expense', categoryId: 'subscription', amount: sub.amount, date: nowInstant() };
         setFinance({
             ...data,
             entries: [entry, ...data.entries],
-            subscriptions: data.subscriptions.map(s => s.id === id ? { ...s, nextPaymentDate: next.toISOString().slice(0, 10) } : s),
+            subscriptions: data.subscriptions.map(s => s.id === id ? { ...s, nextPaymentDate: toLocalDateKey(next) } : s),
         });
     };
 

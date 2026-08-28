@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icons';
 import { SPHERES, type ActivityLabel, type Sphere } from './types';
+import { nowInstant } from '../../lib/datetime';
 
 type Props = {
     labels: ActivityLabel[];
@@ -17,7 +18,7 @@ export function SnowmanLabels({ labels, setLabels, onTapLabel }: Props) {
     const save = () => {
         const trimmed = name.trim();
         if (!trimmed) return;
-        const label: ActivityLabel = { id: `lbl_${Date.now()}`, label: trimmed, sphere, createdAt: new Date().toISOString() };
+        const label: ActivityLabel = { id: `lbl_${Date.now()}`, label: trimmed, sphere, createdAt: nowInstant() };
         setLabels(prev => [...prev, label]);
         setName(''); setSphere('intellect'); setModalOpen(false);
     };

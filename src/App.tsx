@@ -28,6 +28,7 @@ import type { ActivityLabel, DayRecord } from './features/snowman/types';
 import { DopamineRoulette } from './features/dopamine/DopamineRoulette';
 import { HyperfocusOverlay } from './features/hyperfocus/HyperfocusOverlay';
 import { computeXp, levelFromXp } from './lib/xp';
+import { todayKey, toLocalDateKey } from './lib/datetime';
 
 /** The real app, mounted only once Clerk confirms a signed-in user. */
 function GequApp() {
@@ -107,10 +108,12 @@ function GequApp() {
     }, [theme]);
 
     // Логика расчета Энергетической Батарейки
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todayLog = logs.find((l: any) => l.date.split('T')[0] === todayStr);
-    const todayGym = gymData.history.some((w: any) => w.date.split('T')[0] === todayStr);
-    const todayTest = testResults.some((t: any) => t.date.split('T')[0] === todayStr);
+    // Both sides go through toLocalDateKey: the stored value is a UTC instant,
+    // so splitting it on 'T' would compare a UTC day against the user's day.
+    const todayStr = todayKey();
+    const todayLog = logs.find((l: any) => toLocalDateKey(l.date) === todayStr);
+    const todayGym = gymData.history.some((w: any) => toLocalDateKey(w.date) === todayStr);
+    const todayTest = testResults.some((t: any) => toLocalDateKey(t.date) === todayStr);
 
     let energy = 5;
     if (todayLog) {

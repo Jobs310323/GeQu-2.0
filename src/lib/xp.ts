@@ -4,6 +4,8 @@
 // habits, kanban, gym history, test results). Nothing new has to be tracked,
 // so past activity counts retroactively and there is no migration.
 
+import { toLocalDateKey, daysBetween } from './datetime';
+
 export type GameData = {
     logs: any[];
     habits: any[];
@@ -98,14 +100,13 @@ export type Achievement = {
     goal: number;
 };
 
-/** Longest run of consecutive days present in a list of YYYY-MM-DD strings. */
+/** Longest run of consecutive days in a list of dates, counted in the user's timezone. */
 function longestDayStreak(dates: string[]): number {
-    const days = [...new Set(dates)].map(d => new Date(d).setHours(0, 0, 0, 0)).sort((a, b) => a - b);
+    const days = [...new Set(dates.map(toLocalDateKey))].filter(Boolean).sort();
     if (days.length === 0) return 0;
     let best = 1, run = 1;
     for (let i = 1; i < days.length; i++) {
-        if (days[i] - days[i - 1] === 86400000) run++;
-        else if (days[i] !== days[i - 1]) run = 1;
+        run = daysBetween(days[i - 1]!, days[i]!) === 1 ? run + 1 : 1;
         best = Math.max(best, run);
     }
     return best;

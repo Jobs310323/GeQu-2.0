@@ -1,8 +1,9 @@
 // Pure scoring/aggregation logic for the Snowman feature — no JSX, no state,
 // so it stays easy to reason about and reuse from both the page and analytics.
 import { DIFFICULTY_MULTIPLIER, SPHERES, type Activity, type DayRecord, type Difficulty, type Sphere } from './types';
+import { todayKey, addDays, nowInstant } from '../../lib/datetime';
 
-export const todayStr = () => new Date().toISOString().split('T')[0];
+export const todayStr = () => todayKey();
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
@@ -49,7 +50,7 @@ function recompute(record: DayRecord, today: string, editedRetroactively: boolea
     }
     return {
         ...record, scores, totalHarmony, closedAt, isEdited: true,
-        editHistory: [...record.editHistory, { timestamp: new Date().toISOString(), changes: changeDesc ?? 'Изменена активность' }],
+        editHistory: [...record.editHistory, { timestamp: nowInstant(), changes: changeDesc ?? 'Изменена активность' }],
     };
 }
 
@@ -67,7 +68,7 @@ export function updateActivity(days: DayRecord[], date: string, activityId: stri
     const existing = findRecord(days, date);
     if (!existing) return days;
     const wasClosed = isClosedDay(existing, today);
-    const activities = existing.activities.map(a => a.id === activityId ? { ...a, ...patch, updatedAt: new Date().toISOString() } : a);
+    const activities = existing.activities.map(a => a.id === activityId ? { ...a, ...patch, updatedAt: nowInstant() } : a);
     const updated = recompute({ ...existing, activities }, today, wasClosed, 'Изменена активность');
     return days.map(d => d.date === date ? updated : d);
 }
@@ -100,8 +101,7 @@ export function mostHarmoniousDay(days: DayRecord[]): DayRecord | null {
     return days.reduce((best, d) => (!best || d.totalHarmony > best.totalHarmony) ? d : best, null as DayRecord | null);
 }
 
-const DAY_MS = 86400000;
-const prevDate = (date: string) => new Date(new Date(date).getTime() - DAY_MS).toISOString().split('T')[0];
+const prevDate = (date: string) => addDays(date, -1);
 
 /** Consecutive days (walking back from the most recent) where every sphere ≥ 8. */
 export function currentStreak(days: DayRecord[]): number {

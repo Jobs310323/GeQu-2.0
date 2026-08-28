@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import { toLocalDateKey } from '../lib/datetime';
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -13,9 +14,9 @@ const KINDS: Record<string, { color: string; label: string; icon: string }> = {
     reminder: { color: '#DB2777', label: 'Напоминание', icon: 'bell' },
 };
 
-/** Local-time YYYY-MM-DD. Using toISOString here would shift evening entries. */
-const dayKey = (d: Date | string) =>
-    (typeof d === 'string' ? new Date(d) : d).toLocaleDateString('sv-SE');
+// This page worked the timezone problem out first; `toLocalDateKey` is that
+// same fix, moved to lib/datetime so the rest of the app shares it.
+const dayKey = toLocalDateKey;
 
 export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: any) {
     const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });

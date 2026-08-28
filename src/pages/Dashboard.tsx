@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { calculateStreak } from '../lib/helpers';
 import { Icon } from '../components/Icons';
 import { RadialGauge } from '../components/RadialGauge';
+import { todayKey, toLocalDateKey, instantForDateKey } from '../lib/datetime';
 
 const HELPED_TAGS = ['Кофе', 'Спорт', 'Сон', 'Pomodoro', 'Интерес к задаче', 'Медитация'];
 const HINDERED_TAGS = ['Телефон', 'Усталость', 'Шум', 'Скука', 'Голод', 'Откладывание'];
@@ -80,15 +81,15 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
     const show = (id: string) => !hiddenWidgets.includes(id);
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayKey();
     const [entryDate, setEntryDate] = useState(todayStr);
-    const todayGym = gymData.history.some((w: any) => w.date.split('T')[0] === todayStr);
-    const todayTest = testResults.some((t: any) => t.date.split('T')[0] === todayStr);
+    const todayGym = gymData.history.some((w: any) => toLocalDateKey(w.date) === todayStr);
+    const todayTest = testResults.some((t: any) => toLocalDateKey(t.date) === todayStr);
 
     // --- Overview figures --------------------------------------------------
     // Gauges show today's numbers once the day is closed, and the running
     // 7-day average before that — so the block is never empty.
-    const todayLog = logs.find((l: any) => l.date.split('T')[0] === todayStr);
+    const todayLog = logs.find((l: any) => toLocalDateKey(l.date) === todayStr);
     const recentLogs = logs.filter((l: any) => new Date(l.date).getTime() >= Date.now() - 7 * DAY_MS);
     const avg = (key: string) => recentLogs.length
         ? recentLogs.reduce((s: number, l: any) => s + Number(l[key] ?? 0), 0) / recentLogs.length
@@ -144,11 +145,12 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     };
 
     const gratitudeCount = gratitude.filter(g => g.trim()).length;
-    const alreadyClosed = logs.some((l: any) => l.date.split('T')[0] === todayStr);
+    const alreadyClosed = logs.some((l: any) => toLocalDateKey(l.date) === todayStr);
 
     const handleSave = () => {
-        const isToday = entryDate === todayStr;
-        const dateISO = isToday ? new Date().toISOString() : new Date(`${entryDate}T12:00:00`).toISOString();
+        // Back-dated entries are stored at local noon of the chosen day, so the
+        // record's own local date key round-trips to the day the user picked.
+        const dateISO = instantForDateKey(entryDate);
         setLogs([...logs, {
             id: Date.now(),
             date: dateISO,

@@ -4,6 +4,7 @@ import { NAV_GROUPS, LOCKED_TABS } from '../lib/nav';
 import { DASHBOARD_WIDGETS, toggleIn } from '../lib/prefs';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import { todayKey } from '../lib/datetime';
 
 export function Settings({ diary, logs, prefs, setPrefs }: any) {
     const hiddenTabs: string[] = prefs?.hiddenTabs ?? [];
@@ -62,7 +63,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `gequ_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `gequ_backup_${todayKey()}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

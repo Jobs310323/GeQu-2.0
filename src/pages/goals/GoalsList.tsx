@@ -8,6 +8,7 @@ import { GoalDescription } from './GoalDescription';
 import { StepRow } from './StepRow';
 import { TaskInput } from './TaskInput';
 import { TagChips } from '../../components/TagChips';
+import { todayKey } from '../../lib/datetime';
 
 type GoalsListProps = {
     goals: Goal[];
@@ -42,7 +43,7 @@ export function GoalsList({ goals, setGoals }: GoalsListProps) {
             setTimeout(() => setCopiedAll(false), 1500);
         }
     };
-    const downloadAll = () => downloadTextFile(`goals-${new Date().toISOString().slice(0, 10)}.txt`, formatAllGoalsText(sortedGoals));
+    const downloadAll = () => downloadTextFile(`goals-${todayKey()}.txt`, formatAllGoalsText(sortedGoals));
 
     return (
         <div>

@@ -3,6 +3,7 @@ import { callAIJson } from '../lib/ai';
 import { DB } from '../lib/db';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import { todayKey } from '../lib/datetime';
 
 type Block = {
     time: string;
@@ -41,10 +42,6 @@ const PLANNER_SYSTEM = `Ты — проактивный ассистент по 
 {"greeting": "короткое тёплое приветствие", "energyNote": "1 предложение про энергию сегодня", "blocks": [{"time": "08:00–09:00", "title": "что делать", "why": "зачем, кратко", "kind": "task|test|break|gym|habit|closing", "taskId": число или null}], "deferred": [{"taskId": число, "reason": "почему перенёс"}], "tip": "одна полезная заметка"}
 
 Весь текст — по-русски и строго на «ты» (никаких «вы», «давайте», «ваш»). Тон тёплый и поддерживающий. Никакого текста вне JSON.`;
-
-function todayKey() {
-    return new Date().toISOString().split('T')[0];
-}
 
 export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, energy }: any) {
     const [plan, setPlan] = useState<Plan | null>(null);

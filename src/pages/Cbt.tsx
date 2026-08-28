@@ -3,6 +3,7 @@ import { DISTORTIONS, PRACTICES, RECORD_FIELDS } from '../lib/cbt';
 import { streamAI, hasGroqKey } from '../lib/ai';
 import { marked } from 'marked';
 import { Icon } from '../components/Icons';
+import { nowInstant } from '../lib/datetime';
 
 const TABS = [
     { id: 'record', label: 'Дневник мыслей' },
@@ -38,7 +39,7 @@ export function Cbt({ cbtRecords, setCbtRecords }: any) {
 
     const save = () => {
         if (!canSave) return;
-        setCbtRecords([{ id: Date.now(), date: new Date().toISOString(), ...draft }, ...records]);
+        setCbtRecords([{ id: Date.now(), date: nowInstant(), ...draft }, ...records]);
         setDraft(emptyRecord());
         setAiOut('');
     };

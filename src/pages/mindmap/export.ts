@@ -1,5 +1,6 @@
 import type { MindEdge, MindNode } from '../../types/mindmap';
 import { isLeaf, PRIORITY_LABEL } from '../../lib/mindTree';
+import { todayKey } from '../../lib/datetime';
 
 function csvEscape(value: string): string {
     return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
@@ -26,7 +27,7 @@ export function exportWeekCsv(nodes: MindNode[], edges: MindEdge[]) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `mindmap-week-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `mindmap-week-${todayKey()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
 

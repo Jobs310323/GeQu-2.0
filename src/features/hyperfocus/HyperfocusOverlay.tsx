@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Icon } from '../../components/Icons';
+import { nowInstant } from '../../lib/datetime';
 
 export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs, todayLog }: any) {
     const [phase, setPhase] = useState(hyperfocus.status); // setup, running, finished, interrupted
@@ -34,7 +35,7 @@ export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs
     const finishCycle = () => {
         // Сохраняем в дневник
         const entry = `[Гиперфокус] ${hyperfocus.duration} мин — Сделал: ${reflection || task}`;
-        setDiary((prev: any[]) => [{ id: Date.now(), date: new Date().toISOString(), content: entry }, ...prev]);
+        setDiary((prev: any[]) => [{ id: Date.now(), date: nowInstant(), content: entry }, ...prev]);
         
         // Бонус к фокусу в закрытии дня
         if (todayLog) {

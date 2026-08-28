@@ -3,6 +3,7 @@ import { marked } from 'marked';
 import { streamAI } from '../lib/ai';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import { nowInstant } from '../lib/datetime';
 
 const JOURNAL_SYSTEM = `Ты — тёплый, бережный собеседник в приложении GeQu (пользователь — человек с СДВГ, ему важны ясность и поддержка).
 Тебе дают последние записи из личного дневника с датами. Мягко отрефлексируй их: подметь повторяющиеся темы и настроения, что радует и что тревожит, отметь сильные стороны и маленькие победы. Дай 1–2 бережных выполнимых предложения на подумать — без давления и нравоучений.
@@ -39,7 +40,7 @@ export function Diary({ diary, setDiary }: any) {
             setAiLoading(false);
         }
     };
-    const addEntry = () => { if (!newEntry.trim()) return; setDiary([{ id: Date.now(), date: new Date().toISOString(), content: newEntry }, ...diary]); setNewEntry(''); };
+    const addEntry = () => { if (!newEntry.trim()) return; setDiary([{ id: Date.now(), date: nowInstant(), content: newEntry }, ...diary]); setNewEntry(''); };
     const deleteEntry = (id: number) => setDiary(diary.filter((entry:any) => entry.id !== id));
     const saveEdit = (id: number) => { setDiary(diary.map((entry:any) => entry.id === id ? { ...entry, content: editText } : entry)); setEditingId(null); };
 

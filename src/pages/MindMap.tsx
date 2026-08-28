@@ -19,6 +19,7 @@ import { mindNodeTypes } from './mindmap/MindMapNode';
 import { NodeInspector } from './mindmap/NodeInspector';
 import type { MindColor, MindEdge, MindMapDoc, MindNode, MindViewMode } from '../types/mindmap';
 import type { MindFlowNode, MindNodeData } from './mindmap/MindMapNode';
+import { todayKey, toLocalDateKey, addDays, nowInstant } from '../lib/datetime';
 
 type Callbacks = Pick<MindNodeData, 'onEdit' | 'onRecolor' | 'onDelete' | 'onOpen' | 'onSnooze' | 'onToggleDone'>;
 type StoredData = Omit<MindNode, 'id' | 'x' | 'y'> & Callbacks;
@@ -102,19 +103,18 @@ function MindMapCanvas() {
         onOpen: id => {
             commitTimeSpent(selectedNodeId);
             inspectorSession.current = { id, start: Date.now() };
-            setNodes(nds => nds.map(n => (n.id === id ? { ...n, data: { ...n.data, lastOpenedAt: new Date().toISOString() } } : n)));
+            setNodes(nds => nds.map(n => (n.id === id ? { ...n, data: { ...n.data, lastOpenedAt: nowInstant() } } : n)));
             setSelectedNodeId(id);
         },
         onSnooze: id => setNodes(nds => nds.map(n => {
             if (n.id !== id) return n;
-            const base = n.data.dueDate ? new Date(n.data.dueDate) : new Date();
-            base.setDate(base.getDate() + 1);
-            return { ...n, data: { ...n.data, dueDate: base.toISOString().slice(0, 10), updatedAt: new Date().toISOString() } };
+            const from = n.data.dueDate ? toLocalDateKey(n.data.dueDate) : todayKey();
+            return { ...n, data: { ...n.data, dueDate: addDays(from, 1), updatedAt: nowInstant() } };
         })),
         onToggleDone: id => setNodes(nds => nds.map(n => {
             if (n.id !== id) return n;
             const nowDone = n.data.status !== 'done';
-            return { ...n, data: { ...n.data, status: nowDone ? 'done' : 'in_progress', progress: nowDone ? 100 : n.data.progress, updatedAt: new Date().toISOString() } };
+            return { ...n, data: { ...n.data, status: nowDone ? 'done' : 'in_progress', progress: nowDone ? 100 : n.data.progress, updatedAt: nowInstant() } };
         })),
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }), []);
