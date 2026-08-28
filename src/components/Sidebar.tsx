@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { NavLink, useLocation } from 'react-router';
 import { UserButton } from '@clerk/clerk-react';
 import { NAV_GROUPS } from '../lib/nav';
 import { Logo, LogoMark } from './Logo';
@@ -6,7 +7,13 @@ import { Icon, NAV_ICON } from './Icons';
 
 const COLLAPSE_KEY = 'gequ_sidebar_collapsed';
 
-export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
+/** Active-state classes shared by every nav control, so they cannot drift apart. */
+const linkClass = (active: boolean, extra = '') =>
+    `${active
+        ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20'
+        : 'text-[var(--text-muted)] hover:bg-white/5 hover:text-[var(--text-main)] border-transparent'} ${extra}`;
+
+export function Sidebar({ theme, setTheme, energy, todayLog,
                           prefs, reminderCount, levelInfo, onRoulette }: any) {
     const [collapsed, setCollapsed] = useState(() => {
         try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
@@ -16,6 +23,7 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
         try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch { /* ignore */ }
     }, [collapsed]);
 
+    const onCard = useLocation().pathname === '/card';
     const hidden: string[] = prefs?.hiddenTabs ?? [];
 
     // Drop hidden entries, then drop groups that end up empty.
@@ -46,18 +54,19 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
             </div>
 
             <div className="p-3 shrink-0">
-                <button
-                    onClick={() => setPage('dashboard')}
+                <NavLink
+                    to="/"
+                    end
                     title={collapsed ? 'Новая запись' : undefined}
-                    className={`w-full flex items-center gap-2 rounded-xl border text-sm transition py-2 ${
-                        page === 'dashboard'
+                    className={({ isActive }) => `w-full flex items-center gap-2 rounded-xl border text-sm transition py-2 ${
+                        isActive
                             ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/25'
                             : 'border-[var(--border)] hover:bg-white/5'
                     } ${collapsed ? 'justify-center px-0' : 'px-3'}`}
                 >
                     <Icon name="plus" size={16} />
                     {!collapsed && <span>Новая запись</span>}
-                </button>
+                </NavLink>
             </div>
 
             <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 flex flex-col gap-4 pb-3">
@@ -70,18 +79,14 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
                         )}
                         <div className="flex flex-col gap-0.5">
                             {group.items.map(item => {
-                                const active = page === item.id;
                                 const badge = item.id === 'calendar' ? reminderCount : 0;
                                 return (
-                                    <button
+                                    <NavLink
                                         key={item.id}
-                                        onClick={() => setPage(item.id)}
+                                        to={item.path}
                                         title={collapsed ? item.label : undefined}
-                                        className={`w-full text-left px-2 py-1.5 rounded-lg cursor-pointer transition flex items-center gap-2.5 text-sm border ${
-                                            active
-                                                ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/20'
-                                                : 'text-[var(--text-muted)] hover:bg-white/5 hover:text-[var(--text-main)] border-transparent'
-                                        } ${collapsed ? 'justify-center' : ''}`}
+                                        className={({ isActive }) => linkClass(isActive,
+                                            `w-full text-left px-2 py-1.5 rounded-lg transition flex items-center gap-2.5 text-sm border ${collapsed ? 'justify-center' : ''}`)}
                                     >
                                         <Icon name={NAV_ICON[item.id] ?? 'grid'} size={16} />
                                         {!collapsed && <span className="truncate flex-1">{item.label}</span>}
@@ -90,7 +95,7 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
                                                 {badge}
                                             </span>
                                         )}
-                                    </button>
+                                    </NavLink>
                                 );
                             })}
                         </div>
@@ -101,12 +106,12 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
             {/* Profile block: level + energy, doubles as the entry point to
                 "Моя карточка", with settings and the theme toggle docked in it. */}
             <div className={`mt-1 mx-3 mb-3 rounded-xl bg-[var(--bg-input)] border group relative shrink-0 ${
-                page === 'card' ? 'border-cyan-400/30' : 'border-[var(--border)]'
+                onCard ? 'border-cyan-400/30' : 'border-[var(--border)]'
             }`}>
-                <button
-                    onClick={() => setPage('card')}
+                <NavLink
+                    to="/card"
                     title={collapsed ? `Моя карточка · Уровень ${level} · Энергия ${energy.toFixed(1)}/10` : 'Открыть мою карточку'}
-                    className={`w-full text-left rounded-t-xl hover:bg-white/5 transition ${collapsed ? 'p-2' : 'p-2.5'}`}
+                    className={`block w-full text-left rounded-t-xl hover:bg-white/5 transition ${collapsed ? 'p-2' : 'p-2.5'}`}
                 >
                     {collapsed ? (
                         <div className="flex flex-col items-center gap-2">
@@ -141,7 +146,7 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
                             <div className="text-[10px] text-[var(--text-muted)] mt-1">{energyText}</div>
                         </>
                     )}
-                </button>
+                </NavLink>
 
                 <div className={`flex items-center border-t border-[var(--border)] ${collapsed ? 'flex-col' : ''}`}>
                     <button
@@ -153,16 +158,16 @@ export function Sidebar({ page, setPage, theme, setTheme, energy, todayLog,
                     >
                         <Icon name="dice" size={15} />
                     </button>
-                    <button
-                        onClick={() => setPage('settings')}
+                    <NavLink
+                        to="/settings"
                         title="Настройки"
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs transition hover:bg-white/5 ${
-                            page === 'settings' ? 'text-cyan-400' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                        className={({ isActive }) => `flex-1 flex items-center justify-center gap-2 py-2 text-xs transition hover:bg-white/5 ${
+                            isActive ? 'text-cyan-400' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                         }`}
                     >
                         <Icon name="settings" size={15} />
                         {!collapsed && <span>Настройки</span>}
-                    </button>
+                    </NavLink>
                     <button
                         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                         title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}

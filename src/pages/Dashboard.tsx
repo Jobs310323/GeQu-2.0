@@ -3,6 +3,7 @@ import { calculateStreak } from '../lib/helpers';
 import { Icon } from '../components/Icons';
 import { RadialGauge } from '../components/RadialGauge';
 import { todayKey, toLocalDateKey, instantForDateKey } from '../lib/datetime';
+import { useNavigate } from 'react-router';
 
 const HELPED_TAGS = ['Кофе', 'Спорт', 'Сон', 'Pomodoro', 'Интерес к задаче', 'Медитация'];
 const HINDERED_TAGS = ['Телефон', 'Усталость', 'Шум', 'Скука', 'Голод', 'Откладывание'];
@@ -53,7 +54,8 @@ function StatTile({ icon, value, label, hint, tone = 'text-[var(--text-main)]', 
 }
 
 export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults,
-                            prefs, habits, setHabits, setPage, levelInfo, energy }: any) {
+                            prefs, habits, setHabits, levelInfo, energy }: any) {
+    const navigate = useNavigate();
     const [sleep, setSleep] = useState(5);
     const [focus, setFocus] = useState(5);
     const [mood, setMood] = useState(5);
@@ -228,9 +230,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         <StatTile icon="flame" label="Энергия" value={energyValue.toFixed(1)}
                             hint={energyValue >= 7 ? 'полный заряд' : energyValue >= 4 ? 'средний заряд' : 'на исходе'} />
                         <StatTile icon="repeat" label="Привычки" value={`${habitsDone}/${habitList.length}`}
-                            hint="отмечено сегодня" onClick={setPage ? () => setPage('habits') : undefined} />
+                            hint="отмечено сегодня" onClick={() => navigate('/habits')} />
                         <StatTile icon="columns" label="Задачи" value={openTasks.length}
-                            hint="в работе" onClick={setPage ? () => setPage('kanban') : undefined} />
+                            hint="в работе" onClick={() => navigate('/kanban')} />
                         {show('streak') && (
                             <StatTile icon="calendar" label="Серия" value={streak} hint="дней подряд" tone="text-pink-400" />
                         )}
@@ -238,9 +240,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                             <StatTile icon="star" label="Ачивки" value={achievements.length} hint="получено" />
                         )}
                         <StatTile icon="dumbbell" label="Тренировки" value={countRecent(gymData.history, 7)} hint="за 7 дней"
-                            onClick={setPage ? () => setPage('gym') : undefined} />
+                            onClick={() => navigate('/gym')} />
                         <StatTile icon="flask" label="Тесты" value={countRecent(testResults, 7)} hint="за 7 дней"
-                            onClick={setPage ? () => setPage('training') : undefined} />
+                            onClick={() => navigate('/training')} />
                     </div>
                 </div>
             )}
@@ -276,10 +278,8 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         <div className="glass-card rounded-2xl p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Ближайшие задачи</h3>
-                                {setPage && (
-                                    <button onClick={() => setPage('kanban')}
-                                        className="text-[11px] text-cyan-400 hover:underline">все {openTasks.length}</button>
-                                )}
+                                <button onClick={() => navigate('/kanban')}
+                                    className="text-[11px] text-cyan-400 hover:underline">все {openTasks.length}</button>
                             </div>
                             <ul className="space-y-2">
                                 {nextTasks.map((t: any) => (

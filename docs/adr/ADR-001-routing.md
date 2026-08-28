@@ -1,4 +1,4 @@
-# ADR-001 — Routing: React Router v7
+# ADR-001 — Routing: React Router
 
 **Status:** Accepted · 2026-08-28
 
@@ -14,7 +14,10 @@ destinations as sub-routes) requires nested routes. It cannot be expressed as a 
 
 ## Decision
 
-Adopt **React Router v7** with `createBrowserRouter` and nested route objects.
+Adopt **React Router** (8.x, the current stable line) with `createBrowserRouter` and nested
+route objects. The decision was taken against v7; v8 is what the registry actually serves as
+`latest`, its peer range matches the pinned React 19.2.7 exactly, and the API this uses
+(`createBrowserRouter`, `NavLink`, `useNavigate`, `errorElement`) is unchanged between them.
 
 - One route per screen; `React.lazy` per route element.
 - `errorElement` at the route level plus a feature-level `ErrorBoundary`.

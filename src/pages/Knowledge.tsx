@@ -4,6 +4,8 @@ import { CATEGORIES, ARTICLES, ARTICLES_BY_CATEGORY, searchArticles, relatedTo, 
 import { DB } from '../lib/db';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import { useNavigate } from 'react-router';
+import { findTab } from '../lib/nav';
 
 /** Former «Про СДВГ» page — kept as a fixed entry point at the top of the list. */
 const INTRO_IDS = ['adhd-what', 'adhd-symptoms', 'adhd-impact', 'adhd-not-a-sentence'];
@@ -13,7 +15,8 @@ function loadSet(key: string): string[] {
     return Array.isArray(v) ? v : [];
 }
 
-export function Knowledge({ setPage }: any) {
+export function Knowledge() {
+    const navigate = useNavigate();
     const [query, setQuery] = useState('');
     const [category, setCategory] = useState<string | null>(null);
     const [open, setOpen] = useState<Article | null>(null);
@@ -68,7 +71,7 @@ export function Knowledge({ setPage }: any) {
                         dangerouslySetInnerHTML={{ __html: marked.parse(open.body) as string }} />
 
                     {open.action && (
-                        <button onClick={() => setPage?.(open.action!.page)}
+                        <button onClick={() => navigate(findTab(open.action!.page)?.path ?? '/')}
                             className="mt-6 bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg">
                             {open.action.label} →
                         </button>

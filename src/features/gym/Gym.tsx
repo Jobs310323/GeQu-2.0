@@ -122,20 +122,8 @@ export function GymApp({ gymData, setGymData, logs }: any) {
 }
 
 export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) {
-    if (!activeProgram) {
-        return (
-            <div className="glass-card p-8 rounded-2xl text-center flex flex-col items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-white/5 text-[var(--text-muted)] flex items-center justify-center">
-                    <Icon name="dumbbell" size={22} />
-                </div>
-                <p className="text-xl text-gray-300">У вас нет активной программы.</p>
-                <button onClick={() => setView('programs')} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg">Создать программу</button>
-            </div>
-        );
-    }
-
     const lastWorkout = gymData.history[gymData.history.length - 1];
-    const days = activeProgram.days ?? [];
+    const days = activeProgram?.days ?? [];
 
     // Suggest the day that follows the last one performed, rather than always
     // the first — that matches how a split is actually run.
@@ -148,8 +136,23 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) 
         return i === -1 ? 0 : (i + 1) % days.length;
     })();
 
+    // These sit above the empty-state return on purpose. Below it they were
+    // skipped whenever there was no active program, so creating the first one
+    // changed the hook count between renders and React threw.
     const [dayId, setDayId] = useState<number | null>(days[suggestedIndex]?.id ?? null);
     const [date, setDate] = useState(() => todayKey());
+
+    if (!activeProgram) {
+        return (
+            <div className="glass-card p-8 rounded-2xl text-center flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/5 text-[var(--text-muted)] flex items-center justify-center">
+                    <Icon name="dumbbell" size={22} />
+                </div>
+                <p className="text-xl text-gray-300">У вас нет активной программы.</p>
+                <button onClick={() => setView('programs')} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg">Создать программу</button>
+            </div>
+        );
+    }
 
     const selectedDay = days.find((d: any) => d.id === dayId) ?? days[suggestedIndex];
     const today = todayKey();
