@@ -1,7 +1,8 @@
 import { Link } from 'react-router';
 import { Icon } from '../../components/Icons';
 import { useCheckins } from '../../stores/checkins.store';
-import { todaysObservation, MIN_SAMPLE } from '../insights/observe';
+import { allInsights, CLAIM_LABEL, MIN_SAMPLE } from '../insights/engine';
+import { toLocalDateKey } from '../../lib/datetime';
 
 /**
  * "What did I learn about myself" — one observation, or an honest nothing.
@@ -11,7 +12,18 @@ import { todaysObservation, MIN_SAMPLE } from '../insights/observe';
  */
 export function TodayInsight() {
     const logs = useCheckins(s => s.logs);
-    const observation = todaysObservation(logs);
+
+    /* One insight, rotated by day.
+     *
+     * The engine produces several; showing all of them turns Today into a
+     * report, and a report is something to read later rather than notice now.
+     * Rotating by date keeps the card stable within a day — a card that changes
+     * under the user mid-afternoon reads as noise, not information. */
+    const insights = allInsights(logs);
+    const dayIndex = Number(toLocalDateKey(new Date()).replaceAll('-', ''));
+    const observation = insights.length
+        ? insights[dayIndex % insights.length] ?? insights[0]
+        : null;
 
     return (
         <section aria-labelledby="today-insight" className="mt-6">
@@ -33,8 +45,14 @@ export function TodayInsight() {
                         <p className="t-small leading-relaxed flex-1">{observation.text}</p>
                     </div>
                     <p className="t-caption text-[11px] mt-3 pt-3 border-t border-[var(--border)]">
-                        {observation.sampleSize} {dayWord(observation.sampleSize)} в выборке. Это наблюдаемая связь,
-                        а не доказанная причина.
+                        {/* Everything needed to judge the sentence above it: what kind
+                            of claim it is, and how much data stands behind it. An
+                            insight that cannot say this does not render at all. */}
+                        {CLAIM_LABEL[observation.claim]} · {observation.sampleSize}{' '}
+                        {dayWord(observation.sampleSize)} в выборке
+                        {observation.effectSize !== undefined && (
+                            <> · разница примерно в {observation.effectSize.toFixed(1)}× твоего обычного разброса</>
+                        )}
                     </p>
                 </div>
             ) : (

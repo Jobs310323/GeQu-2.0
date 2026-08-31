@@ -1045,3 +1045,69 @@ Removing them surfaced real defects the `any` had been hiding:
 **Next phase** — Phase 10: insights engine and personal baselines.
 
 ---
+
+## Phase 10 — Insights engine + personal baselines
+
+**Completed**
+
+`src/features/insights/` grew from the 90-line `observe.ts` seed into an engine, without loosening
+either rule that file established: below the minimum sample an insight is **suppressed, not
+hedged**, and language states association, never cause.
+
+**What Phase 10 adds is effect size.** Sample size alone lets through a statistically-fine,
+practically-meaningless difference — 0.3 points across forty days is not something to tell anyone.
+Every comparison is now measured in the user's own **median absolute deviation**, so "meaningful"
+means "larger than this person's ordinary day-to-day variation" rather than a threshold someone
+picked.
+
+**Median and MAD, not mean and standard deviation.** Self-rated numbers are dragged badly by rare
+extreme days: one 2/10 after a bad night moves a 30-day mean by a third of a point. Telling someone
+"your mood is down" because of one awful Tuesday is precisely the false finding the engine exists
+to prevent.
+
+Every insight is a typed record carrying claim type, sample size, window, effect size, confidence
+and the baseline it was measured against. `renderable()` is the last gate — a detector that forgets
+to check its sample, or produces a comparison whose effect turns out to be noise, is caught there
+rather than shipping a confident sentence drawn from four days.
+
+The local engine can only ever produce `observed` and `associated`; a test asserts it. Only the AI
+layer may go beyond the data, and `aiClaims.ts` constrains it to the four-claim vocabulary with a
+prompt *and* an output check — a model asked nicely is not a guarantee.
+
+### Two real bugs found by the tests
+
+`stripCausalLanguage` did not work at all, for two independent reasons:
+
+1. **`\b` is useless against Cyrillic.** JavaScript defines a word boundary against `[A-Za-z0-9_]`,
+   so every Russian letter counts as a non-word character and `/\bулучшает\b/` never matches
+   Russian text. Replaced with Unicode letter lookarounds under the `u` flag.
+2. **`test()` on a `/g` regex is stateful.** It advances `lastIndex`, so the following `.replace()`
+   started from the wrong offset and the pattern was primed to miss on the next call.
+
+Both would have shipped a filter that silently did nothing.
+
+**Files changed** — new: `src/features/insights/{types,baseline,engine,aiClaims}.ts` and three test
+suites. Deleted: `observe.ts` and its tests, superseded and no longer imported. Modified:
+`src/features/today/TodayInsight.tsx`.
+
+**Tests added** — 58 new, 16 removed with `observe.ts` (352 total).
+
+**Risks**
+
+- The engine is wired into Today but **has not been seen rendering with real data** — Today is
+  behind auth. Its output is covered by unit tests only.
+- `MIN_EFFECT = 1` MAD is a judgement. Too high and real findings are suppressed; too low and noise
+  ships. It errs high on purpose.
+
+**Known limitations**
+
+- `aiClaims.ts` is written and tested but **not yet wired into `lib/ai.ts`'s call sites** —
+  `WeekSummary`, `AiPlan` and `UserCard` still send their own prompts unconstrained. The constraint
+  exists; applying it is a separate change to four call sites.
+- Only day-log metrics are analysed. Cognitive results now carry a full envelope (Phase 9) and
+  nothing reads it yet.
+- Insight text is Russian-only, like the rest of the app. Phase 11.
+
+**Next phase** — Phase 11: internationalization.
+
+---
