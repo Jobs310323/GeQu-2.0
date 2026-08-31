@@ -3,7 +3,13 @@ let ctx: AudioContext | null = null;
 
 export function playAddSound() {
     try {
-        ctx ??= new (window.AudioContext || (window as any).webkitAudioContext)();
+        // Safari exposed AudioContext under a prefix for years and lib.dom does
+        // not describe it. Narrow to the one constructor we need rather than
+        // casting the whole window.
+        const Ctor = window.AudioContext
+            ?? (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!Ctor) return;
+        ctx ??= new Ctor();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';

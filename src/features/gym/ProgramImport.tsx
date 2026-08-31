@@ -3,7 +3,7 @@ import { callAIJson, hasGroqKey } from '../../lib/ai';
 import type { ProgramDay } from '../../types/domain';
 import type { ProgramImportProps } from '../../types/props';
 import { errorMessage } from '../../lib/helpers';
-import type { ProgramExercise } from '../../types/domain';
+import type { Program, ProgramExercise } from '../../types/domain';
 import { Modal } from '../../components/Modal';
 
 type ParsedExercise = { name: string; muscle: string; sets: number; reps: string };
@@ -26,7 +26,7 @@ const IMPORT_SYSTEM = `Ты — парсер программ тренирово
 Никакого текста вне JSON.`;
 
 /** Shapes whatever came back into exactly what the gym state expects. */
-function normalize(parsed: ParsedProgram) {
+function normalize(parsed: ParsedProgram): Program {
     const now = Date.now();
     return {
         id: now,
@@ -39,6 +39,10 @@ function normalize(parsed: ParsedProgram) {
                 id: now + (di + 1) * 1000 + ei,
                 name: String(e?.name || 'Упражнение').slice(0, 80),
                 muscle: String(e?.muscle || '—').slice(0, 30),
+                // Imported programs are treated as strength work: the pasted
+                // formats carry sets and reps but nothing that identifies cardio,
+                // and guessing would mis-shape the logging UI for that exercise.
+                type: 'strength' as const,
                 sets: Math.min(Math.max(parseInt(String(e?.sets)) || 3, 1), 12),
                 reps: String(e?.reps || '8-12').slice(0, 20),
             })),
@@ -48,7 +52,7 @@ function normalize(parsed: ParsedProgram) {
 
 export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportProps) {
     const [text, setText] = useState('');
-    const [preview, setPreview] = useState<any>(null);
+    const [preview, setPreview] = useState<Program | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -98,6 +102,9 @@ export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportPro
     };
 
     const confirm = () => {
+        // The button is only rendered with a preview, but the type does not know
+        // that and a stale click during a re-parse should be a no-op, not a crash.
+        if (!preview) return;
         setGymData({
             ...gymData,
             programs: [...(gymData.programs ?? []), preview],

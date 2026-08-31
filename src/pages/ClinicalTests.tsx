@@ -242,8 +242,8 @@ function AdhdScreeningTest() {
         { text: "Очень часто", val: 4 }
     ];
 
-    const [answers, setAnswers] = useState<any[]>(Array(18).fill(null));
-    const [result, setResult] = useState<any>(null);
+    const [answers, setAnswers] = useState<(number | null)[]>(Array(18).fill(null));
+    const [result, setResult] = useState<{ score: number; percent: number; verdict: string } | null>(null);
 
     const handleAnswer = (qIndex: number, val: number) => {
         const newAnswers = [...answers];
@@ -252,12 +252,12 @@ function AdhdScreeningTest() {
     };
 
     const calculateResult = () => {
-        const total = answers.reduce((sum, val) => sum + val, 0);
+        const total = answers.reduce<number>((sum, val) => sum + (val ?? 0), 0);
         const maxScore = 18 * 4;
         const percent = Math.round((total / maxScore) * 100);
         let verdict = "";
 
-        const partA = answers.slice(0, 6).filter(v => v >= 3).length;
+        const partA = answers.slice(0, 6).filter(v => v !== null && v >= 3).length;
 
         if (partA >= 4 || percent >= 60) {
             verdict = "Высокая вероятность СДВГ. Ваши ответы сильно соответствуют клинической картине. Рекомендуется обратиться к врачу-психиатру для точной диагностики.";

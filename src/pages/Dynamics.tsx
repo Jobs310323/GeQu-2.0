@@ -3,6 +3,7 @@ import { StateChart, TestChart, SERIES } from '../features/charts';
 import { LOWER_IS_BETTER, TEST_LABELS } from '../lib/profile';
 import { Icon } from '../components/Icons';
 import type { DynamicsProps } from '../types/props';
+import type { TestResult } from '../types/domain';
 
 /** The three self-rated numbers a day log carries. */
 type DayMetric = 'sleep' | 'focus' | 'mood';
@@ -101,7 +102,7 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
     // Only offer test types that actually have data in this window.
     const testsInPeriod = useMemo(() => {
         const scoped = within(testResults ?? [], days);
-        const byType: Record<string, any[]> = {};
+        const byType: Record<string, TestResult[]> = {};
         scoped.forEach((t) => { (byType[t.type] ||= []).push(t); });
         return Object.entries(byType)
             .map(([type, list]) => ({

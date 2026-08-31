@@ -28,13 +28,13 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
 
     const exportTxt = () => { 
         let text = "=== Дневник GeQu ===\n\n"; 
-        diary.forEach((d:any) => { text += `${new Date(d.date).toLocaleString('ru-RU')}\n${d.content}\n--------------------\n\n`; }); 
+        diary.forEach(d => { text += `${new Date(d.date).toLocaleString('ru-RU')}\n${d.content}\n--------------------\n\n`; }); 
         downloadFile(text, "gequ_diary.txt", "text/plain"); 
     };
     
     const exportCsv = () => { 
         let csv = "Дата,Сон,Фокус,Настроение,Помогло,Мешало,Событие\n"; 
-        logs.forEach((l:any) => { 
+        logs.forEach(l => { 
             const helped = l.helped ? l.helped.join('; ') : '';
             const hindered = l.hindered ? l.hindered.join('; ') : '';
             csv += `${new Date(l.date).toLocaleString('ru-RU')},${l.sleep},${l.focus},${l.mood},"${helped}","${hindered}","${l.mainEvent || ''}"\n`; 

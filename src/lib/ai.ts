@@ -63,7 +63,7 @@ function requireKey(): string {
  * Non-streaming call that asks the model for a single JSON object and parses it.
  * Used where the UI needs structured data (e.g. the day planner) rather than prose.
  */
-export async function callAIJson<T = any>(opts: { system?: string; prompt: string; maxTokens?: number; signal?: AbortSignal }): Promise<T> {
+export async function callAIJson<T = unknown>(opts: { system?: string; prompt: string; maxTokens?: number; signal?: AbortSignal }): Promise<T> {
     const key = requireKey();
 
     const res = await fetch(GROQ_URL, {

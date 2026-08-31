@@ -75,7 +75,7 @@ export function buildProfile(d: ProfileInput) {
     const nums = (arr: DayLog[], k: 'sleep' | 'focus' | 'mood') => arr.map(l => Number(l[k])).filter(n => Number.isFinite(n));
 
     // --- cognitive tests, per type with a real trend ---
-    const byType: Record<string, any[]> = {};
+    const byType: Record<string, TestResult[]> = {};
     (d.testResults ?? []).forEach(t => { (byType[t.type] ||= []).push(t); });
     const tests: TestSummary[] = Object.entries(byType).map(([type, list]) => {
         const chrono = [...list].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -145,19 +145,24 @@ export function buildProfile(d: ProfileInput) {
     }));
 
     // --- clinical screening tests: latest band per test, plus direction of travel ---
-    const byTest: Record<string, any[]> = {};
+    const byTest: Record<string, ClinicalResult[]> = {};
     (d.clinicalResults ?? []).forEach(r => { (byTest[r.testId] ||= []).push(r); });
-    const clinical = Object.entries(byTest).map(([testId, list]) => {
+    const clinical = Object.entries(byTest).flatMap(([testId, list]) => {
         const chrono = [...list].sort((a, b) => String(a.date).localeCompare(String(b.date)));
-        const first = Number(chrono[0].score) || 0;
+        // Non-empty by construction — the map was built by pushing — but read the
+        // ends out rather than asserting it, so a future change cannot make this
+        // throw on a screen the user is looking at.
+        const earliest = chrono[0];
         const latest = chrono[chrono.length - 1];
-        return {
+        if (!earliest || !latest) return [];
+        const first = Number(earliest.score) || 0;
+        return [{
             testId, count: chrono.length,
             firstScore: first, latestScore: Number(latest.score) || 0,
             latestLabel: latest.label ?? null,
             latestDate: String(latest.date).split('T')[0],
             changeSinceFirst: chrono.length > 1 ? round((Number(latest.score) || 0) - first, 0) : null,
-        };
+        }];
     });
 
     // --- CBT thought records ---

@@ -44,8 +44,8 @@ function GymEmptyState({ icon, text }: { icon: string; text: string }) {
 
 export function GymApp({ gymData, setGymData, logs }: GymProps) {
     const [view, setView] = useState('home');
-    const [activeWorkout, setActiveWorkout] = useState<any>(null);
-    const [editingWorkout, setEditingWorkout] = useState<any>(null);
+    const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
+    const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
 
     const activeProgram = gymData.programs.find((p) => p.id === gymData.activeProgramId);
 
@@ -56,7 +56,7 @@ export function GymApp({ gymData, setGymData, logs }: GymProps) {
             if (isCardio(ex)) {
                 const last = lastEx?.sets?.[0];
                 return {
-                    name: ex.name, muscle: 'Кардио', type: 'cardio',
+                    name: ex.name, muscle: 'Кардио', type: 'cardio' as const,
                     sets: [{
                         duration: num(last?.duration) || ex.duration || 20,
                         distance: num(last?.distance) || 0,
@@ -70,7 +70,7 @@ export function GymApp({ gymData, setGymData, logs }: GymProps) {
                 reps: num(lastEx?.sets[i]?.reps) || parseInt(String(ex.reps).split('-')[0] ?? '') || 0,
                 done: false
             }));
-            return { name: ex.name, muscle: ex.muscle, type: 'strength', sets };
+            return { name: ex.name, muscle: ex.muscle, type: 'strength' as const, sets };
         });
 
         setActiveWorkout({
@@ -270,7 +270,7 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: {
 }
 
 export function GymPrograms({ gymData, setGymData }: { gymData: GymData; setGymData: Setter<GymData> }) {
-    const [editingProgram, setEditingProgram] = useState<any>(null);
+    const [editingProgram, setEditingProgram] = useState<Program | null>(null);
     const [importing, setImporting] = useState(false);
 
     const createProgram = () => {

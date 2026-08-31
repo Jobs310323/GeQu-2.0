@@ -43,8 +43,8 @@ export function Diary({ diary, setDiary }: DiaryProps) {
         }
     };
     const addEntry = () => { if (!newEntry.trim()) return; setDiary([{ id: Date.now(), date: nowInstant(), content: newEntry }, ...diary]); setNewEntry(''); };
-    const deleteEntry = (id: number) => setDiary(diary.filter((entry:any) => entry.id !== id));
-    const saveEdit = (id: number) => { setDiary(diary.map((entry:any) => entry.id === id ? { ...entry, content: editText } : entry)); setEditingId(null); };
+    const deleteEntry = (id: number) => setDiary(diary.filter(entry => entry.id !== id));
+    const saveEdit = (id: number) => { setDiary(diary.map(entry => (entry.id === id ? { ...entry, content: editText } : entry))); setEditingId(null); };
 
     const q = query.trim().toLowerCase();
     const visible = q ? diary.filter((e) => e.content.toLowerCase().includes(q)) : diary;
@@ -103,7 +103,7 @@ export function Diary({ diary, setDiary }: DiaryProps) {
                     {visible.length === 0 && (
                         <p className="text-gray-500 text-sm text-center py-6">{diary.length === 0 ? 'Записей пока нет.' : 'По запросу ничего не найдено.'}</p>
                     )}
-                    {visible.map((entry:any) => (
+                    {visible.map(entry => (
                         <div key={entry.id} className="border-b border-[var(--border)] pb-4 anim-fade-in">
                             <div className="text-xs text-cyan-400 mb-2">{new Date(entry.date).toLocaleString('ru-RU')}</div>
                             {editingId === entry.id ? (

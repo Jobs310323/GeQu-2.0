@@ -98,7 +98,41 @@ export interface TestResult {
     id: number;
     date: Instant;
     type: string;
+    /** The raw score in the exercise's own unit. Never rewritten. */
     value: number;
+
+    /* --- Phase 9 result envelope -------------------------------------------
+       Every field below is OPTIONAL, and that is load-bearing rather than lazy.
+       Records written before Phase 9 have none of them and must keep loading
+       and rendering unchanged — nothing migrates or rewrites stored results.
+       Consumers read these with a default and degrade to `value` alone.
+       See src/features/cognitive/scoring.ts. */
+
+    /** Bumped when the task changes enough that old scores are incomparable. */
+    testVersion?: string;
+    /** How long the attempt took. Distinguishes a completed run from an abandoned one. */
+    durationMs?: number;
+    /** 0–100, higher always better, comparable across exercises. */
+    normalizedScore?: number;
+    /**
+     * Position among the user's OWN previous attempts, 0–100. Absent until
+     * there are enough of them to mean anything.
+     */
+    percentile?: number;
+    /**
+     * Always `'self'`. These are not standardised instruments and there is no
+     * normative sample — a percentile here is never against other people.
+     */
+    referencePopulation?: 'self';
+    /** How much weight the result deserves, derived from sample size. */
+    confidence?: 'none' | 'low' | 'moderate';
+    /** What this exercise cannot tell you, shown alongside the number. */
+    limitations?: readonly string[];
+    /** Conditions that materially change the score. */
+    deviceContext?: {
+        pointer: 'touch' | 'mouse' | 'unknown';
+        reducedMotion: boolean;
+    };
 }
 
 // --- screening questionnaires ----------------------------------------------

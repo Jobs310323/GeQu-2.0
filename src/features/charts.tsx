@@ -121,7 +121,7 @@ export function StateChart({ logs }: { logs: DayLog[] }) {
                     spanGaps: true,
                 })),
             },
-            options: baseOptions(isLight, 0, 10) as any,
+            options: baseOptions(isLight, 0, 10) as ChartOptions<'line'>,
         });
 
         return () => { chartRef.current?.destroy(); chartRef.current = null; };

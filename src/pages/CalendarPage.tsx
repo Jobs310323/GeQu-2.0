@@ -175,7 +175,7 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                             <span key={k} className="flex items-center gap-1.5 text-xs text-gray-400">
                                 <span className="w-2 h-2 rounded-full" style={{ background: v.color }} />
                                 {v.label}
-                                <span className="text-gray-600">· {(monthStats as any)[k]}</span>
+                                <span className="text-gray-600">· {monthStats[k as keyof typeof monthStats]}</span>
                             </span>
                         ))}
                     </div>

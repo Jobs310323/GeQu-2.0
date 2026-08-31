@@ -8,7 +8,7 @@ export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs
     const [timeLeft, setTimeLeft] = useState(hyperfocus.duration * 60);
     const [task, setTask] = useState(hyperfocus.task);
     const [reflection, setReflection] = useState('');
-    const timerRef = useRef<any>(null);
+    const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
     useEffect(() => {
         if (phase === 'running') {

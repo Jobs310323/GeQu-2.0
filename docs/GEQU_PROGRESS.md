@@ -941,3 +941,107 @@ sync runs on every page.
 **Next phase** — Phase 9: cognitive engine unification.
 
 ---
+
+## Phase 9 — Cognitive engine unification
+
+**Completed**
+
+`src/features/cognitive/` — a registry, a scoring layer, a result envelope, and the twelve
+exercises split out of the 1126-line `features/training/tests.tsx` into one file each (largest now
+167 lines).
+
+### What was actually wrong
+
+Every exercise ended with `saveResult(setTestResults, 'schulte', 38.4)` — a bare number in a
+`value` field. A Schulte time in seconds and an N-back accuracy percentage were stored identically,
+with nothing recording what the number meant, which variant produced it, how long the attempt took,
+or whether it was completed at all.
+
+That is fine while a human reads one number. It stops being fine the moment anything **compares**
+them, which `lib/profile.ts` already did. "Your Schulte improved from 41 to 38" is not a finding
+unless both attempts were the same grid, neither was abandoned, and there are enough of them to
+distinguish a trend from a good afternoon.
+
+### The honesty constraint, made structural
+
+`referencePopulation` is `'self'` and the tests assert it can be nothing else. These exercises are
+not standardised instruments, they run on unknown hardware, and there is no normative sample. So a
+percentile means "against your own previous attempts" — and it is **withheld entirely** below five
+of them, because a percentile computed from three numbers is arithmetic, not information.
+
+`confidence` tops out at `moderate`. No amount of repetition earns "high" when the conditions are
+uncontrolled and the instruments are unvalidated.
+
+A new `AttemptContext` card leads with the caveats rather than the number, and says plainly that
+the comparison is only ever to the user's own attempts. The registry's `limitations` are specific
+and were written by reading what each exercise does — a caveat vague enough to apply to anything
+teaches users to skip the ones that matter.
+
+The Training page is now grouped **Измерение / Тренировка / Регуляция**, driven by the registry. A
+flat strip of twelve tabs said a reaction measurement and a breathing exercise were the same kind
+of thing; they are not, and the difference changes how a result should be read.
+
+### The envelope is additive, and that is tested
+
+`TestResult` gained nine optional fields. Nothing migrates or rewrites stored results — deciding
+retroactively what device someone used would be fabrication. `record.test.ts` asserts that
+year-old `{id, date, type, value}` records still count toward history, are never rewritten, still
+aggregate into `buildProfile`, and mix with new records without either being lost.
+
+### A correction to the record
+
+**Phase 2's commit claimed "zero `: any` left in code" and the PR body said "291 → 0". Both were
+wrong.** 26 remained. Phase 2 measured with a grep for `: any`, which does not match `useRef<any>`,
+`any[]`, or `as any` — three forms that accounted for all of them.
+
+All 26 are now gone, and the count is enforced by `typescript/no-explicit-any` as a lint rule
+rather than by a grep. Turning the rule on immediately found four more the corrected grep had
+still missed, which is the point.
+
+Removing them surfaced real defects the `any` had been hiding:
+
+- **`newGrid[index].status = 'correct'`** in two exercises mutated the object *inside* a shallow
+  array copy — so it mutated React state directly. Replaced with `.map`.
+- `ClinicalTests` typed its result as `{score, band}` when the code stored `{score, percent,
+  verdict}`; unanswered questions were being summed as `null` and only worked by JS coercion.
+- `profile.ts` indexed `chrono[0]` and `chrono[length-1]` unguarded on a screen the user looks at.
+- `ProgramImport.normalize()` was not producing a valid `Program` — it omitted the exercise `type`
+  that the logging UI branches on.
+- `Gym.startWorkout` built exercises whose `type` widened to `string`, so nothing checked it.
+
+**Files changed** — new: `src/features/cognitive/{types,registry,scoring,record,AttemptContext}.tsx?`,
+`src/features/cognitive/exercises/` (14 files), two test suites. Deleted:
+`src/features/training/tests.tsx`. Modified: `src/types/domain.ts`, `src/pages/Training.tsx`,
+`.oxlintrc.json`, and the seven files that held the remaining `any`s.
+
+**Dependencies added** — none.
+
+**Tests added** — 48 (326 total): scoring 35, envelope and backward-compatibility 13.
+
+**Bundle** — Training chunk 37.1 → 39.4 kB; entry unchanged.
+
+**Risks**
+
+- The exercise split was mechanical (a script slicing on top-level `export function`) and is
+  verified only by typecheck, lint, build and the a11y sweep. **No exercise was played end to end**
+  — they are behind auth, and there is still no authenticated E2E harness. A behavioural regression
+  inside one of the twelve would not be caught by anything currently running.
+- `plausibleRange` values are my judgement, not measurements. They only affect the 0–100
+  normalisation before a user has three attempts of their own, and are documented as a display
+  convenience rather than a norm — but they are still invented numbers.
+
+**Known limitations**
+
+- `normalizedScore` is comparable across exercises by construction, but nothing in the UI uses it
+  yet. That is Phase 10's job.
+- The inline ASRS in `pages/ClinicalTests.tsx` duplicates the `asrs` entry in `lib/clinicalTests.ts`
+  with **different scoring** — a percentage against 72 versus a count of items crossing per-item
+  thresholds. Two ASRS results in one app that do not agree. Found while typing the file; not
+  fixed, because reconciling them changes what users see for a screening instrument and deserves
+  its own change.
+- `durationMs` is plumbed through `recordAttempt` but only supplied where an exercise already
+  tracked elapsed time.
+
+**Next phase** — Phase 10: insights engine and personal baselines.
+
+---

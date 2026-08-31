@@ -5,6 +5,12 @@
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
 
+    // Phase 2 drove `any` out of the codebase and Phase 9 finished the job —
+    // but Phase 2 measured it with a grep for `: any`, which silently missed
+    // `useRef<any>` and `any[]`, so the "zero" it reported was wrong by 26.
+    // A rule cannot be fooled the way a grep was.
+    "typescript/no-explicit-any": "error",
+
     "jsx-a11y/alt-text": "error",
     "jsx-a11y/anchor-has-content": "error",
     "jsx-a11y/anchor-is-valid": "error",
