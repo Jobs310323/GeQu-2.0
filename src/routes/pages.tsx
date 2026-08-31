@@ -1,4 +1,5 @@
 import { lazy, type ComponentType } from 'react';
+import { Today } from '../features/today/Today';
 import { useCheckins } from '../stores/checkins.store';
 import { useTasks } from '../stores/tasks.store';
 import { useHabits } from '../stores/habits.store';
@@ -48,7 +49,7 @@ const Finance = load<FinanceProps>('Finance', () => import('../pages/Finance'));
 const GymApp = load<GymProps>('GymApp', () => import('../features/gym/Gym'));
 const Snowman = load<SnowmanProps>('Snowman', () => import('../features/snowman/Snowman'));
 
-export function DashboardRoute() {
+export function CheckinRoute() {
     const logs = useCheckins(s => s.logs);
     const setLogs = useCheckins(s => s.replaceAll);
     const achievements = useCognitive(s => s.achievements);
@@ -69,6 +70,11 @@ export function DashboardRoute() {
             habits={habits} setHabits={setHabits} levelInfo={levelInfo} energy={energy}
         />
     );
+}
+
+/** The Today surface. Small and eager: it is the first paint of every session. */
+export function TodayRoute() {
+    return <Today />;
 }
 
 export function KanbanRoute() {

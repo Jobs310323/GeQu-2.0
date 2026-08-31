@@ -5,7 +5,7 @@ import { DB } from '../lib/db';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
 import { useNavigate } from 'react-router';
-import { findTab } from '../lib/nav';
+import { findById } from '../lib/nav';
 
 /** Former «Про СДВГ» page — kept as a fixed entry point at the top of the list. */
 const INTRO_IDS = ['adhd-what', 'adhd-symptoms', 'adhd-impact', 'adhd-not-a-sentence'];
@@ -71,7 +71,7 @@ export function Knowledge() {
                         dangerouslySetInnerHTML={{ __html: marked.parse(open.body) as string }} />
 
                     {open.action && (
-                        <button onClick={() => navigate(findTab(open.action!.page)?.path ?? '/')}
+                        <button onClick={() => navigate(findById(open.action!.page)?.path ?? '/')}
                             className="mt-6 bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg">
                             {open.action.label} →
                         </button>

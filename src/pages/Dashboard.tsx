@@ -241,9 +241,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         <StatTile icon="flame" label="Энергия" value={energyValue.toFixed(1)}
                             hint={energyValue >= 7 ? 'полный заряд' : energyValue >= 4 ? 'средний заряд' : 'на исходе'} />
                         <StatTile icon="repeat" label="Привычки" value={`${habitsDone}/${habitList.length}`}
-                            hint="отмечено сегодня" onClick={() => navigate('/habits')} />
+                            hint="отмечено сегодня" onClick={() => navigate('/track/habits')} />
                         <StatTile icon="columns" label="Задачи" value={openTasks.length}
-                            hint="в работе" onClick={() => navigate('/kanban')} />
+                            hint="в работе" onClick={() => navigate('/plan/tasks')} />
                         {show('streak') && (
                             <StatTile icon="calendar" label="Серия" value={streak} hint="дней подряд" tone="text-pink-400" />
                         )}
@@ -251,9 +251,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                             <StatTile icon="star" label="Ачивки" value={achievements.length} hint="получено" />
                         )}
                         <StatTile icon="dumbbell" label="Тренировки" value={countRecent(gymData.history, 7)} hint="за 7 дней"
-                            onClick={() => navigate('/gym')} />
+                            onClick={() => navigate('/track/body')} />
                         <StatTile icon="flask" label="Тесты" value={countRecent(testResults, 7)} hint="за 7 дней"
-                            onClick={() => navigate('/training')} />
+                            onClick={() => navigate('/brain/train')} />
                     </div>
                 </div>
             )}
@@ -289,7 +289,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                         <div className="glass-card rounded-2xl p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Ближайшие задачи</h3>
-                                <button onClick={() => navigate('/kanban')}
+                                <button onClick={() => navigate('/plan/tasks')}
                                     className="text-[11px] text-cyan-400 hover:underline">все {openTasks.length}</button>
                             </div>
                             <ul className="space-y-2">

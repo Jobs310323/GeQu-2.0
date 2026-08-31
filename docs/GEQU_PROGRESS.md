@@ -371,3 +371,109 @@ energy. Chart.js and `@xyflow/react` remain separate chunks.
 **Next phase** — Phase 4: Today, Quick Capture, the new IA, and onboarding.
 
 ---
+
+## Phase 4 — Today, Quick Capture, the new IA, onboarding
+
+**Status:** Complete
+
+**Validation** — `lint` clean · `typecheck` clean · `build` clean · `smoke` 4/4, plus a browser pass
+over the 21 new routes, the 5 legacy redirects, the palette, the Today surface, mobile at 390px,
+and the onboarding personalisation.
+
+### The IA
+
+Six sections, shaped by the user's question rather than the app's feature list:
+
+```
+TODAY     what now          PLAN      what next
+TRACK     what is happening INSIGHTS  what it means
+BRAIN     how my thinking is doing    PROFILE  who this is about
+```
+
+All nineteen previous destinations are still here — they stopped competing at the top level and
+became sub-routes. Every pre-2.0 path redirects rather than 404ing, because bookmarks, the old PWA
+start URL and the knowledge base's own internal links all point at them. `findById` additionally
+aliases the one **id** that changed (`dashboard` → `checkin`), which a link check caught before it
+could silently send readers to the home screen.
+
+### Today
+
+`src/features/today/` answers four questions and deliberately nothing else: a three-number state
+strip, one next action, up to three priorities, one habit, one observation.
+
+**`NextAction` picks exactly one thing, never a list** — offering three "next actions" hands the
+decision straight back, which is the friction the surface exists to remove. The order is
+deliberate: something already started beats something new, an unstarted urgent task beats a habit,
+and closing the day comes last because it is reflection rather than action.
+
+**`TodayInsight` suppresses rather than hedges.** `src/features/insights/observe.ts` is the seed of
+the Phase 10 engine and already enforces the two rules that will hold there: below `MIN_SAMPLE`
+days on each side of a comparison nothing is reported, and the language states association, never
+cause. Every observation shows its sample size next to the claim.
+
+### Quick capture
+
+⌘K / Ctrl+K. Not a search box — `задача купить молоко` files the task and navigates to the board;
+free text with no command word still offers the capture actions with that text as the payload,
+because the common case is someone who knows what they want to record and not which command records
+it. Navigation entries are generated from the nav structure, so a new screen is in the palette the
+moment it exists.
+
+Verified end to end in a browser: `Ctrl+K` → type → Enter writes `gequ_kanban` and the new task
+then appears as Today's next action.
+
+### Navigation
+
+Desktop: Today pinned above the sections; a section shows its first three screens and expands when
+you are inside it. Every group open at once would put the whole app's structure on screen
+permanently, which is the thing the IA is trying to stop.
+
+Mobile: a five-target bottom bar (Today · Планы · Дневники · Выводы · Ещё) with the rest in a
+drawer. Five because a sixth stops being thumb-reachable at 375px.
+
+### Onboarding
+
+Two questions, then the app — not a tour. A tour teaches the interface; these questions shape it.
+The answers hide screens the user did not ask for, so the first session is the small version of
+GeQu. Verified that hidden means **hidden, never deleted**: a hidden screen stays reachable by URL
+and stays in the command palette.
+
+### Bug found by testing
+
+`selectOpenTasks` was `s => s.kanban.filter(...)` — a selector building a **new array on every
+call**. Zustand v5 compares with `Object.is`, so the component re-rendered, the selector ran again,
+and React aborted the Today surface with "maximum update depth exceeded". The error boundary from
+Phase 1 caught it and rendered a recovery card instead of a white screen, which is how it was
+spotted. Replaced with `openTasksOf(kanban)` — a plain function applied in a `useMemo` — and the
+store carries a comment explaining the trap so it does not recur.
+
+**Files changed** — new: `src/features/today/{Today,NextAction,TodayHabit,TodayInsight}.tsx`, `src/features/capture/{actions.ts,CommandPalette.tsx}`, `src/features/insights/observe.ts`, `src/features/onboarding/Onboarding.tsx`, `src/components/BottomNav.tsx`. Rewritten: `src/lib/nav.ts`, `src/components/Sidebar.tsx`, `src/routes/router.tsx`. Modified: `src/App.tsx`, `src/routes/{AppLayout,pages}.tsx`, `src/pages/{Settings,Knowledge,Dashboard}.tsx`, `src/stores/tasks.store.ts`.
+
+**Dependencies added** — none.
+
+**Tests added** — none automated. Phase 7.
+
+**Bundle** — entry 431.58 → 452.69 kB (gzip 133.27 → 138.86). Today, the palette and the nav are
+shell-level by definition: they must be present before any route resolves.
+
+**Risks**
+
+- Today reads from five stores on every render with no memoisation beyond `openTasksOf`. Fine at
+  current data sizes, but it is now the most-rendered component in the app and the first place to
+  measure when Phase 6 does the performance pass.
+- The palette's expense capture files an uncategorised entry. That is the intended trade — the
+  number is recorded before it is forgotten, categorising it is a later decision — but it does mean
+  Finance can accumulate uncategorised rows that nothing yet prompts the user to sort.
+
+**Known limitations**
+
+- The old day-closing form is now `/today/checkin` but is otherwise unchanged: eleven collapsible
+  sections. It works and it is no longer the first thing a user sees, which was the actual problem;
+  reworking the form itself is a separate piece of work.
+- Onboarding personalisation is one-shot. There is no "I changed my mind" flow beyond Settings'
+  per-screen toggles.
+- No undo yet on any destructive action — that is Phase 6's recovery work.
+
+**Next phase** — Phase 5: design system consolidation, and merging `concept-v2` away.
+
+---

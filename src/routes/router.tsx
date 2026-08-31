@@ -2,50 +2,63 @@ import { createBrowserRouter, Navigate } from 'react-router';
 import { AppLayout } from './AppLayout';
 import { RouteError } from './RouteError';
 import { NotFound } from './NotFound';
+import { LEGACY_PATHS } from '../lib/nav';
 import * as R from './pages';
 
 /**
- * One route per screen, each a separate chunk.
+ * The route tree, shaped by the six sections in lib/nav.ts.
  *
- * `/` is the dashboard rather than a redirect so the PWA start URL and a
- * bookmark of the bare origin both land somewhere real. Phase 4 replaces this
- * index with the Today surface and re-parents the rest under
- * Today / Plan / Track / Insights / Brain / Profile; the legacy paths below
- * stay as redirects at that point, which is why they are flat ids now.
+ * `/` is the Today surface rather than a redirect, so the PWA start URL and a
+ * bookmark of the bare origin both land on the screen the product is built
+ * around.
+ *
+ * Every pre-2.0 path redirects rather than 404ing: bookmarks, the old PWA start
+ * URL and the knowledge base's internal links all still point at them.
  */
+const legacyRedirects = Object.entries(LEGACY_PATHS).map(([from, to]) => ({
+    path: from.slice(1),
+    element: <Navigate to={to} replace />,
+}));
+
 export const router = createBrowserRouter([
     {
         path: '/',
         element: <AppLayout />,
         errorElement: <RouteError />,
         children: [
-            { index: true, element: <R.DashboardRoute /> },
-            { path: 'dashboard', element: <Navigate to="/" replace /> },
+            { index: true, element: <R.TodayRoute /> },
 
-            { path: 'aiplan', element: <R.AiPlanRoute /> },
-            { path: 'calendar', element: <R.CalendarRoute /> },
-            { path: 'habits', element: <R.HabitsRoute /> },
-            { path: 'snowman', element: <R.SnowmanRoute /> },
+            { path: 'today/checkin', element: <R.CheckinRoute /> },
+            { path: 'today/plan', element: <R.AiPlanRoute /> },
+            { path: 'today', element: <Navigate to="/" replace /> },
 
-            { path: 'kanban', element: <R.KanbanRoute /> },
-            { path: 'goals', element: <R.GoalsRoute /> },
-            { path: 'mindmap', element: <R.MindMapRoute /> },
-            { path: 'diary', element: <R.DiaryRoute /> },
+            { path: 'plan/tasks', element: <R.KanbanRoute /> },
+            { path: 'plan/goals', element: <R.GoalsRoute /> },
+            { path: 'plan/map', element: <R.MindMapRoute /> },
+            { path: 'plan/calendar', element: <R.CalendarRoute /> },
+            { path: 'plan', element: <Navigate to="/plan/tasks" replace /> },
 
-            { path: 'finance', element: <R.FinanceRoute /> },
+            { path: 'track/habits', element: <R.HabitsRoute /> },
+            { path: 'track/journal', element: <R.DiaryRoute /> },
+            { path: 'track/body', element: <R.GymRoute /> },
+            { path: 'track/balance', element: <R.SnowmanRoute /> },
+            { path: 'track/finance', element: <R.FinanceRoute /> },
+            { path: 'track', element: <Navigate to="/track/habits" replace /> },
 
-            { path: 'gym', element: <R.GymRoute /> },
-            { path: 'training', element: <R.TrainingRoute /> },
-            { path: 'circles', element: <R.CirclesRoute /> },
-            { path: 'clinical', element: <R.ClinicalRoute /> },
+            { path: 'insights/progress', element: <R.ProgressRoute /> },
+            { path: 'insights/stats', element: <R.UnifiedStatsRoute /> },
+            { path: 'insights', element: <Navigate to="/insights/progress" replace /> },
 
-            { path: 'progress', element: <R.ProgressRoute /> },
-            { path: 'hub', element: <R.UnifiedStatsRoute /> },
+            { path: 'brain/train', element: <R.TrainingRoute /> },
+            { path: 'brain/assess', element: <R.ClinicalRoute /> },
+            { path: 'brain/reflect', element: <R.CirclesRoute /> },
+            { path: 'brain/learn', element: <R.KnowledgeRoute /> },
+            { path: 'brain', element: <Navigate to="/brain/train" replace /> },
 
-            { path: 'knowledge', element: <R.KnowledgeRoute /> },
+            { path: 'profile', element: <R.UserCardRoute /> },
+            { path: 'profile/settings', element: <R.SettingsRoute /> },
 
-            { path: 'card', element: <R.UserCardRoute /> },
-            { path: 'settings', element: <R.SettingsRoute /> },
+            ...legacyRedirects,
 
             { path: '*', element: <NotFound /> },
         ],

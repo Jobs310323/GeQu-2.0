@@ -5,6 +5,8 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { HyperfocusOverlay } from '../features/hyperfocus/HyperfocusOverlay';
 import { DopamineRoulette } from '../features/dopamine/DopamineRoulette';
 import { RouteFallback } from './RouteFallback';
+import { BottomNav } from '../components/BottomNav';
+import { CommandPalette } from '../features/capture/CommandPalette';
 import { findByPath } from '../lib/nav';
 import { useAppUi } from '../stores/app-ui.store';
 import { useTasks } from '../stores/tasks.store';
@@ -61,13 +63,17 @@ export function AppLayout() {
                 reminderCount={reminderCount}
             />
 
-            <main id="main" className="flex-1 p-6 overflow-y-auto relative">
+            {/* pb-20 on small screens keeps the last row clear of the bottom bar. */}
+            <main id="main" className="flex-1 p-4 sm:p-6 pb-20 md:pb-6 overflow-y-auto relative">
                 <ErrorBoundary key={location.pathname} feature={feature}>
                     <Suspense fallback={<RouteFallback />}>
                         <Outlet />
                     </Suspense>
                 </ErrorBoundary>
             </main>
+
+            <BottomNav />
+            <CommandPalette />
 
             {hyperfocus && (
                 <HyperfocusOverlay

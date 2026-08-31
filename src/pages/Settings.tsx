@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { getGroqKey, setGroqKey } from '../lib/ai';
-import { NAV_GROUPS, LOCKED_TABS } from '../lib/nav';
+import { SECTIONS, LOCKED_IDS } from '../lib/nav';
 import { DASHBOARD_WIDGETS, toggleIn } from '../lib/prefs';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
@@ -13,7 +13,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
     const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
 
     const toggleTab = (id: string) => {
-        if (LOCKED_TABS.has(id)) return;
+        if (LOCKED_IDS.has(id)) return;
         setPrefs((p) => ({ ...p, hiddenTabs: toggleIn(p.hiddenTabs ?? [], id) }));
     };
     const toggleWidget = (id: string) =>
@@ -115,12 +115,12 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
                     Убери ненужные разделы из меню — данные останутся на месте, раздел можно вернуть в любой момент.
                 </p>
                 <div className="space-y-4">
-                    {NAV_GROUPS.map(group => (
-                        <div key={group.id}>
-                            <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-2">{group.title}</div>
+                    {SECTIONS.map(section => (
+                        <div key={section.id}>
+                            <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-2">{section.title}</div>
                             <div className="flex flex-wrap gap-2">
-                                {group.items.map(item => {
-                                    const locked = LOCKED_TABS.has(item.id);
+                                {section.items.map(item => {
+                                    const locked = LOCKED_IDS.has(item.id);
                                     const visible = !hiddenTabs.includes(item.id);
                                     return (
                                         <button
@@ -134,7 +134,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
                                                     : 'border-[var(--border)] text-gray-500 hover:text-white line-through'
                                             }`}
                                         >
-                                            <span>{item.icon}</span>{item.label}
+                                            <Icon name={item.icon} size={13} />{item.label}
                                             {locked && <Icon name="lock" size={11} />}
                                         </button>
                                     );

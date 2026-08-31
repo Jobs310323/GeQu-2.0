@@ -32,4 +32,14 @@ persistSlices(useTasks, { kanban: s => s.kanban, goals: s => s.goals });
 
 export const selectKanban = (s: TasksState) => s.kanban;
 export const selectGoals = (s: TasksState) => s.goals;
-export const selectOpenTasks = (s: TasksState) => s.kanban.filter(t => t.status !== 'done');
+
+/**
+ * Derives open tasks from a list already read from the store.
+ *
+ * NOT a store selector, deliberately. A selector that builds a new array —
+ * `s => s.kanban.filter(...)` — returns a different reference on every call, and
+ * zustand compares with `Object.is`, so the component re-renders, the selector
+ * runs again, and React aborts with "maximum update depth exceeded". Select the
+ * raw slice and derive from it in a `useMemo` instead.
+ */
+export const openTasksOf = (kanban: KanbanTask[]) => kanban.filter(t => t.status !== 'done');
