@@ -10,8 +10,8 @@ export interface Task {
 export interface Goal {
     id: number;
     title: string;
-    description?: string;
+    description?: string | undefined;
     tasks: Task[];
-    order?: number;
+    order?: number | undefined;
     tags: string[];
 }

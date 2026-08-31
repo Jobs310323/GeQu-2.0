@@ -6,12 +6,30 @@ import { PageHeader } from '../../components/PageHeader';
 import { Icon } from '../../components/Icons';
 import { useDragReorder } from '../../lib/useDragReorder';
 import { todayKey, instantForDateKey, nowInstant } from '../../lib/datetime';
+import type { GymProps, Setter } from '../../types/props';
+import { errorMessage } from '../../lib/helpers';
+import type {
+    GymData, Program, ProgramDay, Workout, WorkoutExercise, WorkoutSet, ProgramExercise, ExerciseKind, DayLog,
+} from '../../types/domain';
+
+/** The tabs GymApp switches between. */
+type GymView = 'home' | 'programs' | 'history' | 'pr' | 'ai' | 'active';
+
+/**
+ * Numbers out of stored workout data. These fields are numbers today, but the
+ * earliest records wrote them as strings, so both are accepted rather than
+ * assumed — a NaN here would silently zero a user's logged weight.
+ */
+const num = (v: unknown): number => {
+    const n = typeof v === 'number' ? v : parseFloat(String(v ?? ''));
+    return Number.isFinite(n) ? n : 0;
+};
 
 const MUSCLES = ['Грудь', 'Спина', 'Ноги', 'Плечи', 'Руки', 'Пресс', 'Всё тело'];
 const INTENSITIES = ['Низкая', 'Средняя', 'Высокая', 'Интервалы'];
 
 /** Exercises saved before cardio existed have no `type` — they are strength. */
-const isCardio = (ex: any) => ex?.type === 'cardio';
+const isCardio = (ex: Pick<WorkoutExercise, 'type'> | undefined) => ex?.type === 'cardio';
 
 function GymEmptyState({ icon, text }: { icon: string; text: string }) {
     return (
@@ -24,32 +42,32 @@ function GymEmptyState({ icon, text }: { icon: string; text: string }) {
     );
 }
 
-export function GymApp({ gymData, setGymData, logs }: any) {
+export function GymApp({ gymData, setGymData, logs }: GymProps) {
     const [view, setView] = useState('home');
     const [activeWorkout, setActiveWorkout] = useState<any>(null);
     const [editingWorkout, setEditingWorkout] = useState<any>(null);
 
-    const activeProgram = gymData.programs.find((p: any) => p.id === gymData.activeProgramId);
+    const activeProgram = gymData.programs.find((p) => p.id === gymData.activeProgramId);
 
-    const startWorkout = (day: any, dateISO?: string) => {
-        const lastHistory = [...gymData.history].reverse().find((h: any) => h.dayId === day.id);
-        const exercises = day.exercises.map((ex: any) => {
-            const lastEx = lastHistory?.exercises.find((e: any) => e.name === ex.name);
+    const startWorkout = (day: ProgramDay, dateISO?: string) => {
+        const lastHistory = [...gymData.history].reverse().find((h) => h.dayId === day.id);
+        const exercises = day.exercises.map((ex) => {
+            const lastEx = lastHistory?.exercises.find((e) => e.name === ex.name);
             if (isCardio(ex)) {
                 const last = lastEx?.sets?.[0];
                 return {
                     name: ex.name, muscle: 'Кардио', type: 'cardio',
                     sets: [{
-                        duration: parseFloat(last?.duration) || ex.duration || 20,
-                        distance: parseFloat(last?.distance) || 0,
+                        duration: num(last?.duration) || ex.duration || 20,
+                        distance: num(last?.distance) || 0,
                         intensity: ex.intensity || last?.intensity || 'Средняя',
                         done: false,
                     }],
                 };
             }
             const sets = Array.from({ length: ex.sets }).map((_, i) => ({
-                weight: parseFloat(lastEx?.sets[i]?.weight) || 0,
-                reps: parseInt(lastEx?.sets[i]?.reps) || parseInt(String(ex.reps).split('-')[0]) || 0,
+                weight: num(lastEx?.sets[i]?.weight) || 0,
+                reps: num(lastEx?.sets[i]?.reps) || parseInt(String(ex.reps).split('-')[0] ?? '') || 0,
                 done: false
             }));
             return { name: ex.name, muscle: ex.muscle, type: 'strength', sets };
@@ -79,8 +97,9 @@ export function GymApp({ gymData, setGymData, logs }: any) {
         setView('history');
     };
 
-    const saveEditedWorkout = (updated: any) => {
-        const newHistory = gymData.history.map((w: any) => 
+    const saveEditedWorkout = (updated?: Workout) => {
+        if (!updated) return;
+        const newHistory = gymData.history.map(w =>
             (w.id || w.date) === (updated.id || updated.date) ? updated : w
         );
         setGymData({ ...gymData, history: newHistory });
@@ -121,7 +140,12 @@ export function GymApp({ gymData, setGymData, logs }: any) {
     );
 }
 
-export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) {
+export function GymHome({ activeProgram, gymData, startWorkout, setView }: {
+    activeProgram: Program | undefined;
+    gymData: GymData;
+    startWorkout: (day: ProgramDay, dateISO?: string) => void;
+    setView: (v: GymView) => void;
+}) {
     const lastWorkout = gymData.history[gymData.history.length - 1];
     const days = activeProgram?.days ?? [];
 
@@ -130,9 +154,9 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) 
     const suggestedIndex = (() => {
         if (!days.length) return 0;
         const lastForProgram = [...gymData.history].reverse()
-            .find((h: any) => days.some((d: any) => d.id === h.dayId));
+            .find((h) => days.some((d) => d.id === h.dayId));
         if (!lastForProgram) return 0;
-        const i = days.findIndex((d: any) => d.id === lastForProgram.dayId);
+        const i = days.findIndex((d) => d.id === lastForProgram.dayId);
         return i === -1 ? 0 : (i + 1) % days.length;
     })();
 
@@ -154,7 +178,7 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) 
         );
     }
 
-    const selectedDay = days.find((d: any) => d.id === dayId) ?? days[suggestedIndex];
+    const selectedDay = days.find((d) => d.id === dayId) ?? days[suggestedIndex];
     const today = todayKey();
     const isToday = date === today;
     const isFuture = date > today;
@@ -192,7 +216,7 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) 
                     <>
                         <label className="block text-sm text-gray-400 mb-2">День программы</label>
                         <div className="flex flex-wrap gap-2 mb-5">
-                            {days.map((d: any, i: number) => (
+                            {days.map((d: ProgramDay, i: number) => (
                                 <button key={d.id} onClick={() => setDayId(d.id)}
                                     className={`px-4 py-2 rounded-lg text-sm border transition ${
                                         selectedDay?.id === d.id
@@ -242,7 +266,7 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: any) 
     );
 }
 
-export function GymPrograms({ gymData, setGymData }: any) {
+export function GymPrograms({ gymData, setGymData }: { gymData: GymData; setGymData: Setter<GymData> }) {
     const [editingProgram, setEditingProgram] = useState<any>(null);
     const [importing, setImporting] = useState(false);
 
@@ -254,14 +278,14 @@ export function GymPrograms({ gymData, setGymData }: any) {
 
     const deleteProgram = (id: number) => {
         if (confirm("Удалить программу навсегда?")) {
-            const newPrograms = gymData.programs.filter((p: any) => p.id !== id);
+            const newPrograms = gymData.programs.filter((p) => p.id !== id);
             const newActiveId = gymData.activeProgramId === id ? (newPrograms[0]?.id || null) : gymData.activeProgramId;
             setGymData({ ...gymData, programs: newPrograms, activeProgramId: newActiveId });
         }
     };
 
     if (editingProgram) {
-        const program = gymData.programs.find((p: any) => p.id === editingProgram.id);
+        const program = gymData.programs.find(p => p.id === editingProgram.id) ?? editingProgram;
         return <ProgramEditor program={program} gymData={gymData} setGymData={setGymData} setEditingProgram={setEditingProgram} />;
     }
 
@@ -277,7 +301,7 @@ export function GymPrograms({ gymData, setGymData }: any) {
             </div>
             {importing && <ProgramImport gymData={gymData} setGymData={setGymData} onClose={() => setImporting(false)} />}
             <div className="space-y-4">
-                {gymData.programs.map((p: any) => (
+                {gymData.programs.map((p) => (
                     <div key={p.id} className="glass-card p-6 rounded-2xl flex justify-between items-center">
                         <div>
                             <h3 className="text-xl font-bold text-white">{p.name}</h3>
@@ -295,37 +319,48 @@ export function GymPrograms({ gymData, setGymData }: any) {
     );
 }
 
-export function ProgramEditor({ program, gymData, setGymData, setEditingProgram }: any) {
+export function ProgramEditor({ program, gymData, setGymData, setEditingProgram }: {
+    program: Program;
+    gymData: GymData;
+    setGymData: Setter<GymData>;
+    setEditingProgram: (p: Program | null) => void;
+}) {
     // { dayId, exercise } — an open add/edit form. `exercise` is null when adding.
-    const [form, setForm] = useState<any>(null);
+    const [form, setForm] = useState<{ dayId: number; exercise: ProgramExercise | null; type: ExerciseKind } | null>(null);
 
-    const patchProgram = (patch: any) =>
-        setGymData({ ...gymData, programs: gymData.programs.map((p: any) => p.id === program.id ? { ...p, ...patch } : p) });
-    const patchDay = (dayId: number, patch: any) =>
-        patchProgram({ days: program.days.map((d: any) => d.id === dayId ? { ...d, ...patch } : d) });
+    const patchProgram = (patch: Partial<Program>) =>
+        setGymData({ ...gymData, programs: gymData.programs.map((p) => p.id === program.id ? { ...p, ...patch } : p) });
+    const patchDay = (dayId: number, patch: Partial<ProgramDay>) =>
+        patchProgram({ days: program.days.map((d) => d.id === dayId ? { ...d, ...patch } : d) });
 
     const addDay = () => patchProgram({ days: [...program.days, { id: Date.now(), name: 'День ' + (program.days.length + 1), exercises: [] }] });
     const deleteDay = (dayId: number) => {
         if (!confirm('Удалить день вместе со всеми упражнениями?')) return;
-        patchProgram({ days: program.days.filter((d: any) => d.id !== dayId) });
+        patchProgram({ days: program.days.filter((d) => d.id !== dayId) });
     };
 
-    const saveExercise = (dayId: number, ex: any) => {
-        const day = program.days.find((d: any) => d.id === dayId);
-        const exists = day.exercises.some((e: any) => e.id === ex.id);
+    const saveExercise = (dayId: number, ex: ProgramExercise) => {
+        // The day can be gone if it was deleted while this form was open.
+        const day = program.days.find(d => d.id === dayId);
+        if (!day) { setForm(null); return; }
+        const exists = day.exercises.some(e => e.id === ex.id);
         patchDay(dayId, {
             exercises: exists
-                ? day.exercises.map((e: any) => e.id === ex.id ? ex : e)
+                ? day.exercises.map(e => e.id === ex.id ? ex : e)
                 : [...day.exercises, ex],
         });
         setForm(null);
     };
-    const deleteExercise = (dayId: number, exId: number) => {
-        const day = program.days.find((d: any) => d.id === dayId);
-        patchDay(dayId, { exercises: day.exercises.filter((e: any) => e.id !== exId) });
+    // By position, not by id: `id` is optional on exercises imported before it
+    // was written, and filtering on an undefined id would remove every one of
+    // them at once rather than the one that was clicked.
+    const deleteExerciseAt = (dayId: number, index: number) => {
+        const day = program.days.find(d => d.id === dayId);
+        if (!day) return;
+        patchDay(dayId, { exercises: day.exercises.filter((_, i) => i !== index) });
     };
 
-    const drag = useDragReorder(program.days, (days: any[]) => patchProgram({ days }));
+    const drag = useDragReorder(program.days, (days: ProgramDay[]) => patchProgram({ days }));
 
     return (
         <div>
@@ -341,7 +376,7 @@ export function ProgramEditor({ program, gymData, setGymData, setEditingProgram 
             )}
 
             <div className="space-y-6">
-                {program.days.map((day: any, i: number) => (
+                {program.days.map((day, i) => (
                     <div key={day.id} {...drag.itemProps(i)} className={`glass-card p-6 rounded-2xl ${drag.itemClass(i)}`}>
                         <div className="flex items-center gap-3 mb-4">
                             <span {...drag.handleProps} title="Перетащить день"
@@ -353,7 +388,7 @@ export function ProgramEditor({ program, gymData, setGymData, setEditingProgram 
                         </div>
 
                         <div className="space-y-2 mb-4">
-                            {day.exercises.map((ex: any) => (
+                            {day.exercises.map((ex, exIndex) => (
                                 <div key={ex.id} className="bg-[var(--bg-input)] p-3 rounded-lg flex items-center gap-3">
                                     <Icon name={isCardio(ex) ? 'activity' : 'dumbbell'} size={16}
                                         className={isCardio(ex) ? 'text-pink-400 shrink-0' : 'text-cyan-400 shrink-0'} />
@@ -364,11 +399,11 @@ export function ProgramEditor({ program, gymData, setGymData, setEditingProgram 
                                     <span className="text-gray-300 text-sm whitespace-nowrap">
                                         {isCardio(ex) ? `${ex.duration} мин · ${ex.intensity}` : `${ex.sets} × ${ex.reps}`}
                                     </span>
-                                    <button onClick={() => setForm({ dayId: day.id, exercise: ex })} title="Изменить упражнение"
+                                    <button onClick={() => setForm({ dayId: day.id, exercise: ex, type: ex.type })} title="Изменить упражнение"
                                         className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-purple-400 transition shrink-0">
                                         <Icon name="edit" size={14} />
                                     </button>
-                                    <button onClick={() => deleteExercise(day.id, ex.id)} title="Удалить упражнение"
+                                    <button onClick={() => deleteExerciseAt(day.id, exIndex)} title="Удалить упражнение"
                                         className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-400 transition shrink-0">
                                         <Icon name="trash" size={14} />
                                     </button>
@@ -376,11 +411,11 @@ export function ProgramEditor({ program, gymData, setGymData, setEditingProgram 
                             ))}
                         </div>
 
-                        {form?.dayId === day.id ? (
+                        {form && form.dayId === day.id ? (
                             <ExerciseForm
                                 initial={form.exercise}
                                 defaultType={form.type}
-                                onSave={(ex: any) => saveExercise(day.id, ex)}
+                                onSave={(ex) => saveExercise(day.id, ex)}
                                 onCancel={() => setForm(null)}
                             />
                         ) : (
@@ -403,13 +438,18 @@ export function ProgramEditor({ program, gymData, setGymData, setEditingProgram 
     );
 }
 
-function ExerciseForm({ initial, defaultType, onSave, onCancel }: any) {
-    const [ex, setEx] = useState<any>(() => initial ?? (defaultType === 'cardio'
-        ? { id: Date.now(), type: 'cardio', name: '', muscle: 'Кардио', duration: 20, intensity: 'Средняя' }
-        : { id: Date.now(), type: 'strength', name: '', muscle: MUSCLES[0], sets: 4, reps: '8-12' }));
+function ExerciseForm({ initial, defaultType, onSave, onCancel }: {
+    initial: ProgramExercise | null;
+    defaultType: ExerciseKind;
+    onSave: (ex: ProgramExercise) => void;
+    onCancel: () => void;
+}) {
+    const [ex, setEx] = useState<ProgramExercise>(() => initial ?? (defaultType === 'cardio'
+        ? { id: Date.now(), type: 'cardio', name: '', muscle: 'Кардио', sets: 1, duration: 20, intensity: 'Средняя' }
+        : { id: Date.now(), type: 'strength', name: '', muscle: MUSCLES[0] ?? '', sets: 4, reps: '8-12' }));
 
     const cardio = isCardio(ex);
-    const patch = (p: any) => setEx({ ...ex, ...p });
+    const patch = (p: Partial<ProgramExercise>) => setEx({ ...ex, ...p });
     const save = () => { if (ex.name.trim()) onSave({ ...ex, name: ex.name.trim() }); };
     const field = 'bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-400';
 
@@ -463,25 +503,37 @@ function ExerciseForm({ initial, defaultType, onSave, onCancel }: any) {
     );
 }
 
-export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorkout, isEditing }: any) {
+export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorkout, isEditing }: {
+    activeWorkout: Workout;
+    setActiveWorkout: Setter<Workout | null>;
+    /** Live sessions take no argument; editing an old one passes the edited workout. */
+    finishWorkout: (workout?: Workout) => void;
+    isEditing?: boolean;
+}) {
     const [activeExIdx, setActiveExIdx] = useState(0);
     const exercise = activeWorkout.exercises[activeExIdx];
 
-    const updateSet = (setIdx: number, field: string, value: any) => {
+    const updateSet = <K extends keyof WorkoutSet>(setIdx: number, field: K, value: WorkoutSet[K]) => {
         const newExercises = [...activeWorkout.exercises];
-        newExercises[activeExIdx].sets[setIdx][field] = value;
+        const set = newExercises[activeExIdx]?.sets[setIdx];
+        if (!set) return;
+        set[field] = value;
         setActiveWorkout({ ...activeWorkout, exercises: newExercises });
     };
 
     const toggleDone = (setIdx: number) => {
         const newExercises = [...activeWorkout.exercises];
-        newExercises[activeExIdx].sets[setIdx].done = !newExercises[activeExIdx].sets[setIdx].done;
+        const set = newExercises[activeExIdx]?.sets[setIdx];
+        if (!set) return;
+        set.done = !set.done;
         setActiveWorkout({ ...activeWorkout, exercises: newExercises });
     };
 
     const changeWeight = (setIdx: number, delta: number) => {
         const newExercises = [...activeWorkout.exercises];
-        newExercises[activeExIdx].sets[setIdx].weight = parseFloat((newExercises[activeExIdx].sets[setIdx].weight + delta).toFixed(2));
+        const set = newExercises[activeExIdx]?.sets[setIdx];
+        if (!set) return;
+        set.weight = parseFloat(((set.weight ?? 0) + delta).toFixed(2));
         setActiveWorkout({ ...activeWorkout, exercises: newExercises });
     };
 
@@ -489,28 +541,37 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
     // recordable without editing the program.
     const addSet = () => {
         const newExercises = [...activeWorkout.exercises];
-        const sets = newExercises[activeExIdx].sets;
-        const last = sets[sets.length - 1];
-        sets.push({ weight: last?.weight ?? 0, reps: last?.reps ?? 0, done: false });
+        const current = newExercises[activeExIdx];
+        if (!current) return;
+        const last = current.sets[current.sets.length - 1];
+        current.sets.push({ weight: last?.weight ?? 0, reps: last?.reps ?? 0, done: false });
         setActiveWorkout({ ...activeWorkout, exercises: newExercises });
     };
 
     const removeSet = (setIdx: number) => {
         const newExercises = [...activeWorkout.exercises];
-        newExercises[activeExIdx].sets = newExercises[activeExIdx].sets.filter((_: any, i: number) => i !== setIdx);
+        const current = newExercises[activeExIdx];
+        if (!current) return;
+        current.sets = current.sets.filter((_, i) => i !== setIdx);
         setActiveWorkout({ ...activeWorkout, exercises: newExercises });
     };
 
     // Cardio is a single entry rather than a list of sets.
-    const updateCardio = (patch: any) => {
+    const updateCardio = (patch: Partial<WorkoutSet>) => {
         const newExercises = [...activeWorkout.exercises];
-        newExercises[activeExIdx] = {
-            ...newExercises[activeExIdx],
-            sets: [{ ...(newExercises[activeExIdx].sets[0] ?? {}), ...patch }],
-        };
+        const current = newExercises[activeExIdx];
+        if (!current) return;
+        const existing: WorkoutSet = current.sets[0] ?? { done: false };
+        newExercises[activeExIdx] = { ...current, sets: [{ ...existing, ...patch }] };
         setActiveWorkout({ ...activeWorkout, exercises: newExercises });
     };
-    const cardioSet = exercise.sets[0] ?? {};
+    const cardioSet: WorkoutSet = exercise?.sets[0] ?? { done: false };
+
+    // A session can only be empty if its program day had no exercises; there is
+    // nothing to log, so say so rather than rendering a broken form.
+    if (!exercise) {
+        return <GymEmptyState icon="dumbbell" text="В этой тренировке нет упражнений." />;
+    }
 
     return (
         <div className="max-w-2xl mx-auto">
@@ -526,7 +587,7 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
             </div>
 
             <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                {activeWorkout.exercises.map((ex: any, i: number) => (
+                {activeWorkout.exercises.map((ex, i) => (
                     <button key={i} onClick={() => setActiveExIdx(i)} className={`px-4 py-2 rounded-lg whitespace-nowrap transition flex items-center gap-2 ${i === activeExIdx ? 'bg-cyan-400 text-black font-bold' : 'bg-white/5 text-gray-400'}`}>
                         {isCardio(ex) && <Icon name="activity" size={14} />}
                         {ex.name}
@@ -583,7 +644,7 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
                 </div>
 
                 <div className="space-y-3">
-                    {exercise.sets.map((set: any, idx: number) => (
+                    {exercise.sets.map((set, idx) => (
                         <div key={idx} className={`grid grid-cols-12 gap-2 items-center p-2 rounded-lg ${set.done ? 'bg-green-500/10' : 'bg-[var(--bg-input)]'}`}>
                             <div className="col-span-1 text-center text-gray-400">{idx + 1}</div>
                             <div className="col-span-4 flex items-center gap-1">
@@ -625,24 +686,28 @@ export function ActiveWorkoutView({ activeWorkout, setActiveWorkout, finishWorko
     );
 }
 
-export function GymHistory({ gymData, setGymData, setEditingWorkout }: any) {
+export function GymHistory({ gymData, setGymData, setEditingWorkout }: {
+    gymData: GymData;
+    setGymData: Setter<GymData>;
+    setEditingWorkout: (w: Workout | null) => void;
+}) {
     if (gymData.history.length === 0) return <GymEmptyState icon="clock" text="История пуста. Начните первую тренировку!" />;
 
     const reversedHistory = [...gymData.history].reverse();
 
-    const calcStats = (workout: any) => {
+    const calcStats = (workout: Workout) => {
         let totalSets = 0, totalReps = 0, totalTonnage = 0, cardioMin = 0, cardioKm = 0;
-        workout.exercises.forEach((ex: any) => {
-            ex.sets.forEach((s: any) => {
+        workout.exercises.forEach((ex) => {
+            ex.sets.forEach((s) => {
                 if (!s.done) return;
                 if (isCardio(ex)) {
-                    cardioMin += parseFloat(s.duration) || 0;
-                    cardioKm += parseFloat(s.distance) || 0;
+                    cardioMin += num(s.duration);
+                    cardioKm += num(s.distance);
                     return;
                 }
                 totalSets++;
-                const w = parseFloat(s.weight) || 0;
-                const r = parseInt(s.reps) || 0;
+                const w = num(s.weight);
+                const r = num(s.reps);
                 totalReps += r;
                 totalTonnage += w * r;
             });
@@ -655,14 +720,14 @@ export function GymHistory({ gymData, setGymData, setEditingWorkout }: any) {
         };
     };
 
-    const deleteWorkout = (workout: any) => {
+    const deleteWorkout = (workout: Workout) => {
         const id = workout.id || workout.date;
-        setGymData({ ...gymData, history: gymData.history.filter((w: any) => (w.id || w.date) !== id) });
+        setGymData({ ...gymData, history: gymData.history.filter((w) => (w.id || w.date) !== id) });
     };
 
     return (
         <div className="space-y-4">
-            {reversedHistory.map((w: any) => {
+            {reversedHistory.map((w) => {
                 const stats = calcStats(w);
                 const tiles = [
                     { value: stats.totalTonnage, label: 'Тоннаж (кг)' },
@@ -693,14 +758,14 @@ export function GymHistory({ gymData, setGymData, setEditingWorkout }: any) {
                             ))}
                         </div>
                         <div className="space-y-2 pt-4 border-t border-[var(--border)]">
-                            {w.exercises.map((ex: any, i: number) => (
+                            {w.exercises.map((ex, i) => (
                                 <div key={i} className="flex justify-between text-sm gap-3">
                                     <span className="text-gray-300 flex items-center gap-1.5">
                                         {isCardio(ex) && <Icon name="activity" size={13} className="text-pink-400" />}
                                         {ex.name}
                                     </span>
                                     <span className="text-gray-500 text-right">
-                                        {ex.sets.filter((s: any) => s.done).map((s: any) =>
+                                        {ex.sets.filter((s) => s.done).map((s) =>
                                             isCardio(ex)
                                                 ? `${s.duration} мин${s.distance ? ` · ${s.distance} км` : ''}`
                                                 : `${s.weight}×${s.reps}`
@@ -716,36 +781,38 @@ export function GymHistory({ gymData, setGymData, setEditingWorkout }: any) {
     );
 }
 
-export function GymPRs({ gymData }: any) {
+export function GymPRs({ gymData }: { gymData: GymData }) {
     const [filter, setFilter] = useState('Все');
     
-    // Собираем базу всех упражнений и их рекордов
-    const db: any = {};
-    const cardioDb: any = {};
-    gymData.history.forEach((w: any) => {
-        w.exercises.forEach((ex: any) => {
+    // Personal bests, grouped muscle -> exercise, built up as the history is walked.
+    const db: Record<string, Record<string, { maxWeight: number; max1RM: number; maxReps: number }>> = {};
+    const cardioDb: Record<string, { maxDuration: number; maxDistance: number; totalMin: number }> = {};
+    gymData.history.forEach((w) => {
+        w.exercises.forEach((ex) => {
             if (isCardio(ex)) {
-                if (!cardioDb[ex.name]) cardioDb[ex.name] = { maxDuration: 0, maxDistance: 0, totalMin: 0 };
-                const rec = cardioDb[ex.name];
-                ex.sets.forEach((s: any) => {
-                    const d = parseFloat(s.duration) || 0;
-                    const km = parseFloat(s.distance) || 0;
+                const rec = (cardioDb[ex.name] ??= { maxDuration: 0, maxDistance: 0, totalMin: 0 });
+                ex.sets.forEach(s => {
+                    const d = num(s.duration);
+                    const km = num(s.distance);
                     if (d > rec.maxDuration) rec.maxDuration = d;
                     if (km > rec.maxDistance) rec.maxDistance = km;
                     rec.totalMin += d;
                 });
                 return;
             }
-            if (!db[ex.muscle]) db[ex.muscle] = {};
-            if (!db[ex.muscle][ex.name]) db[ex.muscle][ex.name] = { maxWeight: 0, max1RM: 0, maxReps: 0 };
 
-            ex.sets.forEach((s: any) => {
-                const w = parseFloat(s.weight) || 0;
-                const r = parseInt(s.reps) || 0;
-                if (w > db[ex.muscle][ex.name].maxWeight) db[ex.muscle][ex.name].maxWeight = w;
-                if (r > db[ex.muscle][ex.name].maxReps) db[ex.muscle][ex.name].maxReps = r;
+            const byExercise = (db[ex.muscle] ??= {});
+            const rec = (byExercise[ex.name] ??= { maxWeight: 0, max1RM: 0, maxReps: 0 });
+
+            ex.sets.forEach(s => {
+                const w = num(s.weight);
+                const r = num(s.reps);
+                if (w > rec.maxWeight) rec.maxWeight = w;
+                if (r > rec.maxReps) rec.maxReps = r;
+                // Epley: an estimated one-rep max, so sets at different rep
+                // counts stay comparable.
                 const e1RM = w * (1 + r / 30);
-                if (e1RM > db[ex.muscle][ex.name].max1RM) db[ex.muscle][ex.name].max1RM = e1RM;
+                if (e1RM > rec.max1RM) rec.max1RM = e1RM;
             });
         });
     });
@@ -767,8 +834,7 @@ export function GymPRs({ gymData }: any) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(filter === 'Все' || filter === 'Кардио') && cardioNames.map(name => {
-                    const pr = cardioDb[name];
+                {(filter === 'Все' || filter === 'Кардио') && Object.entries(cardioDb).map(([name, pr]) => {
                     return (
                         <div key={'cardio-' + name} className="glass-card p-6 rounded-2xl flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-pink-400/10 text-pink-400 flex items-center justify-center shrink-0">
@@ -786,10 +852,9 @@ export function GymPRs({ gymData }: any) {
                         </div>
                     );
                 })}
-                {Object.keys(db).map(muscle => {
+                {Object.entries(db).map(([muscle, byExercise]) => {
                     if (filter !== 'Все' && filter !== muscle) return null;
-                    return Object.keys(db[muscle]).map(name => {
-                        const pr = db[muscle][name];
+                    return Object.entries(byExercise).map(([name, pr]) => {
                         return (
                             <div key={muscle + name} className="glass-card p-6 rounded-2xl flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-xl bg-yellow-400/10 text-yellow-400 flex items-center justify-center shrink-0">
@@ -819,40 +884,66 @@ const GYM_COACH_SYSTEM = `Ты — тёплый, поддерживающий п
 Задача: дать короткий живой разбор прогресса и конкретную рекомендацию на следующую тренировку по каждому упражнению — для силовых увеличить вес, оставить тот же или сделать разгрузку (deload); для кардио добавить минуты, темп или дистанцию либо снизить нагрузку. Где уместно, связывай спад результатов с плохим сном.
 Пиши по-русски, дружелюбно и по делу, без воды и общих фраз. Формат — Markdown: **название упражнения** жирным, затем 1–2 коротких предложения с рекомендацией. В конце добавь одну ободряющую строчку. Не выдумывай данные, которых нет в JSON.`;
 
-function buildGymContext(activeProgram: any, gymData: any, logs: any): any[] {
-    const planned = new Map<string, any>();
-    activeProgram.days.forEach((d: any) => d.exercises.forEach((e: any) => planned.set(e.name, e)));
+/** One exercise's recent history, as handed to the model for its recommendation. */
+type GymContextItem = {
+    exercise: string;
+    type: 'cardio' | 'strength';
+    targetReps?: number | null;
+    targetDurationMin?: number | null;
+    last: ExerciseSnapshot;
+    previous: ExerciseSnapshot | null;
+};
+
+type ExerciseSnapshot = {
+    /** Calendar date; the instant's time is dropped before it reaches the model. */
+    date: string | undefined;
+    /**
+     * Cardio and strength sets carry different fields. Both shapes are allowed
+     * here rather than split into two snapshot types, because the model reads
+     * this as JSON and only ever sees the keys that are present.
+     */
+    sets: Array<Record<string, number | string | undefined>>;
+    sleep: number | null;
+};
+
+function buildGymContext(activeProgram: Program | undefined, gymData: GymData, logs: DayLog[]): GymContextItem[] {
+    // Nothing to advise on until a program is active.
+    if (!activeProgram) return [];
+    const planned = new Map<string, ProgramExercise>();
+    activeProgram.days.forEach(d => d.exercises.forEach(e => planned.set(e.name, e)));
 
     const getHistory = (name: string) =>
         gymData.history
-            .filter((w: any) => w.exercises.some((e: any) => e.name === name))
-            .map((w: any) => ({
+            .filter((w) => w.exercises.some((e) => e.name === name))
+            .map((w) => ({
                 date: w.date,
-                sets: w.exercises.find((e: any) => e.name === name).sets.filter((s: any) => s.done),
+                sets: w.exercises.find(e => e.name === name)?.sets.filter(s => s.done) ?? [],
             }));
 
     const getDayLog = (dateStr: string) =>
-        logs.find((l: any) => l.date.split('T')[0] === dateStr.split('T')[0]);
+        logs.find((l) => l.date.split('T')[0] === dateStr.split('T')[0]);
 
-    const items: any[] = [];
+    const items: GymContextItem[] = [];
     planned.forEach((plan, name) => {
         const history = getHistory(name);
-        if (history.length === 0 || history[history.length - 1].sets.length === 0) return;
+        const last = history[history.length - 1];
+        if (!last || last.sets.length === 0) return;
 
         const cardio = isCardio(plan);
         const repRange = String(plan.reps ?? '').split('-');
-        const targetReps = cardio ? null : (parseInt(repRange[1] ?? repRange[0]) || 10);
+        // Aim for the top of the range ("8-12" -> 12), falling back to the
+        // single value when the range has no upper bound.
+        const targetReps = cardio ? null : (parseInt(repRange[1] ?? repRange[0] ?? '') || 10);
 
-        const summarize = (entry: any) => ({
+        const summarize = (entry: { date: string; sets: WorkoutSet[] }) => ({
             date: entry.date.split('T')[0],
-            sets: entry.sets.map((s: any) => cardio
+            sets: entry.sets.map((s) => cardio
                 ? { durationMin: s.duration, distanceKm: s.distance, intensity: s.intensity }
                 : { weight: s.weight, reps: s.reps }),
             sleep: getDayLog(entry.date)?.sleep ?? null,
         });
 
-        const last = history[history.length - 1];
-        const prev = history.length >= 2 ? history[history.length - 2] : null;
+        const prev = history[history.length - 2] ?? null;
 
         items.push({
             exercise: name,
@@ -865,12 +956,12 @@ function buildGymContext(activeProgram: any, gymData: any, logs: any): any[] {
     return items;
 }
 
-export function GymAI({ gymData, logs }: any) {
+export function GymAI({ gymData, logs }: { gymData: GymData; logs: DayLog[] }) {
     const [output, setOutput] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const activeProgram = gymData.programs.find((p: any) => p.id === gymData.activeProgramId);
+    const activeProgram = gymData.programs.find((p) => p.id === gymData.activeProgramId);
     if (!activeProgram) return <GymEmptyState icon="sparkle" text="Нет активной программы." />;
 
     const context = buildGymContext(activeProgram, gymData, logs);
@@ -890,8 +981,8 @@ export function GymAI({ gymData, logs }: any) {
                 }],
                 onToken: (chunk) => setOutput((prev) => prev + chunk),
             });
-        } catch (e: any) {
-            setError(e?.message || 'Не удалось получить ответ от ИИ.');
+        } catch (e) {
+            setError(errorMessage(e, 'Не удалось получить ответ от ИИ.'));
         } finally {
             setLoading(false);
         }

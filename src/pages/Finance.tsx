@@ -4,6 +4,8 @@ import { PageHeader } from '../components/PageHeader';
 import { Icon } from '../components/Icons';
 import { todayKey, toLocalDateKey, daysBetween, isToday, nowInstant } from '../lib/datetime';
 import { DEFAULT_FINANCE, DEFAULT_EXPENSE_CATS, DEFAULT_INCOME_CATS, type Category, type FinanceEntry, type Debt, type Subscription, type FinanceData } from '../features/finance/types';
+import type { FinanceProps } from '../types/props';
+import type { NonEmptyArray } from '../lib/nonEmpty';
 
 // The data model lives in features/finance/types so the app's initial state can
 // import the defaults without dragging this page (and Chart.js) into the entry
@@ -11,7 +13,7 @@ import { DEFAULT_FINANCE, DEFAULT_EXPENSE_CATS, DEFAULT_INCOME_CATS, type Catego
 export type { Category, FinanceEntry, Debt, Subscription, FinanceData } from '../features/finance/types';
 export { DEFAULT_FINANCE };
 
-const PALETTE = ['#0284C7', '#EA580C', '#7C3AED', '#DB2777', '#16A34A', '#CA8A04', '#64748B', '#0EA5E9', '#F43F5E'];
+const PALETTE: NonEmptyArray<string> = ['#0284C7', '#EA580C', '#7C3AED', '#DB2777', '#16A34A', '#CA8A04', '#64748B', '#0EA5E9', '#F43F5E'];
 
 // Periods are counted in the user's calendar days, not in elapsed hours: "this
 // week" means the last seven days including today, so an entry made yesterday
@@ -150,7 +152,7 @@ function FinanceSettings({ data, setPin, setInitialBalance, onClose }: {
     );
 }
 
-function CategoryForm({ initial, onSave, onClose }: { initial?: Category; onSave: (c: { icon: string; label: string; color: string }) => void; onClose: () => void }) {
+function CategoryForm({ initial, onSave, onClose }: { initial?: Category | undefined; onSave: (c: { icon: string; label: string; color: string }) => void; onClose: () => void }) {
     const [icon, setIcon] = useState(initial?.icon ?? '🔖');
     const [label, setLabel] = useState(initial?.label ?? '');
     const [color, setColor] = useState(initial?.color ?? PALETTE[0]);
@@ -380,7 +382,7 @@ function SubscriptionsPanel({ subs, addSub, markPaid, deleteSub, updateSub, fmt 
     );
 }
 
-export function Finance({ finance, setFinance }: { finance: FinanceData; setFinance: (f: FinanceData) => void }) {
+export function Finance({ finance, setFinance }: FinanceProps) {
     const savedExpenseCats = finance?.categories?.expense ?? DEFAULT_EXPENSE_CATS;
     const withSubscription = savedExpenseCats.some(c => c.id === 'subscription')
         ? savedExpenseCats

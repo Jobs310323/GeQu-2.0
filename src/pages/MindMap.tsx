@@ -20,12 +20,17 @@ import { NodeInspector } from './mindmap/NodeInspector';
 import type { MindColor, MindEdge, MindMapDoc, MindNode, MindViewMode } from '../types/mindmap';
 import type { MindFlowNode, MindNodeData } from './mindmap/MindMapNode';
 import { todayKey, toLocalDateKey, addDays, nowInstant } from '../lib/datetime';
+import type { CSSProperties } from 'react';
 
 type Callbacks = Pick<MindNodeData, 'onEdit' | 'onRecolor' | 'onDelete' | 'onOpen' | 'onSnooze' | 'onToggleDone'>;
 type StoredData = Omit<MindNode, 'id' | 'x' | 'y'> & Callbacks;
 type StoredFlowNode = Node<StoredData, 'mind'>;
 
-function edgeStyle(color: MindColor): Edge['style'] {
+// Returns CSSProperties rather than Edge['style'], which under
+// exactOptionalPropertyTypes is `CSSProperties | undefined` — assigning that
+// into `style:` would set the property to an explicit undefined. This always
+// produces a real style object.
+function edgeStyle(color: MindColor): CSSProperties {
     return { stroke: COLOR_HEX[color], strokeWidth: 1.75 };
 }
 
@@ -40,7 +45,7 @@ function toDomainNode(n: StoredFlowNode): MindNode {
 }
 
 function loadInitial(callbacks: Callbacks): { nodes: StoredFlowNode[]; edges: Edge[] } {
-    const doc = DB.get('mindmap', { nodes: [], edges: [] }) as MindMapDoc;
+    const doc = DB.get<MindMapDoc>('mindmap', { nodes: [], edges: [] });
     const colorOf = new Map(doc.nodes.map(n => [n.id, n.color]));
     return {
         nodes: doc.nodes.map(raw => {
@@ -52,7 +57,7 @@ function loadInitial(callbacks: Callbacks): { nodes: StoredFlowNode[]; edges: Ed
         }),
         edges: doc.edges.map(e => ({
             id: e.id, source: e.source, target: e.target,
-            sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined,
+            sourceHandle: e.sourceHandle ?? null, targetHandle: e.targetHandle ?? null,
             style: edgeStyle(colorOf.get(e.source) ?? 'cyan'),
         })),
     };
@@ -183,7 +188,7 @@ function MindMapCanvas() {
     const addNodeAt = (text: string, x: number, y: number) => {
         const jitter = () => Math.random() * 70 - 35;
         setNodes(nds => {
-            const domain = createNode(text, x + jitter(), y + jitter(), MIND_COLORS[nds.length % MIND_COLORS.length]);
+            const domain = createNode(text, x + jitter(), y + jitter(), MIND_COLORS[nds.length % MIND_COLORS.length] ?? 'cyan');
             return [...nds, { id: domain.id, type: 'mind', position: { x: domain.x, y: domain.y }, data: { ...stripDomain(domain), ...callbacks } }];
         });
     };

@@ -5,6 +5,12 @@
 
 import { computeXp, levelFromXp, evaluateAchievements, type GameData } from './xp';
 import { streakLength, startOfLocalDay } from './datetime';
+import type {
+    DayLog, DiaryEntry, Habit, KanbanTask, TestResult, ClinicalResult, CbtRecord,
+    CircleItem, GymData,
+} from '../types/domain';
+import type { Goal } from '../types/goals';
+import type { FinanceData, FinanceEntry } from '../features/finance/types';
 
 /** Cognitive tests where a LOWER value is better (times/latency). */
 export const LOWER_IS_BETTER = new Set(['schulte', 'reaction', 'tmt']);
@@ -37,25 +43,36 @@ export type TestSummary = {
 const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const round = (n: number, d = 1) => Number(n.toFixed(d));
 
-function tagCounts(logs: any[], field: 'helped' | 'hindered') {
+function tagCounts(logs: DayLog[], field: 'helped' | 'hindered') {
     const counts: Record<string, number> = {};
     logs.forEach(l => (l[field] ?? []).forEach((t: string) => { counts[t] = (counts[t] || 0) + 1; }));
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([tag, n]) => ({ tag, n }));
 }
 
-const currentStreak = (logs: any[]): number => streakLength(logs.map(l => l.date));
+const currentStreak = (logs: DayLog[]): number => streakLength(logs.map(l => l.date));
 
-export function buildProfile(d: {
-    logs: any[]; diary: any[]; habits: any[]; kanban: any[];
-    goals: any[]; gymData: any; testResults: any[];
-    clinicalResults?: any[]; cbtRecords?: any[]; finance?: any; circles?: any[];
-}) {
+/** Everything `buildProfile` reads. Optional members are sections a user may never have used. */
+export interface ProfileInput {
+    logs: DayLog[];
+    diary: DiaryEntry[];
+    habits: Habit[];
+    kanban: KanbanTask[];
+    goals: Goal[];
+    gymData: GymData;
+    testResults: TestResult[];
+    clinicalResults?: ClinicalResult[];
+    cbtRecords?: CbtRecord[];
+    finance?: FinanceData | null;
+    circles?: CircleItem[];
+}
+
+export function buildProfile(d: ProfileInput) {
     const logs = d.logs ?? [];
     const sorted = [...logs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const cutoff = Date.now() - 30 * 86400000;
     const recent = sorted.filter(l => new Date(l.date).getTime() >= cutoff);
 
-    const nums = (arr: any[], k: string) => arr.map(l => Number(l[k])).filter(n => Number.isFinite(n));
+    const nums = (arr: DayLog[], k: 'sleep' | 'focus' | 'mood') => arr.map(l => Number(l[k])).filter(n => Number.isFinite(n));
 
     // --- cognitive tests, per type with a real trend ---
     const byType: Record<string, any[]> = {};
@@ -88,11 +105,11 @@ export function buildProfile(d: {
     let tonnage = 0, cardioMinutes = 0, cardioKm = 0, cardioSessions = 0;
     const muscleTonnage: Record<string, number> = {};
     const exerciseCount: Record<string, number> = {};
-    workouts.forEach((w: any) => {
+    workouts.forEach((w) => {
         let hasCardio = false;
-        (w.exercises ?? []).forEach((ex: any) => {
+        (w.exercises ?? []).forEach((ex) => {
             exerciseCount[ex.name] = (exerciseCount[ex.name] || 0) + 1;
-            (ex.sets ?? []).forEach((s: any) => {
+            (ex.sets ?? []).forEach((s) => {
                 if (!s.done) return;
                 if (ex.type === 'cardio') {
                     hasCardio = true;
@@ -109,10 +126,11 @@ export function buildProfile(d: {
     });
 
     // --- habits ---
-    const spanDays = sorted.length
-        ? Math.max(1, Math.round((Date.now() - new Date(sorted[0].date).getTime()) / 86400000))
+    const firstEntry = sorted[0];
+    const spanDays = firstEntry
+        ? Math.max(1, Math.round((Date.now() - new Date(firstEntry.date).getTime()) / 86400000))
         : 1;
-    const habits = (d.habits ?? []).map((h: any) => ({
+    const habits = (d.habits ?? []).map((h) => ({
         name: h.name,
         done: h.history?.length ?? 0,
         ratePct: round(((h.history?.length ?? 0) / spanDays) * 100, 0),
@@ -120,9 +138,9 @@ export function buildProfile(d: {
 
     // --- tasks & goals ---
     const kanban = d.kanban ?? [];
-    const goals = (d.goals ?? []).map((g: any) => ({
+    const goals = (d.goals ?? []).map((g) => ({
         title: g.title,
-        done: (g.tasks ?? []).filter((t: any) => t.done).length,
+        done: (g.tasks ?? []).filter((t) => t.done).length,
         total: (g.tasks ?? []).length,
     }));
 
@@ -147,7 +165,7 @@ export function buildProfile(d: {
     const cbtSummary = {
         records: cbt.length,
         lastDate: cbt[0]?.date ? String(cbt[0].date).split('T')[0] : null,
-        recentThoughts: cbt.slice(0, 4).map((r: any) => ({
+        recentThoughts: cbt.slice(0, 4).map((r) => ({
             date: String(r.date ?? '').split('T')[0],
             situation: String(r.situation ?? '').slice(0, 160),
             thought: String(r.thought ?? '').slice(0, 160),
@@ -157,13 +175,13 @@ export function buildProfile(d: {
 
     // --- money: aggregates only, never the PIN or raw entry list ---
     const fin = d.finance ?? null;
-    const finEntries: any[] = fin?.entries ?? [];
+    const finEntries: FinanceEntry[] = fin?.entries ?? [];
     const monthStart = startOfLocalDay(new Date()); monthStart.setDate(1);
-    const sum = (list: any[], type: string) =>
+    const sum = (list: FinanceEntry[], type: FinanceEntry['type']) =>
         list.filter(e => e.type === type).reduce((s, e) => s + (Number(e.amount) || 0), 0);
     const thisMonth = finEntries.filter(e => new Date(e.date).getTime() >= monthStart.getTime());
     const catLabel = (id: string) =>
-        [...(fin?.categories?.expense ?? []), ...(fin?.categories?.income ?? [])].find((c: any) => c.id === id)?.label ?? id;
+        [...(fin?.categories?.expense ?? []), ...(fin?.categories?.income ?? [])].find((c) => c.id === id)?.label ?? id;
     const expenseByCat: Record<string, number> = {};
     thisMonth.filter(e => e.type === 'expense').forEach(e => {
         const k = catLabel(e.categoryId);
@@ -174,17 +192,17 @@ export function buildProfile(d: {
         thisMonth: { income: Math.round(sum(thisMonth, 'income')), expense: Math.round(sum(thisMonth, 'expense')) },
         topExpenseCategories: Object.entries(expenseByCat).sort((a, b) => b[1] - a[1]).slice(0, 5)
             .map(([label, amount]) => ({ label, amount: Math.round(amount) })),
-        activeDebts: (fin.debts ?? []).filter((x: any) => x.status === 'active').length,
-        monthlySubscriptions: Math.round((fin.subscriptions ?? []).reduce((s: number, x: any) => s + (Number(x.amount) || 0), 0)),
+        activeDebts: (fin.debts ?? []).filter((x) => x.status === 'active').length,
+        monthlySubscriptions: Math.round((fin.subscriptions ?? []).reduce((s: number, x) => s + (Number(x.amount) || 0), 0)),
     } : null;
 
     // --- circles of control/influence/concern ---
     const circleItems = d.circles ?? [];
     const circles = circleItems.length ? {
-        inControl: circleItems.filter((c: any) => c.circle === 'inner').length,
-        canInfluence: circleItems.filter((c: any) => c.circle === 'middle').length,
-        beyondControl: circleItems.filter((c: any) => c.circle === 'outer').length,
-        examples: circleItems.slice(0, 6).map((c: any) => ({ circle: c.circle, text: String(c.text ?? '').slice(0, 120) })),
+        inControl: circleItems.filter((c) => c.circle === 'inner').length,
+        canInfluence: circleItems.filter((c) => c.circle === 'middle').length,
+        beyondControl: circleItems.filter((c) => c.circle === 'outer').length,
+        examples: circleItems.slice(0, 6).map((c) => ({ circle: c.circle, text: String(c.text ?? '').slice(0, 120) })),
     } : null;
 
     // --- gamification ---
@@ -220,10 +238,10 @@ export function buildProfile(d: {
         hinderedTop: tagCounts(sorted, 'hindered'),
         habits,
         tasks: {
-            done: kanban.filter((t: any) => t.status === 'done').length,
-            inProgress: kanban.filter((t: any) => t.status === 'doing').length,
-            todo: kanban.filter((t: any) => t.status === 'todo').length,
-            highPriorityOpen: kanban.filter((t: any) => t.status !== 'done' && t.priority === 'high').length,
+            done: kanban.filter((t) => t.status === 'done').length,
+            inProgress: kanban.filter((t) => t.status === 'doing').length,
+            todo: kanban.filter((t) => t.status === 'todo').length,
+            highPriorityOpen: kanban.filter((t) => t.status !== 'done' && t.priority === 'high').length,
         },
         goals,
         gym: {
@@ -240,9 +258,9 @@ export function buildProfile(d: {
         circles,
         journal: {
             entries: (d.diary ?? []).length,
-            gratitudeEntries: logs.reduce((s: number, l: any) => s + (l.gratitude?.length ?? 0), 0),
+            gratitudeEntries: logs.reduce((s: number, l) => s + (l.gratitude?.length ?? 0), 0),
             // A few recent excerpts give the model qualitative colour without a token blowout.
-            recentExcerpts: (d.diary ?? []).slice(0, 6).map((e: any) => ({
+            recentExcerpts: (d.diary ?? []).slice(0, 6).map((e) => ({
                 date: e.date?.split('T')[0],
                 text: String(e.content ?? '').slice(0, 300),
             })),

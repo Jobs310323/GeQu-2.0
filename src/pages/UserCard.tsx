@@ -5,6 +5,14 @@ import { DB } from '../lib/db';
 import { buildProfile, hasEnoughData } from '../lib/profile';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import type { UserCardProps } from '../types/props';
+import type { TestSummary } from '../lib/profile';
+import { errorMessage } from '../lib/helpers';
+import type { ReactNode } from 'react';
+
+/** The two AI outputs cached on this device, with the stamp shown beside them. */
+type CachedCard = { card: AiCard; madeAt?: string };
+type CachedReport = { text: string; madeAt?: string };
 
 type AiCard = {
     headline?: string;
@@ -58,7 +66,7 @@ const REPORT_SYSTEM = `Ты — внимательный аналитик в п�
 - Никаких диагнозов, медицинских выводов и оценок скрининговых тестов как диагноза. Ты не врач.
 - Обращайся на «ты», тепло и по делу, без лести. Всё по-русски.`;
 
-function Stat({ label, value, hint }: { label: string; value: any; hint?: string }) {
+function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: string | undefined }) {
     return (
         <div className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
             <div className="text-xs text-gray-400 mb-1">{label}</div>
@@ -68,7 +76,7 @@ function Stat({ label, value, hint }: { label: string; value: any; hint?: string
     );
 }
 
-function Section({ title, items, icon, tone }: { title: string; items?: string[]; icon: string; tone: string }) {
+function Section({ title, items, icon, tone }: { title: string; items?: string[] | undefined; icon: string; tone: string }) {
     if (!items?.length) return null;
     return (
         <div className="glass-card p-5 rounded-2xl">
@@ -88,7 +96,7 @@ function Section({ title, items, icon, tone }: { title: string; items?: string[]
 }
 
 export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData, testResults,
-                           clinicalResults, cbtRecords, finance, circles }: any) {
+                           clinicalResults, cbtRecords, finance, circles }: UserCardProps) {
     const [card, setCard] = useState<AiCard | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -102,13 +110,13 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
         clinicalResults, cbtRecords, finance, circles });
     const enough = hasEnoughData(profile);
 
-    const deleteLog = (id: number) => setLogs((logs ?? []).filter((l: any) => l.id !== id));
-    const sortedLogs = [...(logs ?? [])].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const deleteLog = (id: number) => setLogs((logs ?? []).filter((l) => l.id !== id));
+    const sortedLogs = [...(logs ?? [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     useEffect(() => {
-        const cached = DB.get('usercard', null);
+        const cached = DB.get<CachedCard | null>('usercard', null);
         if (cached?.card) { setCard(cached.card); setMadeAt(cached.madeAt || ''); }
-        const cachedReport = DB.get('usercard_report', null);
+        const cachedReport = DB.get<CachedReport | null>('usercard_report', null);
         if (cachedReport?.text) { setReport(cachedReport.text); setReportAt(cachedReport.madeAt || ''); }
     }, []);
 
@@ -131,8 +139,8 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
             const stamp = stampNow();
             setReportAt(stamp);
             DB.save('usercard_report', { text, madeAt: stamp });
-        } catch (e: any) {
-            setReportError(e?.message || 'Не удалось составить отчёт.');
+        } catch (e) {
+            setReportError(errorMessage(e, 'Не удалось составить отчёт.'));
         } finally {
             setReportLoading(false);
         }
@@ -149,15 +157,15 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
             const stamp = stampNow();
             setCard(result); setMadeAt(stamp);
             DB.save('usercard', { card: result, madeAt: stamp });
-        } catch (e: any) {
-            setError(e?.message || 'Не удалось составить карточку.');
+        } catch (e) {
+            setError(errorMessage(e, 'Не удалось составить карточку.'));
         } finally {
             setLoading(false);
         }
     };
 
     const s = profile.state;
-    const trendText = (t: any) =>
+    const trendText = (t: TestSummary) =>
         t.improvedPct === null ? 'мало данных'
             : t.improvedPct > 0 ? `↑ лучше на ${t.improvedPct}%`
             : t.improvedPct < 0 ? `↓ хуже на ${Math.abs(t.improvedPct)}%`
@@ -270,7 +278,7 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                                 <span className="text-xs text-gray-500">{sortedLogs.length}</span>
                             </div>
                             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                                {sortedLogs.map((l: any) => (
+                                {sortedLogs.map((l) => (
                                     <div key={l.id ?? l.date} className="border-b border-[var(--border)] pb-4 anim-fade-in">
                                         <div className="flex items-baseline justify-between gap-3 mb-2">
                                             <span className="text-xs text-cyan-400">

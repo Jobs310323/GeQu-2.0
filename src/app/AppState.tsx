@@ -1,8 +1,14 @@
 import { createContext, use, useEffect, useRef, useState, type ReactNode } from 'react';
 import { DB } from '../lib/db';
 import { loadPrefs, savePrefs, type Prefs } from '../lib/prefs';
-import { DEFAULT_FINANCE } from '../features/finance/types';
+import { DEFAULT_FINANCE, type FinanceData } from '../features/finance/types';
 import type { ActivityLabel, DayRecord } from '../features/snowman/types';
+import type {
+    DayLog, DiaryEntry, Habit, KanbanTask, TestResult, ClinicalResult, CbtRecord,
+    CircleItem, Reminder, GymData, UnlockedAchievements, HyperfocusSession,
+} from '../types/domain';
+import { EMPTY_GYM_DATA } from '../types/domain';
+import type { Goal } from '../types/goals';
 import { computeXp, levelFromXp } from '../lib/xp';
 import { todayKey, toLocalDateKey } from '../lib/datetime';
 
@@ -22,6 +28,8 @@ const DEFAULT_DOPAMINE_MENU = [
     'Попить воды', 'Сделать растяжку', 'Посмотреть в окно 2 мин', 'Поиграть с котом', 'Закрыть глаза на 1 мин',
 ];
 
+export type Theme = 'dark' | 'light';
+
 export type Pomodoro = {
     workTime: number;
     mode: 'work' | 'break';
@@ -35,26 +43,26 @@ const AppStateContext = createContext<AppState | null>(null);
 
 function useAppStateValue() {
     const [dopamineMenu, setDopamineMenu] = useState<string[]>(DB.get('dopamineMenu', DEFAULT_DOPAMINE_MENU));
-    const [logs, setLogs] = useState<any[]>(DB.get('logs'));
-    const [diary, setDiary] = useState<any[]>(DB.get('diary'));
-    const [goals, setGoals] = useState<any[]>(DB.get('goals'));
-    const [habits, setHabits] = useState<any[]>(DB.get('habits'));
-    const [kanban, setKanban] = useState<any[]>(DB.get('kanban'));
-    const [testResults, setTestResults] = useState<any[]>(DB.get('tests', []));
-    const [achievements, setAchievements] = useState<any[]>(DB.get('ach', []));
-    const [theme, setTheme] = useState<string>(DB.get('theme', 'dark'));
-    const [gymData, setGymData] = useState<any>(DB.get('gym', { programs: [], history: [], activeProgramId: null }));
-    const [circles, setCircles] = useState<any[]>(DB.get('circles', []));
-    const [reminders, setReminders] = useState<any[]>(DB.get('reminders', []));
-    const [clinicalResults, setClinicalResults] = useState<any[]>(DB.get('clinical', []));
-    const [cbtRecords, setCbtRecords] = useState<any[]>(DB.get('cbt', []));
-    const [finance, setFinance] = useState<any>(DB.get('finance', DEFAULT_FINANCE));
-    const [snowmanLabels, setSnowmanLabels] = useState<ActivityLabel[]>(DB.get('snowmanLabels', []));
-    const [snowmanDays, setSnowmanDays] = useState<DayRecord[]>(DB.get('snowmanDays', []));
+    const [logs, setLogs] = useState<DayLog[]>(DB.get<DayLog[]>('logs', []));
+    const [diary, setDiary] = useState<DiaryEntry[]>(DB.get<DiaryEntry[]>('diary', []));
+    const [goals, setGoals] = useState<Goal[]>(DB.get<Goal[]>('goals', []));
+    const [habits, setHabits] = useState<Habit[]>(DB.get<Habit[]>('habits', []));
+    const [kanban, setKanban] = useState<KanbanTask[]>(DB.get<KanbanTask[]>('kanban', []));
+    const [testResults, setTestResults] = useState<TestResult[]>(DB.get<TestResult[]>('tests', []));
+    const [achievements, setAchievements] = useState<UnlockedAchievements>(DB.get<UnlockedAchievements>('ach', []));
+    const [theme, setTheme] = useState<Theme>(DB.get<Theme>('theme', 'dark'));
+    const [gymData, setGymData] = useState<GymData>(DB.get<GymData>('gym', EMPTY_GYM_DATA));
+    const [circles, setCircles] = useState<CircleItem[]>(DB.get<CircleItem[]>('circles', []));
+    const [reminders, setReminders] = useState<Reminder[]>(DB.get<Reminder[]>('reminders', []));
+    const [clinicalResults, setClinicalResults] = useState<ClinicalResult[]>(DB.get<ClinicalResult[]>('clinical', []));
+    const [cbtRecords, setCbtRecords] = useState<CbtRecord[]>(DB.get<CbtRecord[]>('cbt', []));
+    const [finance, setFinance] = useState<FinanceData>(DB.get<FinanceData>('finance', DEFAULT_FINANCE));
+    const [snowmanLabels, setSnowmanLabels] = useState<ActivityLabel[]>(DB.get<ActivityLabel[]>('snowmanLabels', []));
+    const [snowmanDays, setSnowmanDays] = useState<DayRecord[]>(DB.get<DayRecord[]>('snowmanDays', []));
     const [prefs, setPrefs] = useState<Prefs>(() => loadPrefs());
 
     // Ephemeral, never persisted.
-    const [hyperfocus, setHyperfocus] = useState<any>(null);
+    const [hyperfocus, setHyperfocus] = useState<HyperfocusSession | null>(null);
     const [rouletteOpen, setRouletteOpen] = useState(false);
 
     // Lives above the routes (not inside the Pomodoro tab) so navigating away
@@ -113,9 +121,9 @@ function useAppStateValue() {
 
     // --- derived -----------------------------------------------------------
     const todayStr = todayKey();
-    const todayLog = logs.find((l: any) => toLocalDateKey(l.date) === todayStr);
-    const todayGym = gymData.history.some((w: any) => toLocalDateKey(w.date) === todayStr);
-    const todayTest = testResults.some((t: any) => toLocalDateKey(t.date) === todayStr);
+    const todayLog = logs.find(l => toLocalDateKey(l.date) === todayStr);
+    const todayGym = gymData.history.some(w => toLocalDateKey(w.date) === todayStr);
+    const todayTest = testResults.some(t => toLocalDateKey(t.date) === todayStr);
 
     let energy = 5;
     if (todayLog) {
@@ -129,7 +137,7 @@ function useAppStateValue() {
 
     const levelInfo = levelFromXp(computeXp({ logs, habits, kanban, gymData, testResults }).total);
 
-    const reminderCount = reminders.filter((r: any) => !r.done && r.date >= todayStr).length;
+    const reminderCount = reminders.filter(r => !r.done && r.date >= todayStr).length;
 
     return {
         logs, setLogs,

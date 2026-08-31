@@ -4,6 +4,7 @@ import { UserButton } from '@clerk/clerk-react';
 import { NAV_GROUPS } from '../lib/nav';
 import { Logo, LogoMark } from './Logo';
 import { Icon, NAV_ICON } from './Icons';
+import type { SidebarProps } from '../types/props';
 
 const COLLAPSE_KEY = 'gequ_sidebar_collapsed';
 
@@ -14,7 +15,7 @@ const linkClass = (active: boolean, extra = '') =>
         : 'text-[var(--text-muted)] hover:bg-white/5 hover:text-[var(--text-main)] border-transparent'} ${extra}`;
 
 export function Sidebar({ theme, setTheme, energy, todayLog,
-                          prefs, reminderCount, levelInfo, onRoulette }: any) {
+                          prefs, reminderCount, levelInfo, onRoulette }: SidebarProps) {
     const [collapsed, setCollapsed] = useState(() => {
         try { return localStorage.getItem(COLLAPSE_KEY) === '1'; } catch { return false; }
     });

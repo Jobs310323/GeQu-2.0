@@ -72,7 +72,7 @@ export function isGoalComplete(goal: Goal): boolean {
 /** Alphabetically-first tag, or null for untagged — the sort key for tag grouping. */
 function primaryTag(tags: string[] | undefined): string | null {
     if (!tags || tags.length === 0) return null;
-    return [...tags].sort((a, b) => a.localeCompare(b))[0];
+    return [...tags].sort((a, b) => a.localeCompare(b))[0] ?? null;
 }
 
 function compareByTag(a: { tags: string[] }, b: { tags: string[] }): number {

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { PageHeader } from '../components/PageHeader';
+import type { CirclesProps } from '../types/props';
 
-export function CirclesOfInfluence({ circles, setCircles }: any) {
+export function CirclesOfInfluence({ circles, setCircles }: CirclesProps) {
     const [text, setText] = useState('');
     const [activeCircle, setActiveCircle] = useState<'inner' | 'middle' | 'outer'>('inner');
 
@@ -12,7 +13,7 @@ export function CirclesOfInfluence({ circles, setCircles }: any) {
     };
 
     const removeItem = (id: number) => {
-        setCircles(circles.filter((c: any) => c.id !== id));
+        setCircles(circles.filter((c) => c.id !== id));
     };
 
     const config = {
@@ -69,10 +70,10 @@ export function CirclesOfInfluence({ circles, setCircles }: any) {
                             {config[key].label}
                         </h2>
                         <div className="space-y-2">
-                            {circles.filter((c: any) => c.circle === key).length === 0 && (
+                            {circles.filter((c) => c.circle === key).length === 0 && (
                                 <p className="text-[var(--text-muted)] text-sm italic">Пусто...</p>
                             )}
-                            {circles.filter((c: any) => c.circle === key).map((item: any) => (
+                            {circles.filter((c) => c.circle === key).map((item) => (
                                 <div key={item.id} className={`flex items-center justify-between p-3 rounded-xl ${config[key].bg} ${key === 'outer' ? 'opacity-60' : ''}`}>
                                     <span className="text-[var(--text-main)] text-sm">{item.text}</span>
                                     <button onClick={() => removeItem(item.id)} className="text-[var(--text-muted)] hover:text-red-400 text-sm ml-2">✕</button>

@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import type { KanbanProps } from '../types/props';
+import type { TaskPriority, TaskStatus } from '../types/domain';
 
-export function Kanban({ kanban, setKanban }: any) {
+/** Board columns in order; moving a card walks this list. */
+const STAGES = ['todo', 'doing', 'done'] as const satisfies readonly TaskStatus[];
+
+export function Kanban({ kanban, setKanban }: KanbanProps) {
     const [newTask, setNewTask] = useState('');
-    const [newPriority, setNewPriority] = useState('low');
+    const [newPriority, setNewPriority] = useState<TaskPriority>('low');
     const [draggedId, setDraggedId] = useState<number | null>(null);
     const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
@@ -14,23 +19,22 @@ export function Kanban({ kanban, setKanban }: any) {
         setNewTask('');
     };
     const moveTask = (id: number, dir: number) => {
-        const stages = ['todo', 'doing', 'done'];
-        setKanban(kanban.map((t: any) => {
+        setKanban(kanban.map(t => {
             if (t.id === id) {
-                const currentIndex = stages.indexOf(t.status);
-                const nextIndex = currentIndex + dir;
-                if (nextIndex >= 0 && nextIndex < stages.length) return { ...t, status: stages[nextIndex] };
+                const nextIndex = STAGES.indexOf(t.status) + dir;
+                const next = STAGES[nextIndex];
+                if (next) return { ...t, status: next };
             }
             return t;
         }));
     };
-    const setStatus = (id: number, status: string) => setKanban(kanban.map((t: any) => t.id === id ? { ...t, status } : t));
-    const deleteTask = (id: number) => setKanban(kanban.filter((t: any) => t.id !== id));
+    const setStatus = (id: number, status: TaskStatus) => setKanban(kanban.map(t => t.id === id ? { ...t, status } : t));
+    const deleteTask = (id: number) => setKanban(kanban.filter((t) => t.id !== id));
 
-    const columns = [
+    const columns: { id: TaskStatus; title: string; color: string }[] = [
         { id: 'todo', title: 'Сделать', color: 'text-gray-400' },
         { id: 'doing', title: 'В процессе', color: 'text-cyan-400' },
-        { id: 'done', title: 'Готово', color: 'text-green-400' }
+        { id: 'done', title: 'Готово', color: 'text-green-400' },
     ];
 
     const getPriorityClass = (p: string) => {
@@ -51,7 +55,7 @@ export function Kanban({ kanban, setKanban }: any) {
             <div className="glass-card p-4 rounded-2xl mb-6 flex flex-col md:flex-row gap-3">
                 <input type="text" value={newTask} onChange={e => setNewTask(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTask()}
                     placeholder="Новая задача..." className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-2 outline-none focus:border-cyan-400 text-white" />
-                <select value={newPriority} onChange={e => setNewPriority(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-2 outline-none focus:border-cyan-400 text-white">
+                <select value={newPriority} onChange={e => setNewPriority(e.target.value as TaskPriority)} className="bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-2 outline-none focus:border-cyan-400 text-white">
                     <option value="low">Низкий приоритет</option>
                     <option value="medium">Средний приоритет</option>
                     <option value="high">Срочный приоритет</option>
@@ -73,9 +77,9 @@ export function Kanban({ kanban, setKanban }: any) {
                             setDraggedId(null);
                         }}
                     >
-                        <h2 className={`text-lg font-bold mb-4 ${col.color}`}>{col.title} ({kanban.filter((t:any) => t.status === col.id).length})</h2>
+                        <h2 className={`text-lg font-bold mb-4 ${col.color}`}>{col.title} ({kanban.filter(t => t.status === col.id).length})</h2>
                         <div className="space-y-3">
-                            {kanban.filter((t:any) => t.status === col.id).map((t:any) => (
+                            {kanban.filter(t => t.status === col.id).map(t => (
                                 <div
                                     key={t.id}
                                     draggable

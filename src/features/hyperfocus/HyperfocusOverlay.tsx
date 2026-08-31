@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Icon } from '../../components/Icons';
 import { nowInstant } from '../../lib/datetime';
+import type { HyperfocusProps } from '../../types/props';
 
-export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs, todayLog }: any) {
+export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs, todayLog }: HyperfocusProps) {
     const [phase, setPhase] = useState(hyperfocus.status); // setup, running, finished, interrupted
     const [timeLeft, setTimeLeft] = useState(hyperfocus.duration * 60);
     const [task, setTask] = useState(hyperfocus.task);
@@ -35,11 +36,11 @@ export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs
     const finishCycle = () => {
         // Сохраняем в дневник
         const entry = `[Гиперфокус] ${hyperfocus.duration} мин — Сделал: ${reflection || task}`;
-        setDiary((prev: any[]) => [{ id: Date.now(), date: nowInstant(), content: entry }, ...prev]);
+        setDiary(prev => [{ id: Date.now(), date: nowInstant(), content: entry }, ...prev]);
         
         // Бонус к фокусу в закрытии дня
         if (todayLog) {
-            setLogs((prev: any[]) => prev.map((l: any) => l.id === todayLog.id ? { ...l, focus: Math.min(10, l.focus + 1) } : l));
+            setLogs(prev => prev.map(l => l.id === todayLog.id ? { ...l, focus: Math.min(10, l.focus + 1) } : l));
         }
         
         setHyperfocus(null);
@@ -52,7 +53,7 @@ export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs
 
     const saveInterruption = (reason: string) => {
         if (todayLog) {
-            setLogs((prev: any[]) => prev.map((l: any) => 
+            setLogs(prev => prev.map(l => 
                 l.id === todayLog.id ? { ...l, hindered: [...new Set([...(l.hindered || []), reason])] } : l
             ));
         }
@@ -73,7 +74,7 @@ export function HyperfocusOverlay({ hyperfocus, setHyperfocus, setDiary, setLogs
                     <h2 className="text-3xl font-bold text-cyan-400 mb-2">Подготовка к гиперфокусу</h2>
                     <p className="text-gray-400 mb-6">Выбери ОДНУ задачу. Остальное будет заблокировано.</p>
                     <select value={task} onChange={e => setTask(e.target.value)} className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-3 mb-6 text-white outline-none focus:border-cyan-400">
-                        {hyperfocus.todoTasks?.map((t: any) => <option key={t.id} value={t.text}>{t.text}</option>)}
+                        {hyperfocus.todoTasks?.map((t) => <option key={t.id} value={t.text}>{t.text}</option>)}
                         <option value="Своя задача">Своя задача</option>
                     </select>
                     <button onClick={startFocus} className="w-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold py-4 rounded-lg text-lg">Начать ({hyperfocus.duration} мин)</button>

@@ -5,17 +5,19 @@ import { DASHBOARD_WIDGETS, toggleIn } from '../lib/prefs';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
 import { todayKey } from '../lib/datetime';
+import type { SettingsProps } from '../types/props';
+import type { ChangeEvent } from 'react';
 
-export function Settings({ diary, logs, prefs, setPrefs }: any) {
+export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
     const hiddenTabs: string[] = prefs?.hiddenTabs ?? [];
     const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
 
     const toggleTab = (id: string) => {
         if (LOCKED_TABS.has(id)) return;
-        setPrefs((p: any) => ({ ...p, hiddenTabs: toggleIn(p.hiddenTabs ?? [], id) }));
+        setPrefs((p) => ({ ...p, hiddenTabs: toggleIn(p.hiddenTabs ?? [], id) }));
     };
     const toggleWidget = (id: string) =>
-        setPrefs((p: any) => ({ ...p, hiddenWidgets: toggleIn(p.hiddenWidgets ?? [], id) }));
+        setPrefs((p) => ({ ...p, hiddenWidgets: toggleIn(p.hiddenWidgets ?? [], id) }));
     const [groqKey, setGroqKeyState] = useState(getGroqKey());
     const [savedMsg, setSavedMsg] = useState('');
     const saveGroqKey = () => {
@@ -53,7 +55,8 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
     };
 
     const exportAllData = () => {
-        const backup: any = {};
+        // Whatever `gequ_*` keys exist at export time, as their raw stored JSON.
+        const backup: Record<string, unknown> = {};
         Object.keys(localStorage).forEach(key => {
             if (key.startsWith('gequ_')) {
                 backup[key] = localStorage.getItem(key);
@@ -70,8 +73,8 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
         URL.revokeObjectURL(url);
     };
 
-    const importAllData = (e: any) => {
-        const file = e.target.files[0];
+    const importAllData = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -102,7 +105,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
                         <Icon name="columns" size={17} className="text-[var(--text-muted)]" /> Разделы меню
                     </h2>
                     {hiddenTabs.length > 0 && (
-                        <button onClick={() => setPrefs((p: any) => ({ ...p, hiddenTabs: [] }))}
+                        <button onClick={() => setPrefs((p) => ({ ...p, hiddenTabs: [] }))}
                             className="text-xs text-cyan-400 hover:underline">
                             Показать все ({hiddenTabs.length} скрыто)
                         </button>
@@ -149,7 +152,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
                         <Icon name="grid" size={17} className="text-[var(--text-muted)]" /> Виджеты дашборда
                     </h2>
                     {hiddenWidgets.length > 0 && (
-                        <button onClick={() => setPrefs((p: any) => ({ ...p, hiddenWidgets: [] }))}
+                        <button onClick={() => setPrefs((p) => ({ ...p, hiddenWidgets: [] }))}
                             className="text-xs text-cyan-400 hover:underline">
                             Показать все ({hiddenWidgets.length} скрыто)
                         </button>

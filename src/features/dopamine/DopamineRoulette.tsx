@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icons';
+import type { DopamineRouletteProps } from '../../types/props';
+import { isNonEmpty, lastOf, type NonEmptyArray } from '../../lib/nonEmpty';
 
-export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineMenu, energy = 5, onClose }: any) {
+export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineMenu, energy = 5, onClose }: DopamineRouletteProps) {
     const [phase, setPhase] = useState<'idle' | 'spinning' | 'result'>('idle');
     const [result, setResult] = useState<{ text: string; type: 'task' | 'break' } | null>(null);
     const [displayText, setDisplayText] = useState('?');
@@ -17,27 +19,30 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
         // Weighted pool rather than a flat 50/50: on low energy the wheel should
         // mostly offer recovery, on high energy mostly work — and among tasks,
         // the urgent ones should come up more often than 'buy a lightbulb'.
-        const todoTasks = kanban.filter((t: any) => t.status === 'todo');
+        const todoTasks = kanban.filter((t) => t.status === 'todo');
         const taskShare = energy >= 7 ? 3 : energy >= 4 ? 1 : 0.35;
         const priorityWeight = (p: string) => (p === 'high' ? 3 : p === 'medium' ? 2 : 1);
 
         const pool: { text: string; type: 'task' | 'break'; w: number }[] = [
-            ...todoTasks.map((t: any) => ({
+            ...todoTasks.map((t) => ({
                 text: t.text, type: 'task' as const,
                 w: priorityWeight(t.priority) * taskShare,
             })),
             ...dopamineMenu.map((b: string) => ({ text: b, type: 'break' as const, w: 1 })),
         ];
 
-        if (pool.length === 0) {
+        if (!isNonEmpty(pool)) {
             pool.push({ text: 'Список пуст. Просто подыши 1 минуту!', type: 'break', w: 1 });
         }
+        // Non-empty from here: either the pool had entries or the line above
+        // added the fallback, so `pick` can always return something.
+        const weighted = pool as NonEmptyArray<(typeof pool)[number]>;
 
-        const totalWeight = pool.reduce((s, i) => s + i.w, 0);
+        const totalWeight = weighted.reduce((s, i) => s + i.w, 0);
         const pick = () => {
             let r = Math.random() * totalWeight;
-            for (const item of pool) { r -= item.w; if (r <= 0) return item; }
-            return pool[pool.length - 1];
+            for (const item of weighted) { r -= item.w; if (r <= 0) return item; }
+            return lastOf(weighted);
         };
 
         // Анимация прокрутки текста
@@ -58,8 +63,8 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
     const acceptMission = () => {
         if (result?.type === 'task') {
             // Переносим задачу в Doing
-            const updatedKanban = kanban.map((t: any) => 
-                t.text === result.text ? { ...t, status: 'doing' } : t
+            const updatedKanban = kanban.map((t) => 
+                t.text === result.text ? { ...t, status: 'doing' as const } : t
             );
             setKanban(updatedKanban);
         }

@@ -4,21 +4,15 @@ import { PageHeader } from '../../components/PageHeader';
 import { SnowmanDay } from './SnowmanDay';
 import { SnowmanCircles } from './SnowmanCircles';
 import { findRecord, imbalanceBanner, todayStr } from './logic';
-import { SPHERES, type ActivityLabel, type DayRecord } from './types';
+import { SPHERES } from './types';
+import type { SnowmanProps } from '../../types/props';
 
 const TABS = [
     { id: 'today', label: 'Сегодня' },
     { id: 'history', label: 'История' },
 ];
 
-type Props = {
-    labels: ActivityLabel[];
-    setLabels: (fn: (prev: ActivityLabel[]) => ActivityLabel[]) => void;
-    days: DayRecord[];
-    setDays: (fn: (prev: DayRecord[]) => DayRecord[]) => void;
-};
-
-export function Snowman({ labels, setLabels, days, setDays }: Props) {
+export function Snowman({ labels, setLabels, days, setDays }: SnowmanProps) {
     const [tab, setTab] = useState('today');
     const [editingDate, setEditingDate] = useState<string | null>(null);
     const today = todayStr();

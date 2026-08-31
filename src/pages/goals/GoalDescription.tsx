@@ -3,7 +3,7 @@ import { Icon } from '../../components/Icons';
 import { CollapsibleMarkdown, autoGrow } from '../../components/CollapsibleMarkdown';
 
 type Props = {
-    description?: string;
+    description?: string | undefined;
     onSave: (description: string) => void;
 };
 

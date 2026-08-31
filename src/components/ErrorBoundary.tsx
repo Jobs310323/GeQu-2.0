@@ -3,9 +3,9 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 type Props = {
     children: ReactNode;
     /** Named in the fallback so the user knows what failed, and in the log line. */
-    feature?: string;
+    feature?: string | undefined;
     /** Rendered instead of the default fallback when supplied. */
-    fallback?: (error: Error, reset: () => void) => ReactNode;
+    fallback?: ((error: Error, reset: () => void) => ReactNode) | undefined;
 };
 
 type State = { error: Error | null };

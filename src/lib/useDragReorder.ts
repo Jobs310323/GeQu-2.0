@@ -3,6 +3,8 @@ import { useState } from 'react';
 function move<T>(arr: T[], from: number, to: number): T[] {
     const next = [...arr];
     const [item] = next.splice(from, 1);
+    // Out-of-range index: nothing was removed, so there is nothing to reinsert.
+    if (item === undefined) return arr;
     next.splice(to, 0, item);
     return next;
 }

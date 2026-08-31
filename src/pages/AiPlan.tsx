@@ -4,6 +4,17 @@ import { DB } from '../lib/db';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
 import { todayKey } from '../lib/datetime';
+import type { AiPlanProps } from '../types/props';
+import { errorMessage } from '../lib/helpers';
+
+/** What gets written to `gequ_aiplan`: today's plan, so a revisit does not regenerate it. */
+type CachedPlan = {
+    /** Calendar date the plan was generated for; a plan for another day is discarded. */
+    date: string;
+    plan: Plan;
+    savedAt?: string;
+    accepted?: boolean;
+};
 
 type Block = {
     time: string;
@@ -43,7 +54,7 @@ const PLANNER_SYSTEM = `Ты — проактивный ассистент по 
 
 Весь текст — по-русски и строго на «ты» (никаких «вы», «давайте», «ваш»). Тон тёплый и поддерживающий. Никакого текста вне JSON.`;
 
-export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, energy }: any) {
+export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, energy }: AiPlanProps) {
     const [plan, setPlan] = useState<Plan | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -52,7 +63,7 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
 
     // Restore today's cached plan so it isn't regenerated on every visit.
     useEffect(() => {
-        const cached = DB.get('aiplan', null);
+        const cached = DB.get<CachedPlan | null>('aiplan', null);
         if (cached && cached.date === todayKey()) {
             setPlan(cached.plan);
             setSavedAt(cached.savedAt || '');
@@ -68,13 +79,13 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
 
     const buildContext = () => {
         const today = todayKey();
-        const todayLog = logs.find((l: any) => l.date.split('T')[0] === today);
+        const todayLog = logs.find((l) => l.date.split('T')[0] === today);
         const openTasks = kanban
-            .filter((t: any) => t.status === 'todo' || t.status === 'doing')
-            .map((t: any) => ({ id: t.id, text: t.text, priority: t.priority, status: t.status }));
+            .filter((t) => t.status === 'todo' || t.status === 'doing')
+            .map((t) => ({ id: t.id, text: t.text, priority: t.priority, status: t.status }));
         const undoneHabits = habits
-            .filter((h: any) => !(h.history || []).includes(today))
-            .map((h: any) => h.name);
+            .filter((h) => !(h.history || []).includes(today))
+            .map((h) => h.name);
 
         return {
             currentTime: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
@@ -83,8 +94,8 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
             dayClosed: !!todayLog,
             openTasks,
             undoneHabits,
-            daysSinceWorkout: daysSince((gymData?.history ?? []).map((w: any) => w.date)),
-            daysSinceCognitiveTest: daysSince((testResults ?? []).map((t: any) => t.date)),
+            daysSinceWorkout: daysSince((gymData?.history ?? []).map((w) => w.date)),
+            daysSinceCognitiveTest: daysSince((testResults ?? []).map((t) => t.date)),
         };
     };
 
@@ -103,8 +114,8 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
             setPlan(result);
             setSavedAt(stamp);
             DB.save('aiplan', { date: todayKey(), plan: result, savedAt: stamp, accepted: false });
-        } catch (e: any) {
-            setError(e?.message || 'Не удалось составить план.');
+        } catch (e) {
+            setError(errorMessage(e, 'Не удалось составить план.'));
         } finally {
             setLoading(false);
         }
@@ -116,10 +127,10 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
             .map(b => b.taskId)
             .filter((id): id is number => typeof id === 'number');
         if (ids.length) {
-            setKanban(kanban.map((t: any) => (ids.includes(t.id) && t.status === 'todo' ? { ...t, status: 'doing' } : t)));
+            setKanban(kanban.map((t) => (ids.includes(t.id) && t.status === 'todo' ? { ...t, status: 'doing' } : t)));
         }
         setAccepted(true);
-        const cached = DB.get('aiplan', null);
+        const cached = DB.get<CachedPlan | null>('aiplan', null);
         if (cached) DB.save('aiplan', { ...cached, accepted: true });
     };
 
@@ -209,7 +220,7 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
                             <p className="text-xs text-gray-500 mb-4">Чтобы сегодня не перегружаться.</p>
                             <div className="space-y-2">
                                 {plan.deferred!.map((d, i) => {
-                                    const task = kanban.find((t: any) => t.id === d.taskId);
+                                    const task = kanban.find((t) => t.id === d.taskId);
                                     return (
                                         <div key={i} className="bg-[var(--bg-input)] p-3 rounded-lg border border-[var(--border)]">
                                             <div className="text-sm text-gray-300">{task?.text ?? d.text ?? 'Задача'}</div>

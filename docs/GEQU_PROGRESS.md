@@ -192,3 +192,89 @@ adds the real suite.
   Brain / Profile is Phase 4; the flat paths become redirects then.
 
 **Next phase** — Phase 2: TypeScript strict migration.
+
+## Phase 2 — TypeScript strict
+
+**Status:** Complete
+
+**Validation** — `lint` clean (0 errors, 8 warnings) · `typecheck` clean · `build` clean ·
+`smoke` 4/4.
+
+### The finding that shaped the phase
+
+Turning on `strict` produced **zero errors**. With 291 explicit `any` annotations the flag had
+nothing to bite on — the codebase was not accidentally loose, it was explicitly loose. The safety
+only arrives as the `any`s come out, so the phase is mostly deletion, not configuration.
+
+Final state: **`strict`, `noImplicitAny`, `strictNullChecks`, `noUncheckedIndexedAccess` and
+`exactOptionalPropertyTypes` all on, with zero type errors and zero `: any` remaining in code.**
+
+### What was built
+
+- **`src/types/domain.ts`** — the shapes the app actually persists, derived from the code that
+  writes them rather than designed fresh. Every optional field is optional because stored records
+  genuinely lack it.
+- **`src/types/props.ts`** — a prop contract per screen and per shared component. Setters are
+  typed as React state setters because that is what they are today; Phase 3 narrows them to store
+  actions.
+- **`src/lib/nonEmpty.ts`** — `NonEmptyArray<T>`, `isNonEmpty`, `randomOf`, `lastOf`.
+  `noUncheckedIndexedAccess` is right about data-driven arrays and noise about fixed constants
+  like the three Snowman spheres or the four Stroop colours; declaring those as non-empty keeps
+  the guarantee in the type instead of asserting it away with `!` at each call site.
+- **`errorMessage(e, fallback)`** in `lib/helpers` — `catch` binds `unknown` under `strict`, and a
+  thrown value need not be an `Error`. Eight `catch (e: any)` blocks reaching for `.message` now
+  narrow once, here.
+- **`DB.get<T>(key, def)`** typed, which immediately surfaced 23 untyped read sites, including
+  four cached AI payloads that had no declared shape at all.
+
+### Bugs found by typing
+
+| Bug | Effect |
+|---|---|
+| **`WorkoutExercise` conflated two different things** — a program *template* (`sets` is a count, `reps` a range string like `"8-12"`) and a *performed* exercise (`sets` is an array). The same nominal type was both `Array.from({ length: ex.sets })` and `ex.sets.map(...)`. | Split into `ProgramExercise` and `WorkoutExercise`. |
+| **Deleting a gym exercise filtered by `id`, which is optional** on exercises imported before ids were written. | Deleting one such exercise would have removed *every* exercise with no id. Now index-based. |
+| **`WorkoutSet` was missing cardio `intensity`** despite it being written and read. | Silent data field with no type. |
+| **`ActiveWorkoutView` rendered `exercises[activeExIdx]` unguarded.** | A program day with no exercises produced a broken form; now an empty state. |
+| **Two cached-payload types were wrong in the source** — `weekSummary.summary` and `usercard.card` hold structured AI objects, not strings. | Caught while writing the types. |
+
+### The two flags, assessed rather than assumed
+
+`noUncheckedIndexedAccess` earned its place: it produced 33 errors, several of them real
+"this could be undefined at runtime" cases (`forecastTomorrow`'s weakest sphere, the roulette's
+pick, `chapterFor`'s fallback, the Fisher–Yates swap in Schulte).
+
+`exactOptionalPropertyTypes` produced only 13, nearly all in our own code, and the fix is to state
+what was already true (`customQuestion?: string | undefined` — the field is written as an explicit
+`undefined`, not omitted). Two touched third-party types and got real fixes rather than casts:
+`RequestInit.signal` is now spread in conditionally, and `edgeStyle` returns `CSSProperties`
+instead of `Edge['style']`.
+
+**Files changed** — new: `src/types/domain.ts`, `src/types/props.ts`, `src/lib/nonEmpty.ts`.
+Modified: `tsconfig.app.json`, `src/lib/{db,profile,xp,helpers,clinicalTests,taskTree,useDragReorder,prefs,ai}`, `src/app/AppState.tsx`, all 19 pages, `features/{gym,training,snowman,dopamine,hyperfocus,charts}`, `src/types/{goals,mindmap}.ts`.
+
+**Dependencies added** — none.
+
+**Tests added** — none. This phase moved a large amount of code with no test net, which is the
+single largest risk carried forward; Phase 7 closes it.
+
+**Risks**
+
+- The prop contracts describe how pages are called *today*, threading setters. That is honest but
+  temporary — Phase 3 replaces them with store actions, and the interfaces narrow rather than
+  disappear.
+- `DB.get<T>` is an assertion about stored data, not a validation of it. Nothing checks that a
+  parsed record actually matches `T`. That is defensible for data this app wrote itself and is
+  exactly what schema versioning and validation address in Phase 8; until then a hand-edited or
+  migrated `localStorage` value can still lie to the type system.
+
+**Known limitations**
+
+- `src/concept-v2/` is excluded from this pass. It is a preview app scheduled for merge-and-delete
+  in Phase 5, so typing it would be work thrown away.
+- The four remaining lint warnings are pre-existing (`exhaustive-deps` in the n-back timer and the
+  goals memo, `only-export-components` in two files). None is a correctness bug; they are recorded
+  rather than silenced.
+
+**Next phase** — Phase 3: extract `AppState` into per-domain Zustand stores.
+
+---

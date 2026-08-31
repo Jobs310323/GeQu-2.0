@@ -1,4 +1,5 @@
 import { SPHERES, type DayRecord } from './types';
+import type { ElementType } from 'react';
 
 const MAX_RADIUS = 120;
 const MIN_RADIUS = 28;
@@ -30,7 +31,8 @@ export function SnowmanCircles({ scores, totalHarmony, onSphereClick, maxRadius 
                 {SPHERES.map((s, i) => {
                     const score = scores[s.id];
                     const r = radiusFor(score, maxRadius);
-                    const Tag: any = onSphereClick ? 'button' : 'div';
+                    // Only interactive when there is something to click.
+                    const Tag: ElementType = onSphereClick ? 'button' : 'div';
                     return (
                         <Tag key={s.id}
                             onClick={onSphereClick ? () => onSphereClick(s.id) : undefined}

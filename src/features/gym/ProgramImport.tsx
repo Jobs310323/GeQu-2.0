@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { callAIJson, hasGroqKey } from '../../lib/ai';
 import { Icon } from '../../components/Icons';
+import type { ProgramDay } from '../../types/domain';
+import type { ProgramImportProps } from '../../types/props';
+import { errorMessage } from '../../lib/helpers';
+import type { ProgramExercise } from '../../types/domain';
 
 type ParsedExercise = { name: string; muscle: string; sets: number; reps: string };
 type ParsedDay = { name: string; exercises: ParsedExercise[] };
@@ -42,7 +46,7 @@ function normalize(parsed: ParsedProgram) {
     };
 }
 
-export function ProgramImport({ gymData, setGymData, onClose }: any) {
+export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportProps) {
     const [text, setText] = useState('');
     const [preview, setPreview] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -86,8 +90,8 @@ export function ProgramImport({ gymData, setGymData, onClose }: any) {
             } else {
                 setPreview(normalized);
             }
-        } catch (e: any) {
-            setError(e?.message || 'Не удалось разобрать программу.');
+        } catch (e) {
+            setError(errorMessage(e, 'Не удалось разобрать программу.'));
         } finally {
             setLoading(false);
         }
@@ -102,7 +106,7 @@ export function ProgramImport({ gymData, setGymData, onClose }: any) {
         onClose();
     };
 
-    const exerciseCount = preview?.days.reduce((s: number, d: any) => s + d.exercises.length, 0) ?? 0;
+    const exerciseCount = preview?.days.reduce((s: number, d: ProgramDay) => s + d.exercises.length, 0) ?? 0;
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -152,11 +156,11 @@ export function ProgramImport({ gymData, setGymData, onClose }: any) {
                         />
 
                         <div className="space-y-3 mb-5">
-                            {preview.days.map((d: any) => (
+                            {preview.days.map((d: ProgramDay) => (
                                 <div key={d.id} className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
                                     <div className="font-bold text-cyan-400 mb-2">{d.name}</div>
                                     <div className="space-y-1">
-                                        {d.exercises.map((ex: any, i: number) => (
+                                        {d.exercises.map((ex: ProgramExercise, i: number) => (
                                             <div key={i} className="flex justify-between text-sm gap-3">
                                                 <span className="text-gray-200 truncate">{ex.name}</span>
                                                 <span className="text-gray-500 whitespace-nowrap">

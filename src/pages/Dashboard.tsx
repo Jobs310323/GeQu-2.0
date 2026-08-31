@@ -4,15 +4,18 @@ import { Icon } from '../components/Icons';
 import { RadialGauge } from '../components/RadialGauge';
 import { todayKey, toLocalDateKey, instantForDateKey } from '../lib/datetime';
 import { useNavigate } from 'react-router';
+import type { DashboardProps } from '../types/props';
+import type { ReactNode, ElementType } from 'react';
+import type { Habit } from '../types/domain';
 
 const HELPED_TAGS = ['Кофе', 'Спорт', 'Сон', 'Pomodoro', 'Интерес к задаче', 'Медитация'];
 const HINDERED_TAGS = ['Телефон', 'Усталость', 'Шум', 'Скука', 'Голод', 'Откладывание'];
 
 const DAY_MS = 86400000;
 /** How many entries in `items` fall inside the last `days` days. */
-function countRecent(items: any[], days: number) {
+function countRecent(items: { date: string }[], days: number) {
     const from = Date.now() - days * DAY_MS;
-    return (items ?? []).filter((i: any) => new Date(i.date).getTime() >= from).length;
+    return (items ?? []).filter((i) => new Date(i.date).getTime() >= from).length;
 }
 
 /**
@@ -20,7 +23,10 @@ function countRecent(items: any[], days: number) {
  * in one column, which meant a lot of scrolling past things not being filled in;
  * these fold away and show a one-line summary of what's inside instead.
  */
-function Section({ icon, title, summary, filled, children, open, onToggle }: any) {
+function Section({ icon, title, summary, filled, children, open, onToggle }: {
+    icon: string; title: string; summary: string; filled: boolean;
+    children: ReactNode; open: boolean; onToggle: () => void;
+}) {
     return (
         <div className="glass-card rounded-2xl overflow-hidden">
             <button onClick={onToggle}
@@ -38,8 +44,13 @@ function Section({ icon, title, summary, filled, children, open, onToggle }: any
 }
 
 /** One number plus its caption, the building block of the overview grid. */
-function StatTile({ icon, value, label, hint, tone = 'text-[var(--text-main)]', onClick }: any) {
-    const Tag: any = onClick ? 'button' : 'div';
+function StatTile({ icon, value, label, hint, tone = 'text-[var(--text-main)]', onClick }: {
+    icon: string; value: ReactNode; label: string; hint?: string | undefined;
+    tone?: string; onClick?: (() => void) | undefined;
+}) {
+    // A tile is a button when it navigates and a plain div otherwise, so a
+    // non-interactive tile is not announced as actionable.
+    const Tag: ElementType = onClick ? 'button' : 'div';
     return (
         <Tag onClick={onClick}
             className={`glass-card rounded-2xl p-3 flex flex-col gap-1 text-left ${onClick ? 'hover:bg-white/5 transition' : ''}`}>
@@ -54,7 +65,7 @@ function StatTile({ icon, value, label, hint, tone = 'text-[var(--text-main)]', 
 }
 
 export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults,
-                            prefs, habits, setHabits, levelInfo, energy }: any) {
+                            prefs, habits, setHabits, levelInfo, energy }: DashboardProps) {
     const navigate = useNavigate();
     const [sleep, setSleep] = useState(5);
     const [focus, setFocus] = useState(5);
@@ -85,23 +96,23 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
 
     const todayStr = todayKey();
     const [entryDate, setEntryDate] = useState(todayStr);
-    const todayGym = gymData.history.some((w: any) => toLocalDateKey(w.date) === todayStr);
-    const todayTest = testResults.some((t: any) => toLocalDateKey(t.date) === todayStr);
+    const todayGym = gymData.history.some((w) => toLocalDateKey(w.date) === todayStr);
+    const todayTest = testResults.some((t) => toLocalDateKey(t.date) === todayStr);
 
     // --- Overview figures --------------------------------------------------
     // Gauges show today's numbers once the day is closed, and the running
     // 7-day average before that — so the block is never empty.
-    const todayLog = logs.find((l: any) => toLocalDateKey(l.date) === todayStr);
-    const recentLogs = logs.filter((l: any) => new Date(l.date).getTime() >= Date.now() - 7 * DAY_MS);
-    const avg = (key: string) => recentLogs.length
-        ? recentLogs.reduce((s: number, l: any) => s + Number(l[key] ?? 0), 0) / recentLogs.length
+    const todayLog = logs.find((l) => toLocalDateKey(l.date) === todayStr);
+    const recentLogs = logs.filter((l) => new Date(l.date).getTime() >= Date.now() - 7 * DAY_MS);
+    const avg = (key: 'sleep' | 'focus' | 'mood') => recentLogs.length
+        ? recentLogs.reduce((s: number, l) => s + Number(l[key] ?? 0), 0) / recentLogs.length
         : 0;
     const gaugeSource = todayLog ?? (recentLogs.length ? { sleep: avg('sleep'), focus: avg('focus'), mood: avg('mood') } : null);
     const gaugeCaption = todayLog ? 'Сегодня' : recentLogs.length ? 'В среднем за 7 дней' : 'Пока нет записей';
 
-    const habitList: any[] = habits ?? [];
-    const habitsDone = habitList.filter((h: any) => h.history?.includes(todayStr)).length;
-    const openTasks = kanban.filter((t: any) => t.status !== 'done');
+    const habitList: Habit[] = habits ?? [];
+    const habitsDone = habitList.filter((h) => h.history?.includes(todayStr)).length;
+    const openTasks = kanban.filter((t) => t.status !== 'done');
     const nextTasks = openTasks.slice(0, 3);
 
     const level = levelInfo?.level ?? 1;
@@ -139,7 +150,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     /** Same toggle the Habits page uses, so ticking here is the same action. */
     const toggleHabit = (id: number) => {
         if (!setHabits) return;
-        setHabits(habitList.map((h: any) => {
+        setHabits(habitList.map((h) => {
             if (h.id !== id) return h;
             const done = h.history?.includes(todayStr);
             return { ...h, history: done ? h.history.filter((d: string) => d !== todayStr) : [...(h.history ?? []), todayStr] };
@@ -147,7 +158,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     };
 
     const gratitudeCount = gratitude.filter(g => g.trim()).length;
-    const alreadyClosed = logs.some((l: any) => toLocalDateKey(l.date) === todayStr);
+    const alreadyClosed = logs.some((l) => toLocalDateKey(l.date) === todayStr);
 
     const handleSave = () => {
         // Back-dated entries are stored at local noon of the chosen day, so the
@@ -171,11 +182,11 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     };
 
     const startHyper = () => {
-        const todoTasks = kanban.filter((t: any) => t.status === 'todo' || t.status === 'doing');
+        const todoTasks = kanban.filter((t) => t.status === 'todo' || t.status === 'doing');
         setHyperfocus({ status: 'setup', duration: 25, task: todoTasks[0]?.text || 'Своя задача', todoTasks });
     };
 
-    const Slider = ({ label, value, onChange }: any) => (
+    const Slider = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
         <div>
             <div className="flex justify-between text-sm text-gray-400 mb-1.5">
                 <span>{label}</span><span className="text-cyan-400 font-bold">{value}/10</span>
@@ -257,7 +268,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                                 <span className="text-[11px] text-[var(--text-muted)]">{habitsDone} из {habitList.length}</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                {habitList.map((h: any) => {
+                                {habitList.map((h) => {
                                     const done = h.history?.includes(todayStr);
                                     return (
                                         <button key={h.id} onClick={() => toggleHabit(h.id)}
@@ -282,7 +293,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                                     className="text-[11px] text-cyan-400 hover:underline">все {openTasks.length}</button>
                             </div>
                             <ul className="space-y-2">
-                                {nextTasks.map((t: any) => (
+                                {nextTasks.map((t) => (
                                     <li key={t.id} className="flex items-start gap-2 text-sm">
                                         <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${
                                             t.status === 'doing' ? 'bg-cyan-400' : 'bg-[var(--text-muted)]'

@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { saveResult } from '../../lib/helpers';
 import { Icon } from '../../components/Icons';
+import type { Pomodoro } from '../../app/AppState';
+import type { Setter, ExerciseProps, ScoredExerciseProps } from '../../types/props';
+import type { FormEvent } from 'react';
+import { randomOf, type NonEmptyArray } from '../../lib/nonEmpty';
 
-export function NBackTest({ setTestResults }: any) {
+export function NBackTest({ setTestResults }: ExerciseProps) {
     const [phase, setPhase] = useState<'config' | 'playing' | 'finished'>('config');
     const [nLevel, setNLevel] = useState(2);
     const [currentIdx, setCurrentIdx] = useState(0);
@@ -17,8 +21,9 @@ export function NBackTest({ setTestResults }: any) {
     const startTest = (n: number) => {
         const seq: number[] = [];
         for (let i = 0; i < totalTrials; i++) {
-            if (i >= n && Math.random() < 0.3) {
-                seq.push(seq[i - n]);
+            const lookback = i >= n ? seq[i - n] : undefined;
+            if (lookback !== undefined && Math.random() < 0.3) {
+                seq.push(lookback);
             } else {
                 let next = Math.floor(Math.random() * 9);
                 if (i >= n && next === seq[i - n]) {
@@ -63,7 +68,7 @@ export function NBackTest({ setTestResults }: any) {
             return;
         }
 
-        setActiveCell(sequence[currentIdx]);
+        setActiveCell(sequence[currentIdx] ?? null);
         setHasAnswered(false);
         
         const showTimer = setTimeout(() => setActiveCell(null), 800);
@@ -161,7 +166,7 @@ export function NBackTest({ setTestResults }: any) {
     );
 }
 
-export function SchulteTable({ setTestResults, achievements, setAchievements }: any) {
+export function SchulteTable({ setTestResults, achievements, setAchievements }: ScoredExerciseProps) {
     const [grid, setGrid] = useState<any[]>([]);
     const [nextNum, setNextNum] = useState(1);
     const [time, setTime] = useState(0);
@@ -172,7 +177,14 @@ export function SchulteTable({ setTestResults, achievements, setAchievements }: 
 
     const initSchulte = () => {
         const nums = Array.from({length: 25}, (_, i) => i + 1);
-        for (let i = nums.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [nums[i], nums[j]] = [nums[j], nums[i]]; }
+        // Fisher-Yates. Both indices are in range by construction, but the
+        // compiler cannot see that, so read them out before swapping.
+        for (let i = nums.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const a = nums[i], b = nums[j];
+            if (a === undefined || b === undefined) continue;
+            nums[i] = b; nums[j] = a;
+        }
         setGrid(nums.map(n => ({ value: n, status: 'pending' })));
         setNextNum(1); setTime(0); setIsRunning(true); setIsStopped(false);
     };
@@ -336,15 +348,15 @@ export function BreathingExercise() {
     );
 }
 
-export function StroopTest({ setTestResults }: any) {
-    const colors = [
+export function StroopTest({ setTestResults }: ExerciseProps) {
+    const colors: NonEmptyArray<{ name: string; hex: string }> = [
         { name: 'КРАСНЫЙ', hex: '#FF5555' },
         { name: 'ЗЕЛЕНЫЙ', hex: '#50FA7B' },
         { name: 'СИНИЙ', hex: '#8BE9FD' },
-        { name: 'ЖЕЛТЫЙ', hex: '#F1FA8C' }
+        { name: 'ЖЕЛТЫЙ', hex: '#F1FA8C' },
     ];
     const [word, setWord] = useState(colors[0]);
-    const [color, setColor] = useState(colors[1]);
+    const [color, setColor] = useState(colors[1] ?? colors[0]);
     const [score, setScore] = useState(0);
     const [time, setTime] = useState(30);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -352,9 +364,11 @@ export function StroopTest({ setTestResults }: any) {
 
     const startGame = () => { setScore(0); setTime(30); setIsPlaying(true); nextRound(); };
     const nextRound = () => {
-        const rndWord = colors[Math.floor(Math.random() * colors.length)];
-        let rndColor = colors[Math.floor(Math.random() * colors.length)];
-        while (rndColor.name === rndWord.name) rndColor = colors[Math.floor(Math.random() * colors.length)];
+        // The ink colour must differ from the word, or there is no interference
+        // to measure — that difference is the whole task.
+        const rndWord = randomOf(colors);
+        let rndColor = randomOf(colors);
+        while (rndColor.name === rndWord.name) rndColor = randomOf(colors);
         setWord(rndWord); setColor(rndColor);
     };
 
@@ -417,7 +431,7 @@ export function StroopTest({ setTestResults }: any) {
     );
 }
 
-export function ReactionTest({ setTestResults, achievements, setAchievements }: any) {
+export function ReactionTest({ setTestResults, achievements, setAchievements }: ScoredExerciseProps) {
     const [state, setState] = useState<'idle' | 'waiting' | 'ready' | 'result' | 'tooSoon'>('idle');
     const [time, setTime] = useState(0);
     const [best, setBest] = useState<number | null>(null);
@@ -429,7 +443,7 @@ export function ReactionTest({ setTestResults, achievements, setAchievements }: 
 
     const addAchievement = (name: string) => {
         if (Array.isArray(achievements) && !achievements.includes(name)) {
-            setAchievements((prev: any[]) => [...prev, name]);
+            setAchievements(prev => [...prev, name]);
             setToast(`Ачивка: «${name}»!`);
             setTimeout(() => setToast(''), 4000);
         }
@@ -513,7 +527,7 @@ export function ReactionTest({ setTestResults, achievements, setAchievements }: 
     );
 }
 
-export function TrailMakingTest({ setTestResults }: any) {
+export function TrailMakingTest({ setTestResults }: ExerciseProps) {
     const targets = ['1','А','2','Б','3','В','4','Г','5','Д','6','Е','7','Ж','8','З'];
     const [grid, setGrid] = useState<any[]>([]);
     const [nextIndex, setNextIndex] = useState(0);
@@ -599,7 +613,7 @@ export function TrailMakingTest({ setTestResults }: any) {
     );
 }
 
-export function DigitSpanTest({ setTestResults }: any) {
+export function DigitSpanTest({ setTestResults }: ExerciseProps) {
     const [level, setLevel] = useState(3);
     const [phase, setPhase] = useState('idle');
     const [sequence, setSequence] = useState<number[]>([]);
@@ -684,7 +698,7 @@ export function DigitSpanTest({ setTestResults }: any) {
     );
 }
 
-export function GoNoGoTest({ setTestResults }: any) {
+export function GoNoGoTest({ setTestResults }: ExerciseProps) {
     const [phase, setPhase] = useState<'idle' | 'playing' | 'gameover'>('idle');
     const [score, setScore] = useState(0);
     const [time, setTime] = useState(30);
@@ -798,13 +812,13 @@ export function GoNoGoTest({ setTestResults }: any) {
  * The countdown itself lives in App (see `pomodoro`/`setPomodoro`) so it keeps
  * running when this tab unmounts — this component is just the dial and controls.
  */
-export function PomodoroTimer({ pomodoro, setPomodoro }: any) {
+export function PomodoroTimer({ pomodoro, setPomodoro }: { pomodoro: Pomodoro; setPomodoro: Setter<Pomodoro> }) {
     const workDurations = [5, 10, 15, 20, 25, 30];
     const { workTime, mode, timeLeft, isRunning } = pomodoro;
 
     const changeDuration = (mins: number) => setPomodoro({ workTime: mins, mode: 'work', timeLeft: mins * 60, isRunning: false });
-    const toggleRun = () => setPomodoro((p: any) => ({ ...p, isRunning: !p.isRunning }));
-    const reset = () => setPomodoro((p: any) => ({ ...p, isRunning: false, mode: 'work', timeLeft: p.workTime * 60 }));
+    const toggleRun = () => setPomodoro((p) => ({ ...p, isRunning: !p.isRunning }));
+    const reset = () => setPomodoro((p) => ({ ...p, isRunning: false, mode: 'work', timeLeft: p.workTime * 60 }));
 
     const minutes = Math.floor(timeLeft / 60);
     const seconds = timeLeft % 60;
@@ -831,7 +845,7 @@ export function PomodoroTimer({ pomodoro, setPomodoro }: any) {
  * Corsi block-tapping — visuospatial working memory. Complements Digit Span,
  * which is verbal: the two often diverge sharply in ADHD.
  */
-export function CorsiTest({ setTestResults }: any) {
+export function CorsiTest({ setTestResults }: ExerciseProps) {
     const [phase, setPhase] = useState<'idle' | 'showing' | 'input' | 'over'>('idle');
     const [sequence, setSequence] = useState<number[]>([]);
     const [entered, setEntered] = useState<number[]>([]);
@@ -921,7 +935,7 @@ export function CorsiTest({ setTestResults }: any) {
 }
 
 /** Mental arithmetic against the clock — processing speed under mild pressure. */
-export function ArithmeticTest({ setTestResults }: any) {
+export function ArithmeticTest({ setTestResults }: ExerciseProps) {
     const [playing, setPlaying] = useState(false);
     const [time, setTime] = useState(60);
     const [score, setScore] = useState(0);
@@ -958,7 +972,7 @@ export function ArithmeticTest({ setTestResults }: any) {
         }
     }, [time, playing, setTestResults]);
 
-    const submit = (e: any) => {
+    const submit = (e: FormEvent) => {
         e.preventDefault();
         if (!playing || !task || input === '') return;
         const correct = Number(input) === task.answer;
@@ -1011,7 +1025,7 @@ export function ArithmeticTest({ setTestResults }: any) {
  * Task switching — the rule flips between "is the number even?" and "is the
  * colour warm?", which makes the cost of switching sets visible.
  */
-export function SwitchingTest({ setTestResults }: any) {
+export function SwitchingTest({ setTestResults }: ExerciseProps) {
     const [playing, setPlaying] = useState(false);
     const [time, setTime] = useState(45);
     const [score, setScore] = useState(0);

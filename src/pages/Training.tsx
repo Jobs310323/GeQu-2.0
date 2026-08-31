@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { NBackTest, SchulteTable, CorsiTest, ArithmeticTest, SwitchingTest, BreathingExercise, StroopTest, ReactionTest, TrailMakingTest, DigitSpanTest, GoNoGoTest, PomodoroTimer } from '../features/training/tests';
 import { PageHeader } from '../components/PageHeader';
 import { LOWER_IS_BETTER } from '../lib/profile';
+import type { TrainingProps } from '../types/props';
+import type { TestResult } from '../types/domain';
 
 const TAB_TO_TYPE: Record<string, string> = {
     schulte: 'schulte', stroop: 'stroop', reaction: 'reaction', trail: 'tmt',
@@ -10,15 +12,15 @@ const TAB_TO_TYPE: Record<string, string> = {
 };
 
 /** Last few attempts and the personal best for the exercise currently on screen. */
-function RecentResults({ testResults, type }: any) {
+function RecentResults({ testResults, type }: { testResults: TestResult[]; type: string | undefined }) {
     if (!type) return null;
     const list = (testResults ?? [])
-        .filter((r: any) => r.type === type)
-        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        .filter((r) => r.type === type)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     if (list.length === 0) return null;
 
     const lowerIsBetter = LOWER_IS_BETTER.has(type);
-    const best = list.reduce((b: any, r: any) =>
+    const best = list.reduce<TestResult | null>((b, r) =>
         !b || (lowerIsBetter ? Number(r.value) < Number(b.value) : Number(r.value) > Number(b.value)) ? r : b, null);
     const fmtDate = (d: string) => new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 
@@ -33,7 +35,7 @@ function RecentResults({ testResults, type }: any) {
                 )}
             </div>
             <div className="flex flex-wrap gap-2">
-                {list.slice(0, 5).map((r: any) => (
+                {list.slice(0, 5).map((r) => (
                     <span key={r.id} className="text-xs px-2.5 py-1 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-gray-300 tabular-nums">
                         {r.value} <span className="text-gray-500">· {fmtDate(r.date)}</span>
                     </span>
@@ -43,7 +45,7 @@ function RecentResults({ testResults, type }: any) {
     );
 }
 
-export function Training({ setTestResults, testResults, achievements, setAchievements, pomodoro, setPomodoro }: any) {
+export function Training({ setTestResults, testResults, achievements, setAchievements, pomodoro, setPomodoro }: TrainingProps) {
     const [tab, setTab] = useState('schulte');
     const tabs = [
         { id: 'schulte', label: 'Шульте' },

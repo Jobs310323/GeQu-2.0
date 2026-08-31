@@ -3,6 +3,7 @@ import { CLINICAL_TESTS, scoreTest, bandFor, TONE_CLASS, type ClinicalTest } fro
 import { PageHeader } from '../components/PageHeader';
 import { Cbt } from './Cbt';
 import { nowInstant } from '../lib/datetime';
+import type { ClinicalTestsProps } from '../types/props';
 
 /** One completed run, kept so trends over time are visible. */
 type Result = { id: number; testId: string; date: string; score: number; label: string };
@@ -70,7 +71,7 @@ function Runner({ test, onFinish, onCancel }: { test: ClinicalTest; onFinish: (s
     );
 }
 
-function ClinicalTestsView({ clinicalResults, setClinicalResults }: any) {
+function ClinicalTestsView({ clinicalResults, setClinicalResults }: Pick<ClinicalTestsProps, 'clinicalResults' | 'setClinicalResults'>) {
     const [running, setRunning] = useState<ClinicalTest | null>(null);
     const [justFinished, setJustFinished] = useState<{ test: ClinicalTest; score: number } | null>(null);
 
@@ -315,7 +316,7 @@ function AdhdScreeningTest() {
     );
 }
 
-export function ClinicalTests({ clinicalResults, setClinicalResults, cbtRecords, setCbtRecords }: any) {
+export function ClinicalTests({ clinicalResults, setClinicalResults, cbtRecords, setCbtRecords }: ClinicalTestsProps) {
     const [tab, setTab] = useState('clinical');
 
     return (
