@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { saveResult } from '../../lib/helpers';
 import { Icon } from '../../components/Icons';
-import type { Pomodoro } from '../../app/AppState';
+import type { Pomodoro } from '../../stores/app-ui.store';
 import type { Setter, ExerciseProps, ScoredExerciseProps } from '../../types/props';
 import type { FormEvent } from 'react';
 import { randomOf, type NonEmptyArray } from '../../lib/nonEmpty';
@@ -809,7 +809,7 @@ export function GoNoGoTest({ setTestResults }: ExerciseProps) {
 }
 
 /**
- * The countdown itself lives in App (see `pomodoro`/`setPomodoro`) so it keeps
+ * The countdown itself is driven by PomodoroTicker in the app shell, so it keeps
  * running when this tab unmounts — this component is just the dial and controls.
  */
 export function PomodoroTimer({ pomodoro, setPomodoro }: { pomodoro: Pomodoro; setPomodoro: Setter<Pomodoro> }) {

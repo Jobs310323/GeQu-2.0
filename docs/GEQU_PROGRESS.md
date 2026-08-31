@@ -278,3 +278,96 @@ single largest risk carried forward; Phase 7 closes it.
 **Next phase** — Phase 3: extract `AppState` into per-domain Zustand stores.
 
 ---
+
+## Phase 3 — Domain stores
+
+**Status:** Complete
+
+**Validation** — `lint` clean (0 errors) · `typecheck` clean · `build` clean · `smoke` 4/4, plus a
+browser pass over all 19 routes and two storage-behaviour checks (below).
+
+### What changed
+
+`src/app/AppState.tsx` — the transitional context from Phase 1, holding 18 `useState` hooks and 18
+persistence effects — is **deleted**. In its place, nine domain stores under `src/stores/`:
+
+| Store | Holds |
+|---|---|
+| `checkins` | day logs — the record at the centre of the loop |
+| `tasks` | kanban + goals |
+| `habits` | habits, with `toggle(id, date?)` |
+| `journal` | diary entries |
+| `cognitive` | exercise results, achievements, screening results, CBT records, circles |
+| `body` | gym data, Snowman labels and days |
+| `finance` | finance data |
+| `calendar` | reminders |
+| `app-ui` | theme, prefs, dopamine menu, pomodoro, hyperfocus, roulette |
+
+`src/stores/derived.ts` holds the values computed across stores — energy, level, today's log — as
+hooks that subscribe only to the slices they read, so a journal edit does not recompute energy.
+
+`App.tsx` now has no state at all. The Pomodoro countdown moved to `src/app/Pomodoro.tsx`, a
+render-nothing ticker mounted in the shell, so navigating away still cannot pause a running timer.
+
+### The decision that mattered: not using zustand's `persist`
+
+Zustand's own `persist` middleware wraps stored values as `{ state, version }`. Adopting it would
+have changed the on-disk format of every `gequ_*` key — and `lib/cloud.ts` sweeps those keys **raw**
+and ships them to the server as-is. The format change would have corrupted the stored data of every
+existing user and every other device already holding it, silently, on first write.
+
+So `src/stores/persist.ts` hydrates from the existing key and mirrors changes back unchanged. The
+refactor is invisible to storage and to sync. Phase 8 swaps `DB` for the repository layer in that
+one file.
+
+Two behaviours were verified in a browser rather than assumed:
+
+- Adding a habit writes `gequ_habits` as a **raw array** — `[{"id":…,"name":"…","history":[]}]` —
+  with no wrapper.
+- That same action writes **exactly one** key. `persistSlice` compares by reference, so a change in
+  one domain does not rewrite its neighbours (which would also mean spurious cloud pushes).
+
+### Store discipline
+
+Global state only where it is needed by distant components, must survive navigation, or is
+application-level. Modal open/closed, in-progress form state, hover, selection and local tab index
+stay in the component. The rule is written into `app-ui.store.ts` because that store is where the
+temptation to accumulate a global bag actually lives.
+
+Store actions accept the `useState` contract (a value *or* an updater), via `stores/setter.ts`.
+That is deliberate: screens need `setTasks(prev => …)` to derive from current state without closing
+over a stale copy, and it means a screen can move between local state and a store without being
+rewritten.
+
+**Files changed** — new: `src/stores/*` (12 files), `src/app/Pomodoro.tsx`. Rewritten: `src/App.tsx`, `src/routes/{AppLayout,pages}.tsx`. Deleted: `src/app/AppState.tsx`.
+
+**Dependencies added** — `zustand` 5.0.15 (~3 kB).
+
+**Tests added** — none automated. Phase 7.
+
+**Bundle** — entry 402.55 → 431.58 kB (gzip 122.05 → 133.27). The growth is zustand plus the
+stores plus `lib/xp.ts`, which is now shell-level because the sidebar always renders level and
+energy. Chart.js and `@xyflow/react` remain separate chunks.
+
+**Risks**
+
+- The route adapters in `routes/pages.tsx` are now the seam between stores and screens. They are
+  typed against each page's real props, so a mismatch is a compile error rather than a blank panel
+  — but they are still passing whole collections down, which is why the entry bundle grew rather
+  than shrank. Phase 4 narrows them to intent-named actions per screen.
+- `derived.ts` recomputes energy and level on every relevant store change with no memoisation.
+  Cheap today (the datasets are small); worth measuring in Phase 4 when Today reads them
+  continuously.
+
+**Known limitations**
+
+- Screens still receive `set*` props rather than domain actions (`addTask`, `completeHabit`). The
+  stores expose those actions already; the screens have not been reworked to use them, and doing so
+  belongs with the Phase 4 screen-by-screen rework rather than as a mechanical rename now.
+- Sign-in still triggers a full page reload to re-seed state after a cloud pull
+  (`CloudSync.tsx:52`). Stores hydrate at import, so the reload is still how a different account's
+  data gets in. Removing it needs the sync engine — Phase 8.
+
+**Next phase** — Phase 4: Today, Quick Capture, the new IA, and onboarding.
+
+---

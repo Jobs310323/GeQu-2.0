@@ -19,7 +19,7 @@ import type { FinanceData } from '../features/finance/types';
 import type { ActivityLabel, DayRecord } from '../features/snowman/types';
 import type { Prefs } from '../lib/prefs';
 import type { LevelInfo } from '../lib/xp';
-import type { Pomodoro, Theme } from '../app/AppState';
+import type { Pomodoro, Theme } from '../stores/app-ui.store';
 
 /** A `useState` setter, the shape every mutation prop currently has. */
 export type Setter<T> = Dispatch<SetStateAction<T>>;

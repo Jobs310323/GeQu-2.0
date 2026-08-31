@@ -1,12 +1,17 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { Sidebar } from '../components/Sidebar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { HyperfocusOverlay } from '../features/hyperfocus/HyperfocusOverlay';
 import { DopamineRoulette } from '../features/dopamine/DopamineRoulette';
-import { useAppState } from '../app/AppState';
 import { RouteFallback } from './RouteFallback';
 import { findByPath } from '../lib/nav';
+import { useAppUi } from '../stores/app-ui.store';
+import { useTasks } from '../stores/tasks.store';
+import { useJournal } from '../stores/journal.store';
+import { useCheckins } from '../stores/checkins.store';
+import { useCalendar, selectUpcomingCount } from '../stores/calendar.store';
+import { useEnergy, useLevelInfo, useTodayLog } from '../stores/derived';
 
 /**
  * The shell every route renders inside: navigation, the app-level overlays that
@@ -17,17 +22,43 @@ import { findByPath } from '../lib/nav';
  * fallback until a full reload.
  */
 export function AppLayout() {
-    const s = useAppState();
     const location = useLocation();
     const feature = findByPath(location.pathname)?.label;
+
+    const theme = useAppUi(s => s.theme);
+    const setTheme = useAppUi(s => s.setTheme);
+    const prefs = useAppUi(s => s.prefs);
+    const hyperfocus = useAppUi(s => s.hyperfocus);
+    const setHyperfocus = useAppUi(s => s.setHyperfocus);
+    const rouletteOpen = useAppUi(s => s.rouletteOpen);
+    const setRouletteOpen = useAppUi(s => s.setRouletteOpen);
+    const dopamineMenu = useAppUi(s => s.dopamineMenu);
+    const setDopamineMenu = useAppUi(s => s.setDopamineMenu);
+
+    const kanban = useTasks(s => s.kanban);
+    const setKanban = useTasks(s => s.setKanban);
+    const setDiary = useJournal(s => s.setEntries);
+    const setLogs = useCheckins(s => s.replaceAll);
+
+    const reminderCount = useCalendar(selectUpcomingCount);
+    const energy = useEnergy();
+    const levelInfo = useLevelInfo();
+    const todayLog = useTodayLog();
+
+    useEffect(() => {
+        // Toggle only the theme classes. Assigning to `className` here used to
+        // replace the whole list, silently dropping anything else on <html>.
+        document.documentElement.classList.toggle('light', theme === 'light');
+        document.documentElement.classList.toggle('dark', theme !== 'light');
+    }, [theme]);
 
     return (
         <div className="flex h-screen overflow-hidden">
             <Sidebar
-                theme={s.theme} setTheme={s.setTheme} energy={s.energy} todayLog={s.todayLog}
-                prefs={s.prefs} levelInfo={s.levelInfo}
-                onRoulette={() => s.setRouletteOpen(true)}
-                reminderCount={s.reminderCount}
+                theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog}
+                prefs={prefs} levelInfo={levelInfo}
+                onRoulette={() => setRouletteOpen(true)}
+                reminderCount={reminderCount}
             />
 
             <main id="main" className="flex-1 p-6 overflow-y-auto relative">
@@ -38,19 +69,19 @@ export function AppLayout() {
                 </ErrorBoundary>
             </main>
 
-            {s.hyperfocus && (
+            {hyperfocus && (
                 <HyperfocusOverlay
-                    hyperfocus={s.hyperfocus} setHyperfocus={s.setHyperfocus}
-                    kanban={s.kanban} setDiary={s.setDiary} setLogs={s.setLogs} todayLog={s.todayLog}
+                    hyperfocus={hyperfocus} setHyperfocus={setHyperfocus}
+                    kanban={kanban} setDiary={setDiary} setLogs={setLogs} todayLog={todayLog}
                 />
             )}
 
-            {s.rouletteOpen && (
+            {rouletteOpen && (
                 <DopamineRoulette
-                    kanban={s.kanban} setKanban={s.setKanban}
-                    dopamineMenu={s.dopamineMenu} setDopamineMenu={s.setDopamineMenu}
-                    energy={s.energy}
-                    onClose={() => s.setRouletteOpen(false)}
+                    kanban={kanban} setKanban={setKanban}
+                    dopamineMenu={dopamineMenu} setDopamineMenu={setDopamineMenu}
+                    energy={energy}
+                    onClose={() => setRouletteOpen(false)}
                 />
             )}
         </div>
