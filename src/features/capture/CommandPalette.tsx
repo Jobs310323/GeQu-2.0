@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Icon } from '../../components/Icons';
 import { ALL_ACTIONS, SECTION_OF, type PaletteAction } from './actions';
+import { Modal } from '../../components/Modal';
 
 /**
  * Quick capture: ⌘K / Ctrl+K from anywhere.
@@ -21,7 +22,6 @@ export function CommandPalette() {
     const [active, setActive] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
-    const restoreFocusTo = useRef<HTMLElement | null>(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -36,17 +36,12 @@ export function CommandPalette() {
     }, []);
 
     useEffect(() => {
-        if (open) {
-            // Remember where focus came from so closing returns it there, rather
-            // than dumping the user at the top of the document.
-            restoreFocusTo.current = document.activeElement as HTMLElement | null;
-            setQuery('');
-            setActive(0);
-            // After paint, or the input does not exist yet to focus.
-            requestAnimationFrame(() => inputRef.current?.focus());
-        } else {
-            restoreFocusTo.current?.focus?.();
-        }
+        if (!open) return;
+        setQuery('');
+        setActive(0);
+        // After paint, or the input does not exist yet to focus. Closing needs no
+        // counterpart: <dialog>.showModal() restores focus to the opener itself.
+        requestAnimationFrame(() => inputRef.current?.focus());
     }, [open]);
 
     const { matches, remainder } = useMemo(() => rank(query), [query]);
@@ -80,30 +75,29 @@ export function CommandPalette() {
     };
 
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] px-4 bg-black/50 backdrop-blur-sm"
-            onMouseDown={e => { if (e.target === e.currentTarget) close(); }}
-        >
-            <div
-                role="dialog"
-                aria-modal="true"
-                aria-label="Быстрый ввод"
-                className="w-full max-w-lg glass-card rounded-2xl overflow-hidden shadow-2xl"
-                onKeyDown={onKeyDown}
-            >
+        <Modal title="Быстрый ввод" onClose={close} bare size="md" align="top">
+            {/* The key handler belongs on the wrapper, not the input: ArrowUp and
+                ArrowDown move the listbox selection, which is a property of the
+                combobox as a whole. Focus never leaves the input, so this cannot
+                intercept a key the user aimed elsewhere. */}
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+            <div onKeyDown={onKeyDown}>
                 <div className="flex items-center gap-3 px-4 border-b border-[var(--border)]">
-                    <Icon name="search" size={16} className="text-[var(--text-muted)] shrink-0" />
+                    <Icon name="search" size={16} className="text-[var(--gq-text-tertiary)] shrink-0" aria-hidden="true" />
                     <input
                         ref={inputRef}
                         value={query}
                         onChange={e => setQuery(e.target.value)}
                         placeholder="Что записать или куда перейти?"
                         aria-label="Команда или текст записи"
+                        role="combobox"
+                        aria-expanded={matches.length > 0}
                         aria-controls="palette-results"
+                        aria-autocomplete="list"
                         aria-activedescendant={matches[active] ? `palette-${matches[active].id}` : undefined}
-                        className="flex-1 bg-transparent py-3.5 text-sm outline-none placeholder:text-[var(--text-muted)]"
+                        className="flex-1 bg-transparent py-3.5 t-small outline-none placeholder:text-[var(--gq-text-subtle)]"
                     />
-                    <kbd className="text-[10px] text-[var(--text-muted)] border border-[var(--border)] rounded px-1.5 py-0.5 shrink-0">
+                    <kbd className="t-label text-[10px] border border-[var(--border)] rounded px-1.5 py-0.5 shrink-0">
                         Esc
                     </kbd>
                 </div>
@@ -116,47 +110,59 @@ export function CommandPalette() {
                     className="max-h-[50vh] overflow-y-auto py-1.5"
                 >
                     {matches.length === 0 && (
-                        <li className="px-4 py-6 text-sm text-[var(--text-muted)] text-center">
+                        <li className="px-4 py-6 t-small text-[var(--gq-text-tertiary)] text-center">
                             Ничего не найдено
                         </li>
                     )}
                     {matches.map((action, i) => (
-                        <li key={action.id} id={`palette-${action.id}`} role="option" aria-selected={i === active}>
-                            <button
-                                data-active={i === active}
-                                onMouseEnter={() => setActive(i)}
-                                onClick={() => runAction(action)}
-                                className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition ${
-                                    i === active ? 'bg-cyan-400/10' : 'hover:bg-white/5'
-                                }`}
-                            >
-                                <Icon
-                                    name={action.icon}
-                                    size={15}
-                                    className={i === active ? 'text-cyan-400 shrink-0' : 'text-[var(--text-muted)] shrink-0'}
-                                />
-                                <span className="flex-1 min-w-0">
-                                    <span className="block text-sm truncate">
-                                        {action.label}
-                                        {action.group === 'Создать' && remainder && (
-                                            <span className="text-cyan-400"> · {remainder}</span>
-                                        )}
-                                    </span>
-                                    {(action.hint || SECTION_OF[action.id]) && (
-                                        <span className="block text-[11px] text-[var(--text-muted)] truncate">
-                                            {SECTION_OF[action.id] ?? action.hint}
-                                        </span>
+                        /* The option itself is the target. A <button> inside an
+                           option is invalid — an option may not contain another
+                           interactive element — and a focusable child would fight
+                           `aria-activedescendant` for the focus ring. The input
+                           keeps DOM focus throughout; the option is announced
+                           through activedescendant and clicked with the mouse. */
+                        /* `<li role="option">` inside `<ul role="listbox">` is the
+                           ARIA Authoring Practices listbox pattern verbatim. The
+                           click handler is the pointer path; the keyboard path is
+                           the input's arrow keys driving `aria-activedescendant`,
+                           which is why the option itself carries no key handler. */
+                        /* eslint-disable-next-line jsx-a11y/click-events-have-key-events */
+                        <li
+                            key={action.id}
+                            id={`palette-${action.id}`}
+                            role="option"
+                            aria-selected={i === active}
+                            data-active={i === active}
+                            onMouseEnter={() => setActive(i)}
+                            onClick={() => runAction(action)}
+                            className={`cursor-pointer px-4 py-2.5 flex items-center gap-3 transition ${
+                                i === active ? 'bg-cyan-400/10' : 'hover:bg-white/5'
+                            }`}
+                        >
+                            <Icon
+                                name={action.icon}
+                                size={15}
+                                className={i === active ? 'text-cyan-400 shrink-0' : 'text-[var(--gq-text-tertiary)] shrink-0'}
+                            />
+                            <span className="flex-1 min-w-0">
+                                <span className="block t-small truncate">
+                                    {action.label}
+                                    {action.group === 'Создать' && remainder && (
+                                        <span className="text-cyan-400"> · {remainder}</span>
                                     )}
                                 </span>
-                                <span className="text-[10px] uppercase tracking-wide text-[var(--text-muted)] shrink-0">
-                                    {action.group}
-                                </span>
-                            </button>
+                                {(action.hint || SECTION_OF[action.id]) && (
+                                    <span className="block text-[11px] text-[var(--gq-text-tertiary)] truncate">
+                                        {SECTION_OF[action.id] ?? action.hint}
+                                    </span>
+                                )}
+                            </span>
+                            <span className="t-label shrink-0">{action.group}</span>
                         </li>
                     ))}
                 </ul>
             </div>
-        </div>
+        </Modal>
     );
 }
 

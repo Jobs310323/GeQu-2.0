@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Icon } from '../../components/Icons';
 import { SPHERES, type ActivityLabel, type Sphere } from './types';
 import { nowInstant } from '../../lib/datetime';
+import { Modal } from '../../components/Modal';
 
 type Props = {
     labels: ActivityLabel[];
@@ -60,37 +61,36 @@ export function SnowmanLabels({ labels, setLabels, onTapLabel }: Props) {
             )}
 
             {modalOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setModalOpen(false)}>
-                    <div className="glass-card p-6 rounded-2xl max-w-sm w-full border border-cyan-400/30" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-lg font-bold text-[var(--text-main)] mb-4">Новый ярлык</h2>
-
-                        <label className="text-xs text-[var(--text-muted)] mb-1 block">Название активности</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)}
+                <Modal title="Новый ярлык" onClose={() => setModalOpen(false)} size="sm">
+                        <label htmlFor="label-name" className="t-caption mb-1 block">Название активности</label>
+                        <input id="label-name" type="text" value={name} onChange={e => setName(e.target.value)}
                             placeholder="Например: Чтение книги"
                             className="w-full mb-4 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 outline-none focus:border-cyan-400 text-white" />
 
-                        <label className="text-xs text-[var(--text-muted)] mb-1 block">Сфера</label>
-                        <div className="grid grid-cols-3 gap-2 mb-5">
-                            {SPHERES.map(s => (
-                                <button key={s.id} onClick={() => setSphere(s.id)}
-                                    className={`py-2 rounded-lg border text-sm transition ${
-                                        sphere === s.id ? 'text-white' : 'text-[var(--text-muted)] border-[var(--border)] hover:border-white/30'
-                                    }`}
-                                    style={sphere === s.id ? { backgroundColor: `${s.color}33`, borderColor: s.color } : undefined}>
-                                    <div>{s.icon}</div>
-                                    <div className="text-[11px] mt-0.5">{s.label}</div>
-                                </button>
-                            ))}
-                        </div>
+                        <fieldset className="mb-5">
+                            <legend className="t-caption mb-1">Сфера</legend>
+                            <div className="grid grid-cols-3 gap-2">
+                                {SPHERES.map(s => (
+                                    <button key={s.id} type="button" onClick={() => setSphere(s.id)}
+                                        aria-pressed={sphere === s.id}
+                                        className={`py-2 rounded-lg border text-sm transition ${
+                                            sphere === s.id ? 'text-white' : 'text-[var(--gq-text-tertiary)] border-[var(--border)] hover:border-[var(--gq-border-strong)]'
+                                        }`}
+                                        style={sphere === s.id ? { backgroundColor: `${s.color}33`, borderColor: s.color } : undefined}>
+                                        <div aria-hidden="true">{s.icon}</div>
+                                        <div className="text-[11px] mt-0.5">{s.label}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </fieldset>
 
                         <div className="flex gap-3">
                             <button onClick={() => setModalOpen(false)}
                                 className="flex-1 py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-muted)] hover:bg-white/5">Отмена</button>
-                            <button onClick={save} disabled={!name.trim()}
+                            <button type="button" onClick={save} disabled={!name.trim()}
                                 className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold disabled:opacity-40">Сохранить</button>
                         </div>
-                    </div>
-                </div>
+                </Modal>
             )}
         </div>
     );

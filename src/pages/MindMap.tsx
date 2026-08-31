@@ -21,6 +21,7 @@ import type { MindColor, MindEdge, MindMapDoc, MindNode, MindViewMode } from '..
 import type { MindFlowNode, MindNodeData } from './mindmap/MindMapNode';
 import { todayKey, toLocalDateKey, addDays, nowInstant } from '../lib/datetime';
 import type { CSSProperties } from 'react';
+import { Modal } from '../components/Modal';
 
 type Callbacks = Pick<MindNodeData, 'onEdit' | 'onRecolor' | 'onDelete' | 'onOpen' | 'onSnooze' | 'onToggleDone'>;
 type StoredData = Omit<MindNode, 'id' | 'x' | 'y'> & Callbacks;
@@ -270,7 +271,7 @@ function MindMapCanvas() {
                 </ReactFlow>
 
                 {inboxOpen && (
-                    <div className="absolute bottom-24 right-6 z-20 glass-card rounded-xl p-2 flex items-center gap-2 w-72">
+                    <div className="absolute bottom-24 right-3 sm:right-6 z-20 glass-card rounded-xl p-2 flex items-center gap-2 w-[calc(100%-1.5rem)] sm:w-72">
                         <input
                             autoFocus
                             value={inboxDraft}
@@ -306,19 +307,11 @@ function MindMapCanvas() {
             )}
 
             {showAnalytics && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowAnalytics(false)}>
-                    <div className="glass-card rounded-2xl p-5 max-w-sm w-full" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-semibold text-[var(--text-main)]">Итог за неделю</h3>
-                            <button onClick={() => setShowAnalytics(false)} className="text-[var(--text-muted)] hover:text-[var(--text-main)]">
-                                <Icon name="close" size={16} />
-                            </button>
-                        </div>
-                        <ul className="space-y-2 text-sm text-[var(--text-main)]">
-                            {generateWeeklyReport(domainNodes).map((line, i) => <li key={i}>{line}</li>)}
-                        </ul>
-                    </div>
-                </div>
+                <Modal title="Итог за неделю" onClose={() => setShowAnalytics(false)} size="sm">
+                    <ul className="space-y-2 t-small text-[var(--gq-text-primary)]">
+                        {generateWeeklyReport(domainNodes).map((line, i) => <li key={i}>{line}</li>)}
+                    </ul>
+                </Modal>
             )}
             </div>
         </div>

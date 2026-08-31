@@ -105,9 +105,14 @@ export function StepRow({ task, depth = 0, onPatch, onDelete, onAddChild, gripPr
                         />
                     </div>
                 ) : hasNote && (
-                    <div className="px-3 pb-3 -mt-1 cursor-pointer" onClick={() => setNoteOpen(true)}>
+                    <button
+                        type="button"
+                        aria-label="Редактировать заметку"
+                        className="px-3 pb-3 -mt-1 cursor-pointer text-left w-full"
+                        onClick={() => setNoteOpen(true)}
+                    >
                         <CollapsibleMarkdown text={task.note} collapsedHeight={80} />
-                    </div>
+                    </button>
                 )}
 
                 {(tagsOpen || hasTags) && (

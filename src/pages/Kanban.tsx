@@ -6,6 +6,7 @@ import type { TaskPriority, TaskStatus } from '../types/domain';
 
 /** Board columns in order; moving a card walks this list. */
 const STAGES = ['todo', 'doing', 'done'] as const satisfies readonly TaskStatus[];
+const STAGE_LABEL: Record<TaskStatus, string> = { todo: 'Сделать', doing: 'В процессе', done: 'Готово' };
 
 export function Kanban({ kanban, setKanban }: KanbanProps) {
     const [newTask, setNewTask] = useState('');
@@ -18,12 +19,19 @@ export function Kanban({ kanban, setKanban }: KanbanProps) {
         setKanban([...kanban, { id: Date.now(), text: newTask, status: 'todo', priority: newPriority }]);
         setNewTask('');
     };
+    /* Moving a card is the one action with no visible confirmation of its own:
+       the card simply appears elsewhere on screen. A pointer user watched it
+       move; a screen-reader user gets nothing unless it is announced. */
+    const [announcement, setAnnouncement] = useState('');
     const moveTask = (id: number, dir: number) => {
         setKanban(kanban.map(t => {
             if (t.id === id) {
                 const nextIndex = STAGES.indexOf(t.status) + dir;
                 const next = STAGES[nextIndex];
-                if (next) return { ...t, status: next };
+                if (next) {
+                    setAnnouncement(`«${t.text}» перемещено в «${STAGE_LABEL[next]}»`);
+                    return { ...t, status: next };
+                }
             }
             return t;
         }));
@@ -32,9 +40,9 @@ export function Kanban({ kanban, setKanban }: KanbanProps) {
     const deleteTask = (id: number) => setKanban(kanban.filter((t) => t.id !== id));
 
     const columns: { id: TaskStatus; title: string; color: string }[] = [
-        { id: 'todo', title: 'Сделать', color: 'text-gray-400' },
-        { id: 'doing', title: 'В процессе', color: 'text-cyan-400' },
-        { id: 'done', title: 'Готово', color: 'text-green-400' },
+        { id: 'todo', title: STAGE_LABEL.todo, color: 'text-gray-400' },
+        { id: 'doing', title: STAGE_LABEL.doing, color: 'text-cyan-400' },
+        { id: 'done', title: STAGE_LABEL.done, color: 'text-green-400' },
     ];
 
     const getPriorityClass = (p: string) => {
@@ -52,6 +60,10 @@ export function Kanban({ kanban, setKanban }: KanbanProps) {
     return (
         <div>
             <PageHeader page="kanban" title="Канбан-доска" />
+
+            {/* Announces the result of a move. `polite` so it waits for a pause
+                rather than cutting across whatever is being read. */}
+            <p aria-live="polite" className="sr-only">{announcement}</p>
             <div className="glass-card p-4 rounded-2xl mb-6 flex flex-col md:flex-row gap-3">
                 <input type="text" value={newTask} onChange={e => setNewTask(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTask()}
                     placeholder="Новая задача..." className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-2 outline-none focus:border-cyan-400 text-white" />
@@ -94,14 +106,20 @@ export function Kanban({ kanban, setKanban }: KanbanProps) {
                                     <p className="text-sm mb-3 text-white">{t.text}</p>
                                     <div className="flex justify-between items-center">
                                         <div className="flex gap-2">
-                                            <button onClick={() => moveTask(t.id, -1)} disabled={col.id === 'todo'} className="p-1 bg-white/5 rounded-lg disabled:opacity-20 hover:bg-white/10 transition-colors">
+                                            <button type="button" onClick={() => moveTask(t.id, -1)} disabled={col.id === 'todo'}
+                                                aria-label={`Переместить «${t.text}» назад`}
+                                                className="p-1 bg-white/5 rounded-lg disabled:opacity-20 hover:bg-white/10 transition-colors">
                                                 <Icon name="chevronLeft" size={14} />
                                             </button>
-                                            <button onClick={() => moveTask(t.id, 1)} disabled={col.id === 'done'} className="p-1 bg-white/5 rounded-lg disabled:opacity-20 hover:bg-white/10 transition-colors">
+                                            <button type="button" onClick={() => moveTask(t.id, 1)} disabled={col.id === 'done'}
+                                                aria-label={`Переместить «${t.text}» вперёд`}
+                                                className="p-1 bg-white/5 rounded-lg disabled:opacity-20 hover:bg-white/10 transition-colors">
                                                 <Icon name="chevronRight" size={14} />
                                             </button>
                                         </div>
-                                        <button onClick={() => deleteTask(t.id)} className="p-1 text-red-400 hover:text-red-300 transition-colors">
+                                        <button type="button" onClick={() => deleteTask(t.id)}
+                                            aria-label={`Удалить «${t.text}»`}
+                                            className="p-1 text-red-400 hover:text-red-300 transition-colors">
                                             <Icon name="close" size={14} />
                                         </button>
                                     </div>

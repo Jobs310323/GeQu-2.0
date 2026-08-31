@@ -56,6 +56,10 @@ export function AppLayout() {
 
     return (
         <div className="flex h-screen overflow-hidden">
+            {/* First thing in the tab order: a keyboard user should not have to
+                walk the whole sidebar on every navigation to reach the content. */}
+            <a href="#main" className="gq-skip-link">К основному содержимому</a>
+
             <Sidebar
                 theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog}
                 prefs={prefs} levelInfo={levelInfo}
@@ -64,7 +68,7 @@ export function AppLayout() {
             />
 
             {/* pb-20 on small screens keeps the last row clear of the bottom bar. */}
-            <main id="main" className="flex-1 p-4 sm:p-6 pb-20 md:pb-6 overflow-y-auto relative">
+            <main id="main" tabIndex={-1} className="flex-1 p-4 sm:p-6 pb-20 md:pb-6 overflow-y-auto relative">
                 <ErrorBoundary key={location.pathname} feature={feature}>
                     <Suspense fallback={<RouteFallback />}>
                         <Outlet />

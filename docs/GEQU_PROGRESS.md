@@ -601,3 +601,132 @@ non-drag alternatives for Kanban and MindMap, focus management in dialogs, and t
 from 320 to 1440.
 
 ---
+
+## Phase 6 — Accessibility + responsive
+
+**Completed**
+
+WCAG 2.2 AA work across the app, with three gates to hold it: `lint` (oxlint jsx-a11y),
+`check:a11y` (focus, dialogs, viewports, axe, static width analysis) and the Phase-5
+`check:contrast`. Documented in `docs/ACCESSIBILITY.md`.
+
+### The audit
+
+oxlint ships a **jsx-a11y plugin the project had never enabled**. Turning it on reported **75
+findings**. All 75 are resolved or individually justified; `npm run lint` now fails on a new one.
+
+Baseline before the phase: 3 `aria-hidden`, 1 `sr-only`, 0 `tabIndex`, 0 `aria-current`, no skip
+link, no focus trap anywhere, 68 responsive utilities in the entire app.
+
+### One modal, on the platform
+
+Eight overlays were hand-rolled `<div class="fixed inset-0 z-50" onClick={close}>`. That pattern
+gets six things wrong at once — no focus trap, no Escape, no focus restore, background not inert,
+no `role`, z-index by guesswork — and got all six wrong in all eight places.
+
+Replaced with one `Modal` built on the native `<dialog>` element and `showModal()`, which fixes
+all six *in the platform*. `HyperfocusOverlay` was deliberately left alone: it is a full-screen
+focus mode with its own exit flow, not a dismissible dialog.
+
+### Bugs the new gate found in the new code
+
+The a11y gate justified itself twice within minutes of existing, both times against code I had
+just written:
+
+1. **Focus was not restored to the opener.** `showModal()` does restore it — but only if the
+   dialog is still in the document when the UA gets there. Every call site renders conditionally
+   (`{open && <Modal …/>}`), so closing sets state, React unmounts synchronously (close and cancel
+   are discrete events), and the UA has nothing to restore from: focus landed on `<body>`. My
+   comment in `Modal` had confidently claimed the platform handled it. It does not, for this
+   render pattern.
+2. **The fix had a capture-ordering bug.** I read `document.activeElement` in the effect — after
+   `showModal()` had already moved focus into the dialog — so it recorded the dialog's own first
+   control and "restored" focus to an element about to be unmounted. Capture now happens before
+   `showModal()`.
+
+### A green result that was not green
+
+`npm run lint` reported **zero** jsx-a11y findings for several minutes while the config was
+silently failing to parse: oxlint rejects unknown keys, and I had added a `_notes` object to
+document the disabled rules. It fell back to defaults and did not run the plugin at all.
+
+Both new gates are now canary-tested — a deliberate clickable `<div>` and a deliberate
+`w-[400px]` were introduced, confirmed to fail, and reverted. A gate that has never been seen to
+fail is not known to work.
+
+### Three rules turned off, each with a recorded reason
+
+Not a shortcut — the reasons are in `.oxlintrc.json` beside the rule and in
+`docs/ACCESSIBILITY.md`.
+
+- **`no-autofocus`** — the rule cannot distinguish autofocus on page load (bad) from autofocus in
+  a panel the user just opened (correct; it is how HTML expresses initial focus). All 13 uses were
+  audited individually and every one is behind a user-initiated reveal. A blanket removal would
+  have made the app worse for exactly the users it exists for.
+- **`no-noninteractive-element-to-interactive-role`** — it rejects `<ul role="listbox">` /
+  `<li role="option">`, which is the ARIA Authoring Practices pattern verbatim.
+- **`prefer-tag-over-role`** — a style preference, and wrong in both places it fires: it proposes
+  `<select>` for a command palette, and a `<button>` for a card that contains an `<input>`.
+
+### Keyboard
+
+- Skip link to `#main`, first in the tab order, `top`-animated so it cannot land under a sticky
+  header.
+- One `:focus-visible` ring for the whole app.
+- **The cognitive tests were mouse-only.** The Schulte table, reaction target, memory grid and
+  game field were all clickable `<div>`s. These measure reaction time and working memory, not
+  mouse skill — requiring a pointer excluded the users the tool exists for. All now real buttons.
+- Kanban's move buttons are named per card and announce the result through `aria-live="polite"`.
+  A pointer user watched the card move; a screen-reader user got nothing.
+- The command palette is a proper combobox. The nested `<button>` inside each `role="option"` was
+  removed — an option may not contain another interactive element, and a focusable child fights
+  `aria-activedescendant` for the focus ring.
+- `Dashboard` jumped h1 → h3 three times; relevelled.
+
+### Responsive
+
+No horizontal overflow at 320 / 375 / 390 / 430 / 768 / 1024 / 1280 / 1440. Fixed the Schulte
+table (`w-[400px]` → fluid square), the memory grid, the MindMap inbox, and 14 test cards whose
+`p-8` left 256px of content on a phone.
+
+**Files changed** — new: `src/components/Modal.tsx`, `scripts/check-a11y.mjs`,
+`scripts/a11y/{fixture.html,fixture.tsx}`, `docs/ACCESSIBILITY.md`. Rewritten: `.oxlintrc.json`.
+Modified: `src/index.css`, `src/routes/AppLayout.tsx`, `src/features/capture/CommandPalette.tsx`,
+`src/components/BottomNav.tsx`, `src/features/training/tests.tsx`, `src/pages/{Kanban,Finance,MindMap,Dashboard}.tsx`,
+`src/pages/mindmap/{MindMapNode,NodeInspector,colors}.ts(x)`, `src/pages/goals/StepRow.tsx`,
+`src/features/gym/{Gym,ProgramImport}.tsx`, `src/features/snowman/*`,
+`src/features/dopamine/DopamineRoulette.tsx`.
+
+**Dependencies added** — `@axe-core/playwright`, `axe-core` (dev only).
+
+**Tests added** — none unit. `check:a11y` adds 25 runtime checks plus a static scan over all 68
+components. Vitest is still Phase 7.
+
+**Bundle** — entry 438.80 → 438.81 kB. Flat: `Modal` replaced more code than it added.
+
+**Risks**
+
+- `Modal`'s focus restore depends on the opener still being in the document. If a call site
+  unmounts the opener as part of the same action, focus falls back to `<body>` silently. The
+  guard is `isConnected`, which prevents an exception but not the fallback.
+- The `<dialog>` element puts every modal in the top layer, so the app's `z-index` values no
+  longer govern overlay stacking. Anything that must sit *above* a modal has to be a dialog too.
+
+**Known limitations**
+
+- **Coverage is partial, and structurally so.** Nearly every screen is behind Clerk auth, and
+  shipping an auth bypass so a test can log in is a real security surface. `check:a11y` covers the
+  shared primitives, the unauthenticated shell, and static width analysis. It does **not** run axe
+  over each authenticated screen — that needs the Phase 7 E2E harness.
+- Per-screen contrast on **user-chosen** colours (Finance category swatches, MindMap node colours)
+  is unverified. It is the one place the token contrast gate cannot reach, because the user picks
+  the value.
+- MindMap nodes can be selected, opened, recoloured and deleted from the keyboard, but
+  **repositioning still requires a pointer**. The planned "move to…" affordance is not done.
+- Touch targets have not been audited against WCAG 2.2 §2.5.8 (24×24 minimum).
+- No reduced-transparency handling; glass surfaces stay translucent regardless.
+
+**Next phase** — Phase 7: Vitest + Testing Library + Playwright, the authenticated E2E harness
+that closes the coverage gap above, and `.github/workflows/ci.yml` running all six gates.
+
+---

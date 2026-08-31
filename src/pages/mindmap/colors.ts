@@ -2,6 +2,18 @@ import type { MindColor, Priority } from '../../types/mindmap';
 
 export const MIND_COLORS: MindColor[] = ['cyan', 'purple', 'pink', 'green', 'yellow', 'red'];
 
+/** Names for the colour swatches. A swatch has no text, so without these its
+ *  only label is the colour itself — nothing a screen reader can announce, and
+ *  nothing distinguishable to a user who cannot separate these hues. */
+export const MIND_COLOR_LABEL: Record<MindColor, string> = {
+    cyan: 'голубой',
+    purple: 'фиолетовый',
+    pink: 'розовый',
+    green: 'зелёный',
+    yellow: 'жёлтый',
+    red: 'красный',
+};
+
 // Matches the desaturated accent palette in tailwind.config.js.
 export const COLOR_HEX: Record<MindColor, string> = {
     cyan: '#7E9AAB',

@@ -7,6 +7,7 @@ import { playAddSound } from './sound';
 import { addActivity, computePoints, findRecord, isClosedDay, removeActivity, updateActivity } from './logic';
 import { DIFFICULTY_OPTIONS, SPHERES, type Activity, type ActivityLabel, type DayRecord, type Difficulty, type Sphere } from './types';
 import { nowInstant } from '../../lib/datetime';
+import { Modal } from '../../components/Modal';
 
 type Props = {
     date: string;
@@ -27,42 +28,37 @@ function ActivityPopup({ label, sphere, initial, onSave, onClose }: {
     const s = SPHERES.find(sp => sp.id === sphere)!;
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="glass-card p-6 rounded-2xl max-w-sm w-full border border-cyan-400/30" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center gap-2 mb-1">
-                    <span style={{ color: s.color }}>{s.icon}</span>
-                    <h2 className="text-lg font-bold text-[var(--text-main)]">{label}</h2>
-                </div>
-                <p className="text-xs mb-4" style={{ color: s.color }}>{s.label}</p>
-
-                <label className="text-xs text-[var(--text-muted)] mb-1 block">Время (минуты)</label>
-                <input type="number" min={5} step={5} value={minutes}
+        <Modal title={label} subtitle={s.label} onClose={onClose} size="sm">
+                <label htmlFor="activity-minutes" className="t-caption mb-1 block">Время (минуты)</label>
+                <input id="activity-minutes" type="number" min={5} step={5} value={minutes}
                     onChange={e => setMinutes(Math.max(5, Number(e.target.value) || 5))}
                     className="w-full mb-4 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 outline-none focus:border-cyan-400 text-white" />
 
-                <label className="text-xs text-[var(--text-muted)] mb-1 block">Сложность</label>
-                <div className="grid grid-cols-3 gap-2 mb-5">
-                    {DIFFICULTY_OPTIONS.map(d => (
-                        <button key={d.id} onClick={() => setDifficulty(d.id)}
-                            className={`py-2 rounded-lg border text-xs transition ${
-                                difficulty === d.id ? 'bg-cyan-400/15 border-cyan-400 text-cyan-400' : 'text-[var(--text-muted)] border-[var(--border)] hover:border-white/30'
-                            }`}>{d.label}</button>
-                    ))}
-                </div>
+                <fieldset className="mb-5">
+                    <legend className="t-caption mb-1">Сложность</legend>
+                    <div className="grid grid-cols-3 gap-2">
+                        {DIFFICULTY_OPTIONS.map(d => (
+                            <button key={d.id} type="button" onClick={() => setDifficulty(d.id)}
+                                aria-pressed={difficulty === d.id}
+                                className={`py-2 rounded-lg border text-xs transition ${
+                                    difficulty === d.id ? 'bg-cyan-400/15 border-cyan-400 text-cyan-400' : 'text-[var(--gq-text-tertiary)] border-[var(--border)] hover:border-[var(--gq-border-strong)]'
+                                }`}>{d.label}</button>
+                        ))}
+                    </div>
+                </fieldset>
 
-                <div className="text-xs text-[var(--text-muted)] mb-4">
-                    Баллы: <span className="font-bold text-[var(--text-main)]">{computePoints(minutes, difficulty)}</span>
-                </div>
+                <p className="t-caption mb-4">
+                    Баллы: <span className="font-bold text-[var(--gq-text-primary)] t-metric">{computePoints(minutes, difficulty)}</span>
+                </p>
 
                 <div className="flex gap-3">
-                    <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[var(--border)] text-[var(--text-muted)] hover:bg-white/5">Отмена</button>
-                    <button onClick={() => onSave(minutes, difficulty)}
+                    <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[var(--border)] text-[var(--gq-text-tertiary)] hover:bg-white/5">Отмена</button>
+                    <button type="button" onClick={() => onSave(minutes, difficulty)}
                         className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold">
                         {initial ? 'Сохранить' : 'Добавить'}
                     </button>
                 </div>
-            </div>
-        </div>
+        </Modal>
     );
 }
 

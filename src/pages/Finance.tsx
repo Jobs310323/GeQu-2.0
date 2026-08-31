@@ -127,9 +127,9 @@ function FinanceSettings({ data, setPin, setInitialBalance, onClose }: {
         <div className="glass-card p-6 rounded-2xl mb-6">
             <h2 className="font-bold mb-4">Настройки раздела</h2>
             <div className="mb-4">
-                <label className="text-sm text-[var(--text-muted)] block mb-1">Начальный баланс сбережений</label>
+                <label htmlFor="initial-balance" className="text-sm text-[var(--text-muted)] block mb-1">Начальный баланс сбережений</label>
                 <div className="flex gap-2">
-                    <input type="number" value={balance} onChange={e => setBalance(e.target.value)}
+                    <input id="initial-balance" type="number" value={balance} onChange={e => setBalance(e.target.value)}
                         className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-cyan-400" />
                     <button onClick={() => setInitialBalance(parseFloat(balance) || 0)} className="bg-cyan-400 text-black font-bold px-4 py-2 rounded-lg">Сохранить</button>
                 </div>
@@ -165,11 +165,21 @@ function CategoryForm({ initial, onSave, onClose }: { initial?: Category | undef
                 <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Название категории"
                     className="flex-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-cyan-400" />
             </div>
-            <div className="flex gap-2 mb-3">
-                {PALETTE.map(c => (
-                    <button key={c} onClick={() => setColor(c)} className={`w-7 h-7 rounded-full ${color === c ? 'ring-2 ring-white' : ''}`} style={{ backgroundColor: c }} />
-                ))}
-            </div>
+            {/* Swatches carry no text, so colour alone would be their only
+                label — unusable to a screen reader and to anyone who cannot
+                distinguish these hues. Name each one and expose selection. */}
+            <fieldset className="mb-3">
+                <legend className="sr-only">Цвет категории</legend>
+                <div className="flex gap-2">
+                    {PALETTE.map((c, i) => (
+                        <button key={c} type="button" onClick={() => setColor(c)}
+                            aria-pressed={color === c}
+                            aria-label={`Цвет ${i + 1}`}
+                            className={`w-7 h-7 rounded-full ${color === c ? 'ring-2 ring-white' : ''}`}
+                            style={{ backgroundColor: c }} />
+                    ))}
+                </div>
+            </fieldset>
             <div className="flex gap-2">
                 <button onClick={() => { if (!label.trim()) return; onSave({ icon: icon || '🔖', label: label.trim(), color }); }}
                     className="bg-cyan-400 text-black font-bold px-5 py-2 rounded-lg">{initial ? 'Сохранить' : 'Добавить'}</button>
@@ -551,7 +561,7 @@ export function Finance({ finance, setFinance }: FinanceProps) {
                                     {manageCats ? 'Готово' : '✎ Управление'}
                                 </button>
                             </div>
-                            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 sm:grid-cols-5 gap-3">
                                 {categories[tab].map(cat => (
                                     <div key={cat.id} className="relative flex flex-col items-center gap-1">
                                         <button onClick={() => manageCats ? setEditingCatId(cat.id) : (setQuickCat(cat), setAmount(''))} className="flex flex-col items-center gap-1 group w-full">

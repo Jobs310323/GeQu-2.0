@@ -3,7 +3,7 @@ import { Handle, Position } from '@xyflow/react';
 import type { Node, NodeProps } from '@xyflow/react';
 import { Icon } from '../../components/Icons';
 import type { MindColor, MindNode } from '../../types/mindmap';
-import { COLOR_DOT_CLASS, COLOR_HEX, COLOR_OUTLINE_CLASS, MIND_COLORS, PRIORITY_HEX } from './colors';
+import { COLOR_DOT_CLASS, COLOR_HEX, COLOR_OUTLINE_CLASS, MIND_COLORS, MIND_COLOR_LABEL, PRIORITY_HEX } from './colors';
 
 // Every field a node carries (minus id/x/y, which xyflow tracks separately),
 // plus values derived at render time (effectiveProgress, subtreeHours, ...)
@@ -57,18 +57,32 @@ export function MindMapNode({ id, data, selected }: NodeProps<MindFlowNode>) {
         <div className="group relative">
             <div className={`absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 glass-card rounded-full px-1.5 py-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity ${selected ? 'opacity-100' : ''}`}>
                 {MIND_COLORS.map(c => (
-                    <button key={c} onClick={() => data.onRecolor(id, c)} title={c}
+                    <button key={c} type="button" onClick={() => data.onRecolor(id, c)}
+                        aria-label={`Цвет: ${MIND_COLOR_LABEL[c]}`} aria-pressed={c === data.color}
                         className={`nodrag w-4 h-4 rounded-full ${COLOR_DOT_CLASS[c]} ${c === data.color ? 'outline outline-2 outline-offset-1 outline-[var(--text-main)]' : ''}`} />
                 ))}
                 <div className="w-px h-4 bg-[var(--border)] mx-0.5" />
-                <button onClick={() => data.onDelete(id)} title="Удалить узел"
+                <button type="button" onClick={() => data.onDelete(id)} aria-label="Удалить узел"
                     className="nodrag p-1 rounded-full text-[var(--text-muted)] hover:text-red-400 transition">
                     <Icon name="trash" size={12} />
                 </button>
             </div>
 
-            <div
+            {/* The card body opens the node's inspector, so it is a control, not
+                a decorated div — as a <div onClick> it was unreachable by
+                keyboard, which made the whole mind map mouse-only.
+                `role="button"` rather than a real <button>: the card contains an
+                <input> during inline rename, and an input inside a button is
+                invalid HTML that browsers reparent. prefer-tag-over-role is a
+                style preference; nesting-validity is not. */}
+            {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role */}
+            <div role="button" tabIndex={0}
                 onClick={() => data.onOpen(id)}
+                onKeyDown={e => {
+                    if (e.target !== e.currentTarget) return;   // let the inline editor keep its keys
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); data.onOpen(id); }
+                }}
+                aria-label={`Открыть узел: ${data.text}`}
                 style={{ borderLeft: `3px solid ${PRIORITY_HEX[data.priority]}` }}
                 className={[
                     'glass-card rounded-xl pl-3 pr-4 py-2.5 min-w-[160px] max-w-[240px] flex flex-col gap-1.5 transition cursor-pointer',
@@ -78,7 +92,7 @@ export function MindMapNode({ id, data, selected }: NodeProps<MindFlowNode>) {
             >
                 <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${COLOR_DOT_CLASS[data.color]}`} />
-                    {data.isMilestone && <span title="Веха">🏆</span>}
+                    {data.isMilestone && <span aria-label="Веха" title="Веха">🏆</span>}
                     {editing ? (
                         <input
                             autoFocus

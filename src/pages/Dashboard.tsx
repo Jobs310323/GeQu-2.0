@@ -220,7 +220,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 <div className="mb-4 space-y-3">
                     <div className="glass-card rounded-2xl p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Состояние</h3>
+                            <h2 className="t-label">Состояние</h2>
                             <span className="text-[11px] text-[var(--text-muted)]">{gaugeCaption}</span>
                         </div>
                         {gaugeSource ? (
@@ -264,7 +264,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     {habitList.length > 0 && (
                         <div className="glass-card rounded-2xl p-4">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Привычки сегодня</h3>
+                                <h2 className="t-label">Привычки сегодня</h2>
                                 <span className="text-[11px] text-[var(--text-muted)]">{habitsDone} из {habitList.length}</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -288,7 +288,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     {openTasks.length > 0 && (
                         <div className="glass-card rounded-2xl p-4">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Ближайшие задачи</h3>
+                                <h2 className="t-label">Ближайшие задачи</h2>
                                 <button onClick={() => navigate('/plan/tasks')}
                                     className="text-[11px] text-cyan-400 hover:underline">все {openTasks.length}</button>
                             </div>

@@ -214,10 +214,12 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: {
                     </div>
                 ) : (
                     <>
-                        <label className="block text-sm text-gray-400 mb-2">День программы</label>
-                        <div className="flex flex-wrap gap-2 mb-5">
+                        <fieldset className="mb-5">
+                        <legend className="block text-sm text-gray-400 mb-2">День программы</legend>
+                        <div className="flex flex-wrap gap-2">
                             {days.map((d: ProgramDay, i: number) => (
-                                <button key={d.id} onClick={() => setDayId(d.id)}
+                                <button key={d.id} type="button" onClick={() => setDayId(d.id)}
+                                    aria-pressed={selectedDay?.id === d.id}
                                     className={`px-4 py-2 rounded-lg text-sm border transition ${
                                         selectedDay?.id === d.id
                                             ? 'bg-cyan-400/15 text-cyan-400 border-cyan-400/50 font-bold'
@@ -231,10 +233,11 @@ export function GymHome({ activeProgram, gymData, startWorkout, setView }: {
                                 </button>
                             ))}
                         </div>
+                        </fieldset>
 
-                        <label className="block text-sm text-gray-400 mb-2">Дата тренировки</label>
+                        <label htmlFor="workout-date" className="block text-sm text-gray-400 mb-2">Дата тренировки</label>
                         <div className="flex flex-wrap items-center gap-3 mb-5">
-                            <input type="date" value={date} max={today}
+                            <input id="workout-date" type="date" value={date} max={today}
                                 onChange={e => setDate(e.target.value)}
                                 className="bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-white outline-none focus:border-cyan-400" />
                             {!isToday && (

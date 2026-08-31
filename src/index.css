@@ -108,6 +108,53 @@ body {
     /* ===========================================================================
        Surfaces
        =========================================================================== */
+    /* Skip link. Off-screen until focused, then pinned to the top-left above
+       everything. `top: 0` on focus rather than a transform so it cannot land
+       under a sticky header — WCAG 2.2 §2.4.11 requires the focused element not
+       be obscured. */
+    .gq-skip-link {
+        position: fixed;
+        top: -100px;
+        left: var(--gq-space-4);
+        z-index: var(--gq-z-toast);
+        padding: var(--gq-space-3) var(--gq-space-4);
+        border-radius: var(--gq-radius-lg);
+        background: var(--gq-surface-overlay);
+        border: 1px solid var(--gq-border-focus);
+        color: var(--gq-text-primary);
+        font-size: var(--gq-text-small);
+        font-weight: var(--gq-weight-medium);
+        text-decoration: none;
+        transition: top var(--gq-duration-fast) var(--gq-ease-standard);
+    }
+    .gq-skip-link:focus { top: var(--gq-space-4); }
+
+    /* Native <dialog> ships a UA border, padding, centred margin and a
+       max-width/height of `calc(100% - 6px - 2em)`. Reset all of it so the
+       panel inside can be laid out with utilities, and make the element itself
+       the full-viewport flex container that positions that panel. */
+    .gq-modal {
+        display: flex;
+        justify-content: center;
+        position: fixed;
+        inset: 0;
+        max-width: 100vw;
+        max-height: 100dvh;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: var(--gq-space-4);
+        border: 0;
+        background: transparent;
+        color: inherit;
+        overflow: hidden;
+    }
+    .gq-modal:not([open]) { display: none; }
+    .gq-modal::backdrop {
+        background: rgb(0 0 0 / 0.55);
+        backdrop-filter: blur(4px);
+    }
+
     .glass-card {
         background: var(--gq-surface-raised);
         border: 1px solid var(--gq-border-default);

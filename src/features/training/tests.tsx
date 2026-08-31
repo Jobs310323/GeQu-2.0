@@ -104,7 +104,7 @@ export function NBackTest({ setTestResults }: ExerciseProps) {
 
     if (phase === 'finished') {
         return (
-            <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+            <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
                 <h3 className="text-2xl font-bold text-white mb-4">Тест завершен!</h3>
                 <p className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-2">
                     {finalAccuracy.toFixed(1)}%
@@ -119,7 +119,7 @@ export function NBackTest({ setTestResults }: ExerciseProps) {
 
     if (phase === 'playing') {
         return (
-            <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+            <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
                 <div className="w-full max-w-md flex justify-between items-center mb-6">
                     <span className="text-gray-400 text-sm">Уровень: <span className="text-white font-bold">{nLevel}-Back</span></span>
                     <span className="text-gray-400 text-sm">Прогресс: <span className="text-white font-bold">{currentIdx} / {totalTrials}</span></span>
@@ -144,7 +144,7 @@ export function NBackTest({ setTestResults }: ExerciseProps) {
 
     // Экран настроек (phase === 'config')
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <h3 className="text-2xl font-bold text-white mb-4">N-Back Тренировка</h3>
             <p className="text-gray-400 mb-6 text-center max-w-md text-sm">
                 На экране будут появляться квадраты. Нажимайте кнопку, если квадрат появился в той же позиции, что и <span className="text-cyan-400 font-bold">N шагов назад</span>.
@@ -220,19 +220,21 @@ export function SchulteTable({ setTestResults, achievements, setAchievements }: 
     };
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <p className="text-gray-400 mb-4">Смотрите в центр. Находите числа по порядку.</p>
             <div className="text-3xl font-bold text-cyan-400 mb-6 tabular-nums">{(time / 1000).toFixed(1)}s</div>
-            <div className="grid grid-cols-5 gap-2 w-[400px] h-[400px] mb-6">
+            <div className="grid grid-cols-5 gap-1.5 sm:gap-2 w-full max-w-[400px] aspect-square mb-6">
                 {grid.length === 0 && <div className="col-span-5 flex items-center justify-center text-gray-600">Нажмите "Начать"</div>}
                 {grid.map((cell, i) => (
-                    <div key={i} onClick={() => cell.status === 'pending' && handleClick(i, cell.value)}
+                    <button key={i} type="button"
+                        onClick={() => cell.status === 'pending' && handleClick(i, cell.value)}
+                        disabled={isStopped || cell.status !== 'pending'}
                         className={`flex items-center justify-center text-2xl font-bold cursor-pointer border rounded transition-all ${
                             cell.status === 'correct' ? 'bg-cyan-400/30 border-cyan-400 text-cyan-400' :
                             cell.status === 'error' ? 'bg-red-500/30 border-red-500 text-red-500' :
                             isStopped ? 'bg-white/5 border-[var(--border)] text-gray-600 cursor-not-allowed' :
                             'bg-white/5 border-[var(--border)] hover:bg-white/10'
-                        }`}>{cell.value}</div>
+                        }`}>{cell.value}</button>
                 ))}
             </div>
             <div className="flex gap-4">
@@ -303,7 +305,7 @@ export function BreathingExercise() {
     });
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center justify-center min-h-[60vh]">
             <h3 className="text-2xl font-bold text-white mb-2">Квадратное дыхание (4-4-4-4)</h3>
             <p className="text-gray-400 mb-10 text-sm text-center">Веди дыхание по сторонам квадрата: вдох, задержка, выдох, задержка. Цикл: {cycles}/{targetCycles}</p>
 
@@ -401,7 +403,7 @@ export function StroopTest({ setTestResults }: ExerciseProps) {
     };
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <p className="text-gray-400 mb-4">Нажимайте на ЦВЕТ слова, а не на его значение.</p>
             {!isPlaying && time === 30 && <button onClick={startGame} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg mb-6">Начать тест (30 сек)</button>}
             
@@ -482,11 +484,16 @@ export function ReactionTest({ setTestResults, achievements, setAchievements }: 
     const bgClass = state === 'ready' ? 'bg-green-500' : state === 'waiting' ? 'bg-red-500/90' : state === 'tooSoon' ? 'bg-orange-500/80' : 'bg-[var(--bg-card)]';
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <p className="text-gray-400 mb-4 text-center">Дождись зелёного цвета и кликни как можно быстрее.</p>
             {best !== null && <div className="text-sm text-gray-400 mb-4">Лучший результат за сессию: <span className="text-cyan-400 font-bold">{best} мс</span></div>}
 
-            <div onClick={handleClick} className={`relative w-full max-w-md h-64 flex items-center justify-center rounded-2xl cursor-pointer border-2 border-[var(--border)] overflow-hidden transition-colors duration-150 ${bgClass}`}>
+            {/* A real button, so the test can be taken with the keyboard. These
+                measure reaction time, not mouse skill — forcing a pointer
+                excludes exactly the users the tool is meant to help. */}
+            <button type="button" onClick={handleClick}
+                aria-label="Область реакции — нажми, когда станет зелёной"
+                className={`relative w-full max-w-md h-64 flex items-center justify-center rounded-2xl cursor-pointer border-2 border-[var(--border)] overflow-hidden transition-colors duration-150 ${bgClass}`}>
                 {/* waiting: pulsing dots */}
                 {state === 'waiting' && (
                     <div className="flex flex-col items-center gap-3">
@@ -509,7 +516,7 @@ export function ReactionTest({ setTestResults, achievements, setAchievements }: 
                         <div className="text-lg text-white/90 mt-2">{rating}</div>
                     </div>
                 )}
-            </div>
+            </button>
 
             {state === 'result' && (
                 <button onClick={startTest} className="mt-8 bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">
@@ -581,7 +588,7 @@ export function TrailMakingTest({ setTestResults }: ExerciseProps) {
     };
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <p className="text-gray-400 mb-4 text-center">Кликайте по очереди: 1 → А → 2 → Б → 3 и т.д.</p>
             <div className="text-3xl font-bold text-cyan-400 mb-6 tabular-nums">{(time / 1000).toFixed(1)}s</div>
             
@@ -599,14 +606,16 @@ export function TrailMakingTest({ setTestResults }: ExerciseProps) {
 
             <div className="grid grid-cols-4 gap-3 w-full max-w-md">
                 {grid.map((cell, i) => (
-                    <div key={i} onClick={() => cell.status === 'pending' && handleClick(i, cell.value)}
+                    <button key={i} type="button"
+                        onClick={() => cell.status === 'pending' && handleClick(i, cell.value)}
+                        disabled={cell.status !== 'pending'}
                         className={`h-20 flex items-center justify-center text-2xl font-bold cursor-pointer border rounded-lg transition-all ${
                             cell.status === 'correct' ? 'bg-cyan-400/30 border-cyan-400 text-cyan-400' :
                             cell.status === 'error' ? 'bg-red-500/30 border-red-500 text-red-500' :
                             'bg-white/5 border-[var(--border)] hover:bg-white/10'
                         }`}>
                         {cell.value}
-                    </div>
+                    </button>
                 ))}
             </div>
         </div>
@@ -664,7 +673,7 @@ export function DigitSpanTest({ setTestResults }: ExerciseProps) {
     useEffect(() => () => clearTimeout(timerRef.current), []);
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <p className="text-gray-400 mb-6 text-center">Запомните последовательность чисел и введите её в правильном порядке.</p>
             <div className="text-xl text-cyan-400 mb-6">Уровень: {level}</div>
             
@@ -776,7 +785,7 @@ export function GoNoGoTest({ setTestResults }: ExerciseProps) {
                         stimulus === 'error' ? 'bg-red-700 border-4 border-red-300' : '';
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <p className="text-gray-400 mb-6 text-center">Кликайте только на <span className="text-green-400 font-bold">зелёный</span> круг. При <span className="text-red-400 font-bold">красном</span> — не нажимайте ничего!</p>
 
             {phase === 'playing' && (
@@ -786,7 +795,9 @@ export function GoNoGoTest({ setTestResults }: ExerciseProps) {
                 </div>
             )}
 
-            <div onClick={handleClick} className={`w-full max-w-md h-64 flex items-center justify-center rounded-2xl border-2 border-[var(--border)] bg-[var(--bg-card)] transition-colors duration-150 ${phase === 'playing' ? 'cursor-pointer' : 'cursor-default'}`}>
+            <button type="button" onClick={handleClick}
+                aria-label="Игровое поле"
+                className={`w-full max-w-md h-64 flex items-center justify-center rounded-2xl border-2 border-[var(--border)] bg-[var(--bg-card)] transition-colors duration-150 ${phase === 'playing' ? 'cursor-pointer' : 'cursor-default'}`}>
                 {phase === 'idle' && <span className="text-3xl font-bold text-white">Нажмите «Старт»</span>}
                 {phase === 'gameover' && (
                     <div className="text-center">
@@ -800,7 +811,7 @@ export function GoNoGoTest({ setTestResults }: ExerciseProps) {
                         {stimulus === 'error' && <span className="text-3xl font-bold text-white">ОЙ!</span>}
                     </div>
                 )}
-            </div>
+            </button>
 
             {phase === 'idle' && <button onClick={startGame} className="mt-8 bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Старт</button>}
             {phase === 'gameover' && <button onClick={startGame} className="mt-8 bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Играть снова</button>}
@@ -824,7 +835,7 @@ export function PomodoroTimer({ pomodoro, setPomodoro }: { pomodoro: Pomodoro; s
     const seconds = timeLeft % 60;
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <div className="flex gap-2 mb-6 flex-wrap justify-center">
                 {workDurations.map(m => (
                     <button key={m} onClick={() => changeDuration(m)} className={`px-4 py-1 rounded-lg text-sm transition ${workTime === m && mode === 'work' ? 'bg-cyan-400 text-black font-bold' : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-[var(--border)]'}`}>{m} мин</button>
@@ -900,16 +911,17 @@ export function CorsiTest({ setTestResults }: ExerciseProps) {
     };
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <p className="text-gray-400 mb-2 text-center">Запомни порядок вспышек и повтори его, нажимая на квадраты.</p>
             <div className="flex gap-6 mb-6 text-sm">
                 <span className="text-gray-400">Длина: <b className="text-cyan-400">{span}</b></span>
                 <span className="text-gray-400">Лучшее: <b className="text-purple-400">{best}</b></span>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 w-72 h-72 mb-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full max-w-72 aspect-square mb-6">
                 {Array.from({ length: 9 }).map((_, i) => (
-                    <button key={i} onClick={() => tap(i)} disabled={phase !== 'input'}
+                    <button key={i} type="button" onClick={() => tap(i)} disabled={phase !== 'input'}
+                        aria-label={`Ячейка ${i + 1} из 9`}
                         className={`rounded-xl border transition-all duration-100 ${
                             lit === i ? 'bg-cyan-400 border-cyan-400 scale-95 shadow-lg shadow-cyan-400/50'
                                 : entered.includes(i) && phase === 'input' ? 'bg-purple-400/30 border-purple-400'
@@ -984,7 +996,7 @@ export function ArithmeticTest({ setTestResults }: ExerciseProps) {
     };
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <p className="text-gray-400 mb-6 text-center">Считай в уме как можно быстрее. За ошибку —1 балл.</p>
 
             {!playing && time === 60 && (
@@ -1068,7 +1080,7 @@ export function SwitchingTest({ setTestResults }: ExerciseProps) {
     };
 
     return (
-        <div className="glass-card p-8 rounded-2xl flex flex-col items-center">
+        <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
             <p className="text-gray-400 mb-6 text-center">Правило меняется на ходу — следи за подсказкой сверху.</p>
 
             {!playing && time === 45 && (

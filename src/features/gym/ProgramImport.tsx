@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { callAIJson, hasGroqKey } from '../../lib/ai';
-import { Icon } from '../../components/Icons';
 import type { ProgramDay } from '../../types/domain';
 import type { ProgramImportProps } from '../../types/props';
 import { errorMessage } from '../../lib/helpers';
 import type { ProgramExercise } from '../../types/domain';
+import { Modal } from '../../components/Modal';
 
 type ParsedExercise = { name: string; muscle: string; sets: number; reps: string };
 type ParsedDay = { name: string; exercises: ParsedExercise[] };
@@ -109,20 +109,12 @@ export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportPro
     const exerciseCount = preview?.days.reduce((s: number, d: ProgramDay) => s + d.exercises.length, 0) ?? 0;
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="glass-card p-6 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-cyan-400/30"
-                onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 className="text-2xl font-bold text-white">Импорт программы</h2>
-                        <p className="text-gray-400 text-sm mt-1">
-                            Вставь программу в любом виде — списком, таблицей, текстом от ИИ. Я разберу её сам.
-                        </p>
-                    </div>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white p-1 rounded-lg hover:bg-white/5 transition">
-                        <Icon name="close" size={18} />
-                    </button>
-                </div>
+        <Modal
+            title="Импорт программы"
+            subtitle="Вставь программу в любом виде — списком, таблицей, текстом от ИИ. Я разберу её сам."
+            onClose={onClose}
+            size="lg"
+        >
 
                 {!preview ? (
                     <>
@@ -185,7 +177,6 @@ export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportPro
                         </div>
                     </>
                 )}
-            </div>
-        </div>
+        </Modal>
     );
 }

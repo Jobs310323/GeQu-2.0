@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import { SECTIONS, TODAY_ITEM, sectionForPath } from '../lib/nav';
 import { Icon } from './Icons';
+import { Modal } from './Modal';
 
 /**
  * Mobile navigation.
@@ -74,33 +75,11 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
     const sections = SECTIONS.filter(s => ['brain', 'profile', 'today'].includes(s.id));
 
     return (
-        <div
-            className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex items-end"
-            onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
-        >
-            <div
-                role="dialog"
-                aria-modal="true"
-                aria-label="Остальные разделы"
-                className="w-full bg-[var(--bg-card)] border-t border-[var(--border)] rounded-t-2xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] max-h-[75vh] overflow-y-auto"
-                onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
-            >
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-medium">Разделы</h2>
-                    <button
-                        onClick={onClose}
-                        aria-label="Закрыть"
-                        className="p-2 -m-2 text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                    >
-                        <Icon name="close" size={18} />
-                    </button>
-                </div>
+        <Modal title="Разделы" onClose={onClose} sheet size="full">
 
                 {sections.map(section => (
                     <div key={section.id} className="mb-4 last:mb-0">
-                        <div className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] mb-1.5 px-1">
-                            {section.title}
-                        </div>
+                        <h3 className="t-label mb-1.5 px-1">{section.title}</h3>
                         <div className="grid grid-cols-2 gap-2">
                             {section.items.map(item => (
                                 <NavLink
@@ -120,7 +99,6 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
                         </div>
                     </div>
                 ))}
-            </div>
-        </div>
+        </Modal>
     );
 }

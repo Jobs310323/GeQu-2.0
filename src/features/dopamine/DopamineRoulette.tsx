@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Icon } from '../../components/Icons';
 import type { DopamineRouletteProps } from '../../types/props';
 import { isNonEmpty, lastOf, type NonEmptyArray } from '../../lib/nonEmpty';
+import { Modal } from '../../components/Modal';
 
 export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineMenu, energy = 5, onClose }: DopamineRouletteProps) {
     const [phase, setPhase] = useState<'idle' | 'spinning' | 'result'>('idle');
@@ -79,16 +80,10 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="glass-card p-8 rounded-3xl max-w-md w-full text-center border border-cyan-400/30 relative" onClick={e => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition">
-                    <Icon name="close" size={18} />
-                </button>
-                
-                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-2">
-                    Генератор Драйва
-                </h2>
-                <p className="text-gray-400 text-sm mb-2">Судьба решит, что тебе сейчас нужнее: задача или перезагрузка.</p>
+        <Modal title="Генератор Драйва"
+            subtitle="Судьба решит, что тебе сейчас нужнее: задача или перезагрузка."
+            onClose={onClose} size="md">
+            <div className="text-center">
                 <p className="text-xs mb-6">
                     <span className="text-gray-500">Энергия {energy.toFixed(1)} — </span>
                     <span className={energy >= 7 ? 'text-cyan-400' : energy >= 4 ? 'text-gray-400' : 'text-pink-400'}>
@@ -171,6 +166,6 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
                     )}
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 }

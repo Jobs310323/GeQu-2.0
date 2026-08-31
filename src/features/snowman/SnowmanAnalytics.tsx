@@ -4,7 +4,7 @@ import { SPHERES, type DayRecord } from './types';
 
 function SphereRow({ label, avg }: { label: React.ReactNode; avg: Record<string, number> }) {
     return (
-        <div className="grid grid-cols-4 gap-2 items-center text-sm py-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 items-center text-sm py-1.5">
             <span className="text-[var(--text-muted)]">{label}</span>
             {SPHERES.map(s => (
                 <span key={s.id} className="text-center font-bold tabular-nums" style={{ color: s.color }}>{avg[s.id]}</span>
@@ -34,7 +34,7 @@ export function SnowmanAnalytics({ days }: { days: DayRecord[] }) {
                 <h3 className="text-lg font-bold text-[var(--text-main)] mb-4 flex items-center gap-2">
                     <Icon name="chart" size={17} className="text-cyan-400" /> Средний балл по сферам
                 </h3>
-                <div className="grid grid-cols-4 gap-2 text-xs text-[var(--text-muted)] mb-1 pb-2 border-b border-[var(--border)]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-[var(--text-muted)] mb-1 pb-2 border-b border-[var(--border)]">
                     <span />
                     {SPHERES.map(s => <span key={s.id} className="text-center" style={{ color: s.color }}>{s.icon}</span>)}
                 </div>
