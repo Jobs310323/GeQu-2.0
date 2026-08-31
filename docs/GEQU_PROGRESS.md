@@ -730,3 +730,98 @@ components. Vitest is still Phase 7.
 that closes the coverage gap above, and `.github/workflows/ci.yml` running all six gates.
 
 ---
+
+## Phase 7 — Testing + CI
+
+**Completed**
+
+Vitest + Testing Library + jsdom, **196 tests**, and `.github/workflows/ci.yml` running all seven
+gates on every PR. Documented in `docs/TESTING.md`.
+
+This closes the risk named at the end of Phase 4: six phases had moved a large amount of code with
+browser checks and the typechecker as the only net.
+
+### Coverage is deliberately uneven
+
+The rule is *test what is expensive to get wrong*, not what is easy to reach.
+
+**`lib/datetime.ts` — 100% statements, enforced by a coverage threshold.** This module exists
+because of the UTC day-key bug that misfiled entries for every non-UTC user. Every case
+reproduces a way that bug manifested, and the suite is **verified to catch it**: reintroducing the
+`toISOString().split('T')[0]` shortcut under `TZ=Pacific/Niue` fails two tests.
+
+**CI runs the unit suite under three timezones** — UTC, Pacific/Niue, Pacific/Kiritimati. A
+UTC-only matrix would pass with the bug reintroduced, because the runner is UTC. That is the
+single most important line in the workflow.
+
+**`lib/clinicalTests.ts` — the highest-stakes code in the app.** Twelve validated instruments with
+published scoring rules. A bug here tells someone their depression is "minimal" when the same
+answers score "moderately severe" everywhere else. The arithmetic is pinned against the published
+rules rather than the implementation's own behaviour, plus four structural invariants checked
+across all twelve: reversed/threshold indices address real questions, bands cover `0..maxScore`
+with no gap or overlap, `maxScore` matches what `scoreTest` can produce, and every attainable
+score resolves to a band. All twelve pass — the honest scoring the Phase 0 audit flagged as worth
+protecting is now protected.
+
+**`features/insights/observe.ts`** — the suppression rules. Below `MIN_SAMPLE` an observation is
+suppressed, not hedged; effects too small to matter are dropped; the reported direction follows
+the data rather than the expected story; no causal verb may appear in the output.
+
+**`stores/persist.ts`** — the layer that kept the Phase 3 refactor from destroying user data.
+Asserts the stored format stays a bare value with no `{state, version}` envelope, that a change in
+one domain does not rewrite a neighbouring key, and that pre-refactor data rehydrates identically.
+
+**`features/today/Today.tsx`** — the product's editorial rules, made executable: exactly one next
+action and never a list, an honest "not enough data" instead of a manufactured insight, unknown
+energy as `—` rather than a fabricated `0.0`.
+
+### The coverage threshold earned itself immediately
+
+`datetime.ts` came in at 91.66% lines against a 95% threshold, which surfaced `localTimeZone()` as
+completely untested — including its fallback for runtimes shipping without full ICU. Now 100%.
+
+### Two type errors in the tests themselves
+
+`npm run typecheck` covers the test files, and caught both: an `{hindered: undefined}` fixture that
+`exactOptionalPropertyTypes` (Phase 2) correctly rejects — an *omitted* key and an explicit
+`undefined` are different types, and it is the omitted one that exists in users' stored data — and
+an answers array inferred as `number[]` where `scoreTest` takes `(number | null)[]`.
+
+**Files changed** — new: `vitest.config.ts`, `src/test/setup.ts`, `.github/workflows/ci.yml`,
+`docs/TESTING.md`, and five suites: `src/lib/{datetime,clinicalTests}.test.ts`,
+`src/features/insights/observe.test.ts`, `src/stores/persist.test.ts`,
+`src/features/today/Today.test.tsx`. Modified: `package.json`.
+
+**Dependencies added** — `vitest`, `@vitest/coverage-v8`, `jsdom`, `@testing-library/react`,
+`@testing-library/jest-dom`, `@testing-library/user-event` (all dev).
+
+**Tests added** — 196, passing under all three CI timezones.
+
+**Bundle** — unchanged; nothing ships.
+
+**Risks**
+
+- CI has never run. The workflow is validated as YAML and every step was executed locally, but
+  `npx playwright install --with-deps chromium` and `npm ci` on a clean runner are untested paths.
+  The first PR run is the real verification.
+- The coverage threshold is set only on `datetime.ts`. Every other module can regress to zero
+  coverage without failing anything.
+
+**Known limitations**
+
+- **There is no end-to-end suite, and the reason is structural.** Nearly every screen is behind
+  Clerk auth; signing in from a test needs either real credentials in CI or an auth bypass in the
+  app, and the second is a security surface deliberately kept out of the repository. The critical
+  journey — sign-up → onboarding → check-in → task → habit → journal → offline → sync → account
+  deletion — is **not** covered by anything.
+- `smoke` proves the app boots and that deep links get the SPA fallback. It does not prove any
+  screen works.
+- Untested: `lib/{xp,profile,knowledge,cbt,mindTree,taskTree}.ts`, `features/snowman/logic.ts`, the
+  finance math, and eight of the nine stores.
+
+**Next phase** — Phase 8 (offline-first, IndexedDB, sync) is the riskiest remaining work: it
+migrates every user's stored data. Its data-safety gate needs the authenticated E2E harness that
+does not yet exist, so **closing the E2E gap comes first** — a Clerk test-mode user with
+credentials in CI secrets, then Playwright specs for the critical journey.
+
+---
