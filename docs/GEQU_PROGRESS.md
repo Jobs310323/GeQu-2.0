@@ -477,3 +477,127 @@ shell-level by definition: they must be present before any route resolves.
 **Next phase** — Phase 5: design system consolidation, and merging `concept-v2` away.
 
 ---
+
+## Phase 5 — Design system
+
+**Completed**
+
+One token layer (`src/styles/tokens.css`), consumed both directly as CSS variables and through
+Tailwind utilities wired to the same tokens. Colour, semantic colour, surface, text, border,
+spacing, radius, elevation, typography, motion and z-index. Documented in `docs/DESIGN_SYSTEM.md`.
+
+### The decision that carried the phase: surface vs ink
+
+A hue needs two values, not one. The same `cyan-400` is asked to be both a button fill and body
+text, and no single value does both across two themes — a tone light enough to carry black button
+text at 40px is far too faint as 13px text on a white page.
+
+So Tailwind's `colors` (fills: `bg-`, `border-`, gradients) and `textColor` (`text-` only) are
+given **different** token sets for the same scale name. Fill tones stay stable across themes; ink
+tones flip.
+
+That is what let **~25 CSS overrides be deleted outright** with no call site changed. The app is
+written dark-first — 124 `text-white`, 297 `text-gray-*`, ~500 accent utilities — and the light
+theme had been made legible by out-ranking each utility with a more specific selector
+(`:root.light .text-white { … }`, specificity (0,2,0) beating (0,1,0)). The utility's own value is
+now a variable that flips with the theme, so there is nothing left to out-rank. A hue added to
+both scales is correct in both themes immediately, rather than correct in dark and invisible in
+light until someone notices.
+
+### Findings
+
+**Inter was never loaded.** `body { font-family: 'Inter' }` has been in the stylesheet since the
+beginning, but there was no `<link>`, no `@font-face` and no package. Every user has read the app
+in whatever `system-ui` resolves to — Segoe UI, Roboto, SF — and the metric columns did not align
+because the fallback lacks tabular figures. Now self-hosted (`@fontsource-variable/inter`), latin
++ cyrillic only, 65 KB rather than the full 213 KB family. Self-hosted rather than the Google
+Fonts CDN: a CDN link leaks every user's IP and referrer to a third party on first paint.
+
+**Tailwind's stock greys fail AA on this canvas.** `gray-500` measured **4.0:1** against the dark
+background and was used 87 times for real text. The new five-step ink ramp is checked, not chosen
+— every step passes 4.5:1 against *both* surfaces of *both* themes, and `text-subtle` (3:1) is
+documented as decoration-only.
+
+**Cascade order was wrong.** Named classes sat after `@tailwind utilities` as plain CSS, so
+`.t-caption { color: … }` would have out-ranked `.text-cyan-400` on the same element, and
+`.glass-card`'s background would have out-ranked `bg-cyan-400/10` — same specificity, later wins.
+Moved into `@layer components`, where Tailwind's `base → components → utilities` order gives
+utilities the win. This was latent before the phase: `.glass-card` already had it.
+
+**Five dead CSS classes.** `.note-card` (+ `popIn`), `.fire-glow`, `.lift`, `.node-overdue` (+
+`pulseOutline`) had zero consumers — MindMap had re-implemented the overdue outline inline with
+Tailwind. Also `animate-fade-in` in `DopamineRoulette.tsx`, which is not a Tailwind class and was
+never defined: that element has never animated. Fixed to `anim-fade-in`.
+
+**`concept-v2` was already dead.** Its five components had been ported into `src/components/` and
+re-themed onto CSS variables in an earlier pass, so the "merge" step was a verification, not a
+migration. 347 lines and the `/concept-v2` branch in `main.tsx` deleted.
+
+**PWA manifest colour was stale.** `theme_color: '#050510'` matched nothing the app paints —
+that is the Android status bar. Now `#0A0B0D`, the actual canvas. Workbox's default glob excludes
+`woff2`, so the font would not have been precached and the offline shell would have repainted in a
+fallback face; added.
+
+### Two gates, because a token layer with no enforcement drifts back within a quarter
+
+`npm run check:contrast` — parses `tokens.css` (it does not carry its own copy of the palette; a
+checker with duplicated values stops being a check the first time someone edits one of the two)
+and measures every ink token against both the canvas and the **composited** card surface of both
+themes. 64 checks.
+
+`npm run check:theme` — drives a real browser against the **built** CSS and asserts what the app
+actually resolves to: ink flips with the theme, fill does not, gradient stops stay on the fill
+ramp, veils invert, `@layer` order holds, Inter is loaded rather than merely declared, and opacity
+modifiers survive tokenisation. 47 checks.
+
+The second gate earned itself immediately by failing twice on its first run — both times because
+the *fixture* was wrong, not the app: it asserted on `border-white/10`, a utility that existed
+only in the just-deleted `concept-v2` and had therefore been purged, and it tried to measure
+contrast against a gradient, which paints no `background-color`. Both are now handled explicitly,
+including a purge guard that reports "this utility no longer exists in the source" rather than
+letting it read as a colour bug.
+
+**Files changed** — new: `src/styles/{tokens,fonts}.css`, `scripts/{check-contrast,check-theme}.mjs`,
+`docs/DESIGN_SYSTEM.md`. Rewritten: `src/index.css`, `tailwind.config.js`, `src/main.tsx`.
+Modified: `src/components/{BentoCard,PageHeader,RadialGauge,TagPill}.tsx`,
+`src/features/today/*.tsx`, `src/features/dopamine/DopamineRoulette.tsx`, `vite.config.ts`,
+`package.json`. Deleted: `src/concept-v2/` (10 files, 347 lines).
+
+**Dependencies added** — `@fontsource-variable/inter` (self-hosted font files only, no runtime
+code).
+
+**Tests added** — none unit. Two browser-verified gates (`check:contrast` 64 checks,
+`check:theme` 47 checks). Vitest is still Phase 7.
+
+**Bundle** — entry 452.69 → 438.80 kB (gzip 138.86 → 135.13), from deleting `concept-v2`. CSS
+51.65 kB / 10.10 gzip. Fonts add 65.4 kB of woff2, downloaded once and precached.
+
+**Risks**
+
+- The `colors` / `textColor` split is powerful and non-obvious. A hue added to `colors` but
+  forgotten in `textColor` silently falls back to stock Tailwind hex, which does not flip, and
+  light-theme text goes unreadable with nothing failing at build time. `check:theme` exists
+  specifically to catch this, but only for the hues listed in its `SAMPLES` — a genuinely new hue
+  needs a row added there.
+- Contrast is verified against flat and composited surfaces. It is **not** verified against text
+  sitting on a user-chosen colour (Finance category swatches, MindMap node colours). Those are
+  still unchecked and belong to Phase 6.
+
+**Known limitations**
+
+- Call-site migration is deliberately incremental. 163 `.glass-card`, 297 `text-gray-*` and ~500
+  accent utilities render correctly through the Tailwind bridge, so there is no functional pressure
+  to rewrite them, and a mass find-and-replace across 19 pages would be unverifiable churn. Only
+  the Today surface and the four shared components have moved to the semantic vocabulary so far.
+- The `--accent-*` / `--text-main` / `--text-muted` aliases are still live and still the majority
+  spelling in the tree. Two vocabularies coexist until Phase 6 passes through the screens.
+- The type scale exists and is documented but has 7 call sites. Headings elsewhere are still
+  ad-hoc `text-2xl font-bold` pairs.
+- `icon.png` is 432 KB for a 192/512 icon and dominates the precache manifest. Unrelated to this
+  phase, not fixed, worth a minute in Phase 6.
+
+**Next phase** — Phase 6: accessibility (WCAG 2.2 AA) and responsive. The 15 clickable `<div>`s,
+non-drag alternatives for Kanban and MindMap, focus management in dialogs, and the viewport sweep
+from 320 to 1440.
+
+---

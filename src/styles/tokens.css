@@ -1,0 +1,271 @@
+/* ===========================================================================
+   GeQu design tokens — the single source of truth for colour, type, space,
+   radius, elevation, motion and layering.
+
+   Three layers, and the direction of dependency only ever goes downward:
+
+     1. PRIMITIVES  raw ramps (`--gq-cyan-400-rgb`). Never referenced by a
+                    component. Exist so a hue can be retuned in one place.
+     2. SEMANTIC    role names (`--gq-text-secondary`, `--gq-border-focus`).
+                    This is what components and `tailwind.config.js` consume.
+     3. ALIASES     the pre-token variable names (`--text-main`, `--accent-cyan`)
+                    mapped onto the semantic layer, so ~2 000 existing call
+                    sites keep working untouched.
+
+   Colours are stored as space-separated RGB channels, not hex. That is what
+   lets `tailwind.config.js` write `rgb(var(--gq-cyan-400-rgb) / <alpha-value>)`
+   and keep every opacity modifier in the codebase working — `bg-cyan-400/10`,
+   `border-cyan-400/30` and friends appear ~500 times.
+
+   SURFACE vs INK is the important split. A hue needs two values, because the
+   same `cyan-400` is asked to be both a button fill and body text:
+
+     --gq-cyan-400-rgb   fill/border tone. Identical in both themes, so
+                         `text-black` on a gradient button stays legible.
+     --gq-cyan-ink-rgb   text-on-canvas tone. Flips per theme, because a fill
+                         tone that reads fine as a 40px button is far too low
+                         contrast as 13px text on a light page.
+
+   Tailwind routes `text-*` through the ink ramp and everything else through
+   the surface ramp (see `theme.extend.textColor`). That split is what let the
+   ~25 `:root.light .text-…` specificity overrides in `index.css` be deleted.
+
+   Every ink value here is checked against both themes' canvas AND card
+   surfaces at WCAG AA (4.5:1 for text, 3:1 for the decorative `subtle` step)
+   by `npm run check:contrast`. Do not hand-edit a colour without re-running it.
+   =========================================================================== */
+
+:root {
+    /* ── 1. PRIMITIVES ────────────────────────────────────────────────────
+       Desaturated on purpose. The app is used daily, often late, often by
+       people who are tired; saturated neon reads as urgency the content has
+       not earned. Hue is used to distinguish, never to shout. */
+
+    --gq-cyan-300-rgb: 143 169 186;
+    --gq-cyan-400-rgb: 126 154 171;
+    --gq-cyan-500-rgb: 108 134 151;
+
+    --gq-purple-300-rgb: 165 161 190;
+    --gq-purple-400-rgb: 148 144 174;
+    --gq-purple-500-rgb: 128 124 155;
+
+    --gq-pink-300-rgb: 190 158 171;
+    --gq-pink-400-rgb: 174 142 155;
+    --gq-pink-500-rgb: 156 127 139;
+
+    --gq-green-300-rgb: 143 174 152;
+    --gq-green-400-rgb: 125 158 134;
+    --gq-green-500-rgb: 107 139 116;
+
+    --gq-yellow-300-rgb: 191 176 136;
+    --gq-yellow-400-rgb: 176 161 118;
+    --gq-yellow-500-rgb: 155 141 100;
+
+    --gq-red-300-rgb: 192 147 147;
+    --gq-red-400-rgb: 181 128 128;
+    --gq-red-500-rgb: 161 110 110;
+
+    --gq-blue-400-rgb: 126 147 171;
+    --gq-orange-400-rgb: 176 147 122;
+
+    /* ── 2. SEMANTIC — dark theme (the default) ──────────────────────────── */
+
+    /* Surfaces, from furthest back to furthest forward. */
+    --gq-surface-canvas-rgb: 10 11 13;
+    --gq-surface-raised-rgb: 22 26 31;
+    --gq-surface-sunken-rgb: 6 7 10;
+    --gq-surface-overlay-rgb: 18 21 26;
+    /* Alpha of the raised surface, so cards keep the frosted look. */
+    --gq-surface-raised-alpha: 0.72;
+    /* Channels for translucent scrims painted *over* content. `white` in
+       tailwind resolves to this, so `bg-white/5` inverts correctly on light. */
+    --gq-veil-rgb: 255 255 255;
+
+    --gq-surface-canvas: rgb(var(--gq-surface-canvas-rgb));
+    --gq-surface-raised: rgb(var(--gq-surface-raised-rgb) / var(--gq-surface-raised-alpha));
+    --gq-surface-sunken: rgb(var(--gq-surface-sunken-rgb));
+    --gq-surface-overlay: rgb(var(--gq-surface-overlay-rgb));
+    --gq-surface-input: rgb(var(--gq-veil-rgb) / 0.035);
+
+    /* Text, five steps. Anything below `subtle` is not text, it is decoration. */
+    --gq-text-primary-rgb: 230 232 236;
+    --gq-text-secondary-rgb: 194 199 209;
+    --gq-text-tertiary-rgb: 158 165 178;
+    --gq-text-quaternary-rgb: 130 138 153;
+    --gq-text-subtle-rgb: 108 115 129;
+
+    --gq-text-primary: rgb(var(--gq-text-primary-rgb));
+    --gq-text-secondary: rgb(var(--gq-text-secondary-rgb));
+    --gq-text-tertiary: rgb(var(--gq-text-tertiary-rgb));
+    --gq-text-quaternary: rgb(var(--gq-text-quaternary-rgb));
+    --gq-text-subtle: rgb(var(--gq-text-subtle-rgb));
+    /* Text placed on a filled accent surface. Fixed, not theme-flipped —
+       accent fills do not change between themes, so neither may this. */
+    --gq-text-on-accent: #000000;
+
+    /* Accent INK — the text-on-canvas tone for each hue. */
+    --gq-cyan-ink-rgb: 143 169 186;
+    --gq-purple-ink-rgb: 165 161 190;
+    --gq-pink-ink-rgb: 190 158 171;
+    --gq-green-ink-rgb: 143 174 152;
+    --gq-yellow-ink-rgb: 191 176 136;
+    --gq-red-ink-rgb: 197 144 144;
+    --gq-blue-ink-rgb: 143 163 187;
+
+    /* Borders. `focus` is deliberately loud — it is the one ring that must be
+       visible against every surface in the app (WCAG 2.2 §2.4.11/2.4.13). */
+    --gq-border-subtle: rgb(var(--gq-veil-rgb) / 0.045);
+    --gq-border-default: rgb(var(--gq-veil-rgb) / 0.075);
+    --gq-border-strong: rgb(var(--gq-veil-rgb) / 0.16);
+    --gq-border-focus: rgb(var(--gq-cyan-ink-rgb));
+
+    /* ── Status, split from brand ─────────────────────────────────────────
+       Before this, "success" *was* the brand green and "info" *was* the brand
+       cyan, so retheming the brand would have silently restyled every error
+       state. They now share primitives but are addressed separately: change
+       `--gq-accent-*` freely and status colour stays put. */
+    --gq-accent-ink: rgb(var(--gq-cyan-ink-rgb));
+    --gq-accent-surface: rgb(var(--gq-cyan-400-rgb));
+
+    --gq-success-ink: rgb(var(--gq-green-ink-rgb));
+    --gq-success-surface: rgb(var(--gq-green-400-rgb));
+    --gq-success-wash: rgb(var(--gq-green-400-rgb) / 0.1);
+
+    --gq-warning-ink: rgb(var(--gq-yellow-ink-rgb));
+    --gq-warning-surface: rgb(var(--gq-yellow-400-rgb));
+    --gq-warning-wash: rgb(var(--gq-yellow-400-rgb) / 0.1);
+
+    --gq-danger-ink: rgb(var(--gq-red-ink-rgb));
+    --gq-danger-surface: rgb(var(--gq-red-400-rgb));
+    --gq-danger-wash: rgb(var(--gq-red-400-rgb) / 0.1);
+
+    --gq-info-ink: rgb(var(--gq-blue-ink-rgb));
+    --gq-info-surface: rgb(var(--gq-blue-400-rgb));
+    --gq-info-wash: rgb(var(--gq-blue-400-rgb) / 0.1);
+
+    /* ── Spacing — a 4px base. Named by px so the name survives a rebase. ── */
+    --gq-space-0: 0;
+    --gq-space-1: 0.25rem;   /*  4 */
+    --gq-space-2: 0.5rem;    /*  8 */
+    --gq-space-3: 0.75rem;   /* 12 */
+    --gq-space-4: 1rem;      /* 16 */
+    --gq-space-5: 1.25rem;   /* 20 */
+    --gq-space-6: 1.5rem;    /* 24 */
+    --gq-space-8: 2rem;      /* 32 */
+    --gq-space-10: 2.5rem;   /* 40 */
+    --gq-space-12: 3rem;     /* 48 */
+    --gq-space-16: 4rem;     /* 64 */
+
+    /* ── Radius ─────────────────────────────────────────────────────────── */
+    --gq-radius-xs: 4px;
+    --gq-radius-sm: 6px;
+    --gq-radius-md: 8px;
+    --gq-radius-lg: 12px;
+    --gq-radius-xl: 16px;
+    --gq-radius-2xl: 20px;
+    --gq-radius-full: 9999px;
+
+    /* ── Elevation. Five steps; anything above 4 is a modal, not a card. ── */
+    --gq-shadow-0: none;
+    --gq-shadow-1: 0 1px 2px rgb(0 0 0 / 0.20);
+    --gq-shadow-2: 0 2px 8px rgb(0 0 0 / 0.24);
+    --gq-shadow-3: 0 6px 18px rgb(0 0 0 / 0.28);
+    --gq-shadow-4: 0 16px 48px rgb(0 0 0 / 0.40);
+
+    /* ── Typography ──────────────────────────────────────────────────────
+       One family. Inter is the only face the app loads; the mono stack is
+       reserved for data the user may need to compare character by character
+       (API keys, imported program text). */
+    --gq-font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --gq-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+    --gq-text-display: 2.25rem;   /* 36 */
+    --gq-text-h1: 1.75rem;        /* 28 */
+    --gq-text-h2: 1.375rem;       /* 22 */
+    --gq-text-h3: 1.125rem;       /* 18 */
+    --gq-text-body: 0.9375rem;    /* 15 */
+    --gq-text-small: 0.8125rem;   /* 13 */
+    --gq-text-caption: 0.75rem;   /* 12 */
+    --gq-text-label: 0.6875rem;   /* 11 */
+
+    --gq-leading-tight: 1.15;
+    --gq-leading-snug: 1.35;
+    --gq-leading-normal: 1.55;
+
+    --gq-weight-regular: 400;
+    --gq-weight-medium: 500;
+    --gq-weight-semibold: 600;
+    --gq-weight-bold: 700;
+
+    /* ── Motion. Durations are short by design: this app is used by people
+       who lose the thread while waiting for a transition to finish. ─────── */
+    --gq-duration-instant: 90ms;
+    --gq-duration-fast: 160ms;
+    --gq-duration-base: 240ms;
+    --gq-duration-slow: 360ms;
+    --gq-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    --gq-ease-out: cubic-bezier(0, 0, 0, 1);
+    --gq-ease-in: cubic-bezier(0.3, 0, 1, 1);
+
+    /* ── Layering. Every `z-*` in the app maps to one of these; a raw z-index
+       in a component is a bug, because nothing can reason about it. ─────── */
+    --gq-z-base: 0;
+    --gq-z-raised: 10;
+    --gq-z-sticky: 20;
+    --gq-z-nav: 30;
+    --gq-z-drawer: 40;
+    --gq-z-overlay: 50;
+    --gq-z-modal: 100;
+    --gq-z-toast: 110;
+
+    /* ── 3. ALIASES — pre-token names, kept so existing markup keeps working.
+       New code should use the semantic names above. These are removed once
+       the last consumer of each has migrated. ───────────────────────────── */
+    --bg-main: var(--gq-surface-canvas);
+    --bg-card: var(--gq-surface-raised);
+    --bg-input: var(--gq-surface-input);
+    --text-main: var(--gq-text-primary);
+    --text-muted: var(--gq-text-tertiary);
+    --border: var(--gq-border-default);
+    --accent-cyan: rgb(var(--gq-cyan-400-rgb));
+    --accent-purple: rgb(var(--gq-purple-400-rgb));
+    --accent-pink: rgb(var(--gq-pink-400-rgb));
+    --accent-red: rgb(var(--gq-red-400-rgb));
+}
+
+/* ── Light theme. Only the values that must differ are restated; every scale
+   (space, radius, type, motion, z) is theme-independent by construction. ── */
+:root.light {
+    --gq-surface-canvas-rgb: 244 245 247;
+    --gq-surface-raised-rgb: 255 255 255;
+    --gq-surface-sunken-rgb: 233 235 239;
+    --gq-surface-overlay-rgb: 255 255 255;
+    --gq-surface-raised-alpha: 0.85;
+    --gq-veil-rgb: 0 0 0;
+
+    --gq-surface-input: rgb(var(--gq-veil-rgb) / 0.04);
+
+    --gq-text-primary-rgb: 21 23 28;
+    --gq-text-secondary-rgb: 51 56 63;
+    --gq-text-tertiary-rgb: 78 84 98;
+    --gq-text-quaternary-rgb: 102 109 123;
+    --gq-text-subtle-rgb: 134 141 155;
+
+    --gq-cyan-ink-rgb: 58 85 102;
+    --gq-purple-ink-rgb: 85 79 109;
+    --gq-pink-ink-rgb: 116 81 94;
+    --gq-green-ink-rgb: 61 96 73;
+    --gq-yellow-ink-rgb: 95 84 48;
+    --gq-red-ink-rgb: 138 74 74;
+    --gq-blue-ink-rgb: 61 82 102;
+
+    --gq-border-subtle: rgb(var(--gq-veil-rgb) / 0.06);
+    --gq-border-default: rgb(var(--gq-veil-rgb) / 0.09);
+    --gq-border-strong: rgb(var(--gq-veil-rgb) / 0.18);
+
+    /* Shadows on a light ground need less opacity or they read as dirt. */
+    --gq-shadow-1: 0 1px 2px rgb(0 0 0 / 0.06);
+    --gq-shadow-2: 0 2px 8px rgb(0 0 0 / 0.08);
+    --gq-shadow-3: 0 6px 18px rgb(0 0 0 / 0.10);
+    --gq-shadow-4: 0 16px 48px rgb(0 0 0 / 0.16);
+}

@@ -101,7 +101,7 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
                     {phase === 'idle' && <Icon name="thought" size={44} className="text-[var(--text-muted)]" />}
                     {phase === 'spinning' && <span className="text-xl font-bold text-cyan-400 animate-pulse">{displayText}</span>}
                     {phase === 'result' && result && (
-                        <div className="animate-fade-in">
+                        <div className="anim-fade-in">
                             <span className={`flex items-center justify-center gap-1.5 text-xs uppercase mb-2 font-bold ${result.type === 'task' ? 'text-purple-400' : 'text-green-400'}`}>
                                 <Icon name={result.type === 'task' ? 'target' : 'pause'} size={14} />
                                 {result.type === 'task' ? 'Рабочая задача' : 'Легальный перерыв'}

@@ -12,12 +12,19 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icon.png'],
+      workbox: {
+        // woff2 is not in workbox's default glob. Without it the shell opens
+        // offline but repaints in a fallback face, which shifts every metric
+        // column. Only the two subsets the UI needs are emitted (see
+        // src/styles/fonts.css), so this precaches ~65 KB, not the full family.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+      },
       manifest: {
         name: 'GeQu - ADHD Control',
         short_name: 'GeQu',
         description: 'Когнитивный трекер для СДВГ',
-        theme_color: '#050510',
-        background_color: '#050510',
+        theme_color: '#0A0B0D',
+        background_color: '#0A0B0D',
         display: 'standalone',
         icons: [
           {

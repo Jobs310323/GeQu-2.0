@@ -1,129 +1,158 @@
+@import './styles/fonts.css';
+@import './styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-    --bg-main: #0A0B0D;
-    --bg-card: rgba(22, 24, 28, 0.72);
-    --bg-input: rgba(255, 255, 255, 0.035);
-    --text-main: #E3E5E9;
-    --text-muted: #868C99;
-    --border: rgba(255, 255, 255, 0.075);
-    --accent-cyan: #7E9AAB;
-    --accent-purple: #9490AE;
-    --accent-pink: #AE8E9B;
-    --accent-red: #B58080;
-}
+/* ===========================================================================
+   Everything below is either a base reset or a named component class. All
+   values come from `styles/tokens.css` — no literal colour, duration or
+   radius should appear in this file.
 
-:root.light {
-    --bg-main: #F4F5F7;
-    --bg-card: rgba(255, 255, 255, 0.85);
-    --bg-input: rgba(0, 0, 0, 0.04);
-    --text-main: #1A1C20;
-    --text-muted: #5A6070;
-    --border: rgba(0, 0, 0, 0.09);
-    --accent-cyan: #3F5A6B;
-    --accent-purple: #5B5473;
-    --accent-pink: #7A5764;
-    --accent-red: #8A4A4A;
-}
+   Notably absent, compared to before: the ~25 `:root.light .text-white`,
+   `:root.light .text-gray-400`, `:root.light .text-cyan-400` … specificity
+   overrides. They existed because Tailwind's palette was hard-coded hex, so
+   the only way to make a dark-first codebase legible on a light background was
+   to out-rank the utility with a more specific selector. The palette is now
+   token-driven (see `tailwind.config.js`), so `text-gray-400` resolves to the
+   right ink for the active theme by itself and there is nothing to override.
+   =========================================================================== */
 
 body {
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--gq-surface-canvas);
+    color: var(--gq-text-primary);
+    font-family: var(--gq-font-sans);
+    font-size: var(--gq-text-body);
+    line-height: var(--gq-leading-normal);
     margin: 0;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
 /* No `transition` on background-color here on purpose: the value comes from a
    custom property that changes on <html> when the theme flips, and Chrome does
    not reliably invalidate a transition driven that way — the page would stay
    painted in the previous theme until something else forced a reflow. */
 
-/* ---------------------------------------------------------------
-   Light theme readability.
-   The UI was written dark-first, so ~95 `text-white` and ~167 muted
-   grey utilities are baked into the markup. On a light background
-   those render white-on-white / near-invisible. Rather than touching
-   every component, remap the offending utilities inside .light —
-   `:root.light .text-white` (0,2,0) outranks `.text-white` (0,1,0).
-   --------------------------------------------------------------- */
-:root.light .text-white { color: var(--text-main); }
-:root.light .text-gray-200,
-:root.light .text-gray-300 { color: #2A2A32; }
-:root.light .text-gray-400 { color: #4A4A55; }
-:root.light .text-gray-500 { color: #5E5E6B; }
-:root.light .text-gray-600 { color: #6B6B78; }
-
-/* Translucent white surfaces vanish on a light page — darken them. */
-:root.light .bg-white\/5 { background-color: rgba(0, 0, 0, 0.04); }
-:root.light .bg-white\/10 { background-color: rgba(0, 0, 0, 0.07); }
-:root.light .hover\:bg-white\/5:hover { background-color: rgba(0, 0, 0, 0.05); }
-:root.light .hover\:bg-white\/10:hover { background-color: rgba(0, 0, 0, 0.08); }
-:root.light .border-white\/20 { border-color: rgba(0, 0, 0, 0.15); }
-
-/* Hovering a nav item set text to white, which disappeared on light. */
-:root.light .hover\:text-white:hover { color: var(--text-main); }
-
-/* Accent text needs more contrast against a light background — kept in the
-   same restrained register as the dark palette, just darker. */
-:root.light .text-cyan-400 { color: #3A5566; }
-:root.light .text-purple-400 { color: #554F6D; }
-:root.light .text-pink-400 { color: #74515E; }
-:root.light .text-green-400 { color: #3D6049; }
-:root.light .text-yellow-400 { color: #6B5F38; }
-:root.light .text-red-400 { color: #8A4A4A; }
-
-/* Gradient "black text on bright button" stays correct, but plain
-   white-on-dark note cards need their body text darkened. */
-:root.light .note-card .markdown-content,
-:root.light .note-card .text-white { color: #1E1E24; }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-.glass-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+/* ── Focus. One visible ring for the whole app.
+   `:focus-visible` rather than `:focus` so a mouse click on a button does not
+   leave a ring behind, while every keyboard path still shows one. The offset
+   keeps the ring clear of the element's own border, which WCAG 2.2 §2.4.13
+   requires to be at least 2px thick and not obscured. ──────────────────── */
+:focus-visible {
+    outline: 2px solid var(--gq-border-focus);
+    outline-offset: 2px;
+    border-radius: var(--gq-radius-xs);
 }
-@keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-.note-card { animation: popIn 0.3s ease-out; }
-/* Was a neon pink halo; kept as a restrained ring so the streak still reads
-   as "hot" without glowing. */
-.fire-glow { box-shadow: 0 0 0 1px var(--accent-pink); }
+/* Only suppress the default ring where a visible one is guaranteed above. */
+:focus:not(:focus-visible) { outline: none; }
 
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.anim-fade-in { animation: fadeInUp 0.35s ease-out both; }
+/* ── Motion. A single global respect for `prefers-reduced-motion`.
+   Previously each animation had to remember to opt out, and most did not.
+   Animations are collapsed to a single frame rather than removed, so anything
+   whose end state is set by an `animation-fill-mode` (the note-card pop-in,
+   the fade-up) still lands in its final position instead of disappearing. ── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
 
-/* Card hover lift (used by Notes) */
-.lift { transition: transform 0.18s ease, box-shadow 0.18s ease; }
-.lift:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.28); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gq-border-strong); border-radius: var(--gq-radius-full); }
 
-/* Box-breathing indicator — a soft expanding ring rather than a neon halo. */
-@keyframes breathGlow { 0%,100% { box-shadow: 0 0 0 2px var(--accent-cyan); } 50% { box-shadow: 0 0 0 8px rgba(126,154,171,0.18); } }
-.breath-dot { animation: breathGlow 2s ease-in-out infinite; }
+/* ---------------------------------------------------------------------------
+   Named component classes.
 
-/* Snowman confetti burst */
-@keyframes confettiFall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
-.anim-confetti-fall { animation: confettiFall linear forwards; }
+   These live in `@layer components` on purpose. Tailwind emits its layers in
+   the order base → components → utilities, so a utility always wins against a
+   class here. Defined as plain CSS after `@tailwind utilities` (as this file
+   used to be), `.t-caption { color: … }` would silently out-rank
+   `.text-cyan-400` on the same element, and `.glass-card`'s background would
+   out-rank `bg-cyan-400/10`. Same specificity, later wins — and "later" was
+   the wrong answer.
+   --------------------------------------------------------------------------- */
+@layer components {
 
-/* Snowman circles growing when a sphere gains points */
-@keyframes snowGrow { 0% { transform: scale(0.85); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
-.anim-snow-grow { animation: snowGrow 0.5s ease-out; }
+    /* ===========================================================================
+       Typography scale.
 
-input, textarea, button { color: var(--text-main); }
-input[type="range"] { accent-color: var(--accent-purple); }
-input[type="checkbox"] { accent-color: var(--accent-cyan); }
+       Use these instead of ad-hoc `text-2xl font-bold` pairs. Each one fixes size,
+       weight and leading together, which is the part that ad-hoc utilities get
+       wrong — a heading with body leading is the single most common way a type
+       scale drifts.
+       =========================================================================== */
+    .t-display { font-size: var(--gq-text-display); font-weight: var(--gq-weight-bold); line-height: var(--gq-leading-tight); letter-spacing: -0.02em; }
+    .t-h1      { font-size: var(--gq-text-h1);      font-weight: var(--gq-weight-bold);     line-height: var(--gq-leading-tight); letter-spacing: -0.015em; }
+    .t-h2      { font-size: var(--gq-text-h2);      font-weight: var(--gq-weight-semibold); line-height: var(--gq-leading-snug); letter-spacing: -0.01em; }
+    .t-h3      { font-size: var(--gq-text-h3);      font-weight: var(--gq-weight-semibold); line-height: var(--gq-leading-snug); }
+    .t-body    { font-size: var(--gq-text-body);    font-weight: var(--gq-weight-regular);  line-height: var(--gq-leading-normal); }
+    .t-small   { font-size: var(--gq-text-small);   font-weight: var(--gq-weight-regular);  line-height: var(--gq-leading-normal); }
+    .t-caption { font-size: var(--gq-text-caption); font-weight: var(--gq-weight-regular);  line-height: var(--gq-leading-snug); color: var(--gq-text-tertiary); }
+    .t-label   { font-size: var(--gq-text-label);   font-weight: var(--gq-weight-medium);   line-height: var(--gq-leading-snug); letter-spacing: 0.06em; text-transform: uppercase; color: var(--gq-text-quaternary); }
 
-/* Overdue MindMap node — pulses outline-color only, since .glass-card's shorthand
-   `border`/`box-shadow` would otherwise clobber a border-* or ring-* utility. */
-@keyframes pulseOutline { 0%,100% { outline-color: var(--accent-red); } 50% { outline-color: rgba(181,128,128,0.35); } }
-.node-overdue { outline: 2px solid var(--accent-red); outline-offset: 2px; animation: pulseOutline 1.5s ease-in-out infinite; }
+    /* Numbers that are read as a column or that tick over in place. Tabular
+       figures stop the row from reflowing every time a digit changes width — the
+       reason the timers and the dashboard metrics used to jitter. */
+    .t-metric {
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum' 1, 'cv05' 1;
+        font-weight: var(--gq-weight-semibold);
+        letter-spacing: -0.01em;
+    }
 
-.markdown-content h1 { font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem; }
-.markdown-content h2 { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; }
-.markdown-content ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 0.5rem; }
-.markdown-content ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 0.5rem; }
-.markdown-content a { color: var(--accent-cyan); text-decoration: underline; }
-.markdown-content strong { font-weight: bold; }
+    /* ===========================================================================
+       Surfaces
+       =========================================================================== */
+    .glass-card {
+        background: var(--gq-surface-raised);
+        border: 1px solid var(--gq-border-default);
+        backdrop-filter: blur(10px);
+        box-shadow: var(--gq-shadow-1);
+    }
+
+    /* ===========================================================================
+       Motion primitives. Kept few on purpose — an animation earns its place by
+       showing a state change the user caused, not by being available.
+       =========================================================================== */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .anim-fade-in { animation: fadeInUp var(--gq-duration-slow) var(--gq-ease-out) both; }
+
+    /* Box-breathing indicator — a soft expanding ring rather than a neon halo. */
+    @keyframes breathGlow {
+        0%, 100% { box-shadow: 0 0 0 2px rgb(var(--gq-cyan-400-rgb)); }
+        50%      { box-shadow: 0 0 0 8px rgb(var(--gq-cyan-400-rgb) / 0.18); }
+    }
+    .breath-dot { animation: breathGlow 2s var(--gq-ease-standard) infinite; }
+
+    /* Snowman confetti burst. */
+    @keyframes confettiFall { from { transform: translateY(-10px) rotate(0deg); opacity: 1; } to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
+    .anim-confetti-fall { animation: confettiFall linear forwards; }
+
+    /* Snowman circles growing when a sphere gains points. */
+    @keyframes snowGrow { 0% { transform: scale(0.85); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+    .anim-snow-grow { animation: snowGrow var(--gq-duration-slow) var(--gq-ease-out); }
+
+    /* ===========================================================================
+       Form controls
+       =========================================================================== */
+    input, textarea, button, select { color: var(--gq-text-primary); font-family: inherit; }
+    input[type="range"] { accent-color: rgb(var(--gq-purple-400-rgb)); }
+    input[type="checkbox"], input[type="radio"] { accent-color: rgb(var(--gq-cyan-400-rgb)); }
+    ::placeholder { color: var(--gq-text-subtle); opacity: 1; }
+
+    /* ===========================================================================
+       Markdown rendering (notes, AI output, knowledge base)
+       =========================================================================== */
+    .markdown-content h1 { font-size: var(--gq-text-h2); font-weight: var(--gq-weight-bold); margin-bottom: var(--gq-space-2); }
+    .markdown-content h2 { font-size: var(--gq-text-h3); font-weight: var(--gq-weight-bold); margin-bottom: var(--gq-space-2); }
+    .markdown-content ul { list-style: disc; padding-left: var(--gq-space-6); margin-bottom: var(--gq-space-2); }
+    .markdown-content ol { list-style: decimal; padding-left: var(--gq-space-6); margin-bottom: var(--gq-space-2); }
+    .markdown-content a { color: var(--gq-accent-ink); text-decoration: underline; }
+    .markdown-content strong { font-weight: var(--gq-weight-bold); }
+
+}

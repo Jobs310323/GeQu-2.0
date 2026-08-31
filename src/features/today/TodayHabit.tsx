@@ -26,8 +26,8 @@ export function TodayHabit() {
     return (
         <section aria-labelledby="today-habit" className="mt-6">
             <div className="flex items-baseline justify-between mb-3">
-                <h2 id="today-habit" className="text-sm font-medium text-[var(--text-muted)]">Привычка</h2>
-                <Link to="/track/habits" className="text-xs text-cyan-400 hover:underline">
+                <h2 id="today-habit" className="t-small font-medium text-[var(--gq-text-tertiary)]">Привычка</h2>
+                <Link to="/track/habits" className="t-caption text-cyan-400 hover:underline">
                     Все ({pending.length} осталось)
                 </Link>
             </div>
@@ -36,13 +36,13 @@ export function TodayHabit() {
                 <button
                     onClick={() => toggle(pick.id)}
                     aria-label={`Отметить «${pick.name}» выполненной сегодня`}
-                    className="w-9 h-9 rounded-xl border border-[var(--border)] text-[var(--text-muted)] flex items-center justify-center shrink-0 hover:border-green-400 hover:text-green-400 transition"
+                    className="w-9 h-9 rounded-xl border border-[var(--border)] text-[var(--gq-text-tertiary)] flex items-center justify-center shrink-0 hover:border-success hover:text-success transition"
                 >
                     <Icon name="check" size={17} />
                 </button>
                 <div className="flex-1 min-w-0">
                     <div className="font-medium leading-snug truncate">{pick.name}</div>
-                    <div className="text-xs text-[var(--text-muted)] mt-0.5">
+                    <div className="t-caption mt-0.5">
                         {run > 0 ? `${run} подряд — не разрывай` : 'Ещё не начата'}
                     </div>
                 </div>

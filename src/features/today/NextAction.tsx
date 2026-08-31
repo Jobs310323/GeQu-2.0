@@ -26,7 +26,7 @@ export function NextAction({ dayClosed, openTasks, habits, doneToday }: Props) {
 
     return (
         <section aria-labelledby="next-action">
-            <h2 id="next-action" className="text-sm font-medium text-[var(--text-muted)] mb-3">
+            <h2 id="next-action" className="t-small font-medium text-[var(--gq-text-tertiary)] mb-3">
                 Дальше
             </h2>
             <Link
@@ -38,12 +38,12 @@ export function NextAction({ dayClosed, openTasks, habits, doneToday }: Props) {
                 </span>
                 <span className="flex-1 min-w-0">
                     <span className="block font-medium leading-snug">{suggestion.title}</span>
-                    <span className="block text-sm text-[var(--text-muted)] mt-0.5">{suggestion.why}</span>
+                    <span className="block t-small text-[var(--gq-text-tertiary)] mt-0.5">{suggestion.why}</span>
                 </span>
                 <Icon
                     name="chevronRight"
                     size={16}
-                    className="text-[var(--text-muted)] shrink-0 mt-1 group-hover:text-cyan-400 transition"
+                    className="text-[var(--gq-text-tertiary)] shrink-0 mt-1 group-hover:text-cyan-400 transition"
                 />
             </Link>
         </section>

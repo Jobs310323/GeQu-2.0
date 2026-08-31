@@ -10,12 +10,15 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "check:emoji": "node scripts/check-emoji.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "check:theme": "node scripts/check-theme.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "@clerk/backend": "^3.15.0",
     "@clerk/clerk-react": "^5.61.9",
     "@clerk/localizations": "^4.13.10",
+    "@fontsource-variable/inter": "^5.3.0",
     "@neondatabase/serverless": "^1.1.0",
     "@xyflow/react": "^12.11.2",
     "chart.js": "^4.5.1",

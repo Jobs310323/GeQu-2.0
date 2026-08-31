@@ -1,6 +1,6 @@
 # ADR-005 — Design system: one token layer
 
-**Status:** Accepted · 2026-08-28
+**Status:** Accepted · 2026-08-28 · **Implemented** 2026-08-31 (Phase 5)
 
 ## Context
 
@@ -71,3 +71,34 @@ that is a separate, narrower decision.
 **Tailwind v4 CSS-first `@theme`.** Attractive — it is exactly this token model natively — but a
 major-version upgrade is a separate change with its own risk. Revisit after the token layer exists,
 at which point the upgrade becomes mostly mechanical.
+
+---
+
+## Implementation note (2026-08-31)
+
+Implemented as decided, with one addition the decision did not anticipate.
+
+**Surface/ink split.** Point 2 said legacy tokens become aliases so no call site breaks. That was
+necessary but not sufficient: a *single* value per hue cannot serve both `bg-cyan-400` and
+`text-cyan-400` across two themes. Tailwind's `colors` and `textColor` are therefore given
+different token sets for the same scale name — fill tones stay stable across themes, ink tones
+flip. This is what allowed the `:root.light .text-*` override block to be deleted outright rather
+than "retired as consumers migrate"; it is gone now, and no call site changed.
+
+**Point 3 (`concept-v2`) closed cheaply.** Its five components had already been ported into
+`src/components/` and re-themed onto CSS variables in an earlier pass, so nothing needed migrating.
+`src/concept-v2/` (347 lines) and the `/concept-v2` branch in `main.tsx` were deleted after
+confirming zero live references.
+
+**Point 4 (Inter) was not the no-op it looked like.** The font was declared but never loaded — no
+`<link>`, no package. It is now self-hosted (`@fontsource-variable/inter`), latin + cyrillic only.
+
+**Two gates were added**, because a token layer with no enforcement drifts back within a quarter:
+`check:contrast` parses `tokens.css` and measures every ink token against both surfaces of both
+themes; `check:theme` drives a real browser against the built CSS and asserts the app resolves to
+those tokens, that ink flips while fill does not, and that the `@layer components` cascade order
+holds.
+
+**Deferred.** Tailwind v4's `@theme` remains the better long-term home for this and remains a
+separate decision. The `--accent-*` and `--text-*` aliases are still in place; they are removed per
+call site, not in a sweep.

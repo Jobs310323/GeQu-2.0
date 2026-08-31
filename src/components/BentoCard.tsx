@@ -9,15 +9,15 @@ type Props = {
     className?: string;
 };
 
-/** Shared bento-grid card surface — ported from the concept-v2 design pass. */
+/** Shared card surface: optional icon + title row, then content. */
 export function BentoCard({ title, icon, action, children, className = '' }: Props) {
     return (
         <div className={`glass-card rounded-2xl p-4 flex flex-col gap-3 ${className}`}>
             {(title || action) && (
                 <div className="flex items-center gap-2">
-                    {icon && <Icon name={icon} size={14} className="text-[var(--text-muted)]" />}
+                    {icon && <Icon name={icon} size={14} className="text-[var(--gq-text-tertiary)]" />}
                     {title && (
-                        <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)] flex-1">
+                        <h3 className="t-label flex-1">
                             {title}
                         </h3>
                     )}
