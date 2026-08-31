@@ -26,22 +26,63 @@ export function collectSnapshot(): Snapshot {
     return out;
 }
 
-/** Replaces local app data with the snapshot. Device-only keys are left alone. */
+/**
+ * Writes the snapshot into localStorage.
+ *
+ * Writes FIRST, then removes only the app keys the snapshot did not carry. The
+ * previous version cleared everything up front, so a failure part-way through —
+ * a quota error, a closed tab — left the user with nothing at all. Now the worst
+ * case is a partially-updated store, which the next merge repairs.
+ *
+ * Since sync merges rather than overwrites (see `lib/merge.ts`), the snapshot
+ * passed here is already the union of both sides; the removal pass only clears
+ * keys that are genuinely gone.
+ */
 export function applySnapshot(snapshot: Snapshot): void {
-    clearLocalData();
+    const written = new Set<string>();
     Object.entries(snapshot).forEach(([key, value]) => {
         if (!key.startsWith(PREFIX) || DEVICE_ONLY.has(key)) return;
-        try { localStorage.setItem(key, String(value)); } catch { /* storage full */ }
+        try {
+            localStorage.setItem(key, String(value));
+            written.add(key);
+        } catch { /* storage full — leave the existing value in place */ }
     });
+
+    for (const key of appKeys()) {
+        if (!written.has(key) && !(key in snapshot)) localStorage.removeItem(key);
+    }
+}
+
+/** Every `gequ_*` key that belongs to the user's data, not to this device. */
+function appKeys(): string[] {
+    const out: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith(PREFIX) && !DEVICE_ONLY.has(key)) out.push(key);
+    }
+    return out;
 }
 
 export function clearLocalData(): void {
-    const doomed: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith(PREFIX) && !DEVICE_ONLY.has(key)) doomed.push(key);
+    appKeys().forEach(k => localStorage.removeItem(k));
+}
+
+/** What the server holds, plus the version a write must be based on. */
+export type RemoteState = {
+    /** null when the account has no row yet. */
+    snapshot: Snapshot | null;
+    /** 0 means "no row yet". */
+    version: number;
+};
+
+/** Raised when a PUT was refused because the row moved on. Carries the winner. */
+export class VersionConflict extends Error {
+    readonly current: RemoteState;
+    constructor(current: RemoteState) {
+        super('version conflict');
+        this.name = 'VersionConflict';
+        this.current = current;
     }
-    doomed.forEach(k => localStorage.removeItem(k));
 }
 
 async function request(token: string, init?: RequestInit) {
@@ -49,15 +90,33 @@ async function request(token: string, init?: RequestInit) {
         ...init,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(init?.headers ?? {}) },
     });
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 409) throw new VersionConflict(toRemoteState(body));
     if (!res.ok) throw new Error(`/api/state ${res.status}`);
-    return res.json();
+    return body as Record<string, unknown>;
 }
 
-export async function fetchRemote(token: string): Promise<Snapshot | null> {
-    const { data } = await request(token);
-    return data && Object.keys(data).length ? (data as Snapshot) : null;
+function toRemoteState(body: Record<string, unknown>): RemoteState {
+    const data = body?.['data'];
+    const snapshot = data && typeof data === 'object' && Object.keys(data).length
+        ? (data as Snapshot)
+        : null;
+    return { snapshot, version: Number(body?.['version'] ?? 0) };
 }
 
-export async function pushRemote(token: string, snapshot: Snapshot): Promise<void> {
-    await request(token, { method: 'PUT', body: JSON.stringify({ data: snapshot }) });
+export async function fetchRemote(token: string): Promise<RemoteState> {
+    return toRemoteState(await request(token));
+}
+
+/**
+ * Writes the snapshot, but only if the row is still at `baseVersion`.
+ * Throws `VersionConflict` (carrying the current row) if another device wrote
+ * first — the caller merges against it and retries.
+ */
+export async function pushRemote(token: string, snapshot: Snapshot, baseVersion: number): Promise<number> {
+    const body = await request(token, {
+        method: 'PUT',
+        body: JSON.stringify({ data: snapshot, baseVersion }),
+    });
+    return Number(body?.['version'] ?? baseVersion + 1);
 }
