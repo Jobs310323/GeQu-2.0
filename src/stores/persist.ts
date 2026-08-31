@@ -1,5 +1,5 @@
 import type { StoreApi } from 'zustand';
-import { DB } from '../lib/db';
+import { repository } from '../data';
 
 // Store persistence.
 //
@@ -12,12 +12,13 @@ import { DB } from '../lib/db';
 // Instead each store hydrates from its existing key and mirrors changes back to
 // it unchanged, so this refactor is invisible to storage and to sync.
 //
-// Phase 8 replaces `DB` here with the repository layer; that swap happens in
-// this file and nowhere else.
+// Phase 8b made that swap: this reads and writes through `src/data`'s
+// `Repository`, which mirrors every write into IndexedDB as well. The stored
+// localStorage format is unchanged, so the note above still holds.
 
 /** Reads a store's initial value from its existing key. */
 export function hydrate<T>(key: string, fallback: T): T {
-    return DB.get<T>(key, fallback);
+    return repository.get<T>(key, fallback);
 }
 
 /**
@@ -30,7 +31,7 @@ export function hydrate<T>(key: string, fallback: T): T {
 export function persistSlice<T, S>(store: StoreApi<T>, key: string, select: (state: T) => S): void {
     store.subscribe((state, prev) => {
         const next = select(state);
-        if (!Object.is(next, select(prev))) DB.save(key, next);
+        if (!Object.is(next, select(prev))) repository.set(key, next);
     });
 }
 

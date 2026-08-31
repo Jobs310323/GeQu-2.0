@@ -825,3 +825,119 @@ does not yet exist, so **closing the E2E gap comes first** — a Clerk test-mode
 credentials in CI secrets, then Playwright specs for the critical journey.
 
 ---
+
+## Phase 8 — Sync correctness, then offline-first storage
+
+**Completed** in two commits, deliberately sequenced.
+
+### 8a — the data-loss fix
+
+Re-reading `CloudSync.tsx` for this phase turned up a defect worse than the audit recorded:
+
+```ts
+const owner = localStorage.getItem(OWNER_KEY);
+if (owner === userId) return;        // never fetched
+```
+
+A device only pulled when the **account** changed. Work on the laptop, then the phone (which
+pulls, adds tasks, pushes), then reopen the laptop: `OWNER_KEY` still matches, the pull is skipped,
+and the first edit pushes the laptop's stale whole-blob snapshot over everything the phone did.
+Silently, with no error and no bound on the loss.
+
+The audit called this "last-write-wins". It was **first-device-wins**.
+
+Now: always pull, merge, push conditionally on the version read. `api/state.ts` versions the row
+and answers a stale write with **409 plus the winning row**, so the client can merge and retry
+rather than being told only that it failed.
+
+`src/lib/merge.ts` reconciles per key — append-only union for records of things that happened
+(journal, day logs, assessments, CBT), merge-by-id for live items, deep-merge for finance and gym,
+last-write-wins for settings. An unknown key defaults to last-write-wins favouring local, so a key
+added by a newer build cannot vanish because this build's policy table has not heard of it.
+
+**Records carry no `updatedAt`**, so a same-id conflict cannot be resolved by recency and this does
+not pretend to. That is not where the damage was: the failure that loses data is deletion by
+omission, and union by id fixes it completely.
+
+Two supporting fixes: `applySnapshot` now writes first and removes only what the merged snapshot
+omits (it used to clear everything up front, so a quota error mid-apply left the user with
+nothing); and `window.location.reload()` is gone, replaced by `rehydrateStores()` — it only existed
+because state lived in `useState(DB.get(...))` inside components, which has not been true since
+Phase 3.
+
+### 8b — storage
+
+`src/data/` is the storage boundary. Writes go to **both** localStorage and IndexedDB; reads still
+come from localStorage.
+
+That split is the judgment call of the phase. Reads stay synchronous because every consumer is a
+store initialised at module load, and making them async pushes a loading state into the shell
+before first paint — real work, justified by nothing the user would notice, for a dataset of a few
+hundred KB. But writing to IndexedDB anyway means the data is there, verified, with the migration
+proven, so the cutover becomes a one-line change whenever a reason to make it appears. **The risk
+is retired without the disruption.**
+
+### The nine-point safety gate is a test file, not a checklist
+
+`src/data/migrate.test.ts`, 21 tests against `fake-indexeddb` with a realistic seeded browser:
+old data, new data, partial failure, duplicate and concurrent runs, interruption mid-migration,
+offline, backup, rollback, and "nothing is deleted before verification".
+
+The migration never deletes from localStorage — that is what makes rollback a single flag removal.
+**Verified by canary:** adding the obvious tidy-up (`verified.forEach(k => localStorage.removeItem(k))`)
+fails eight of the twenty-one.
+
+### A gap found while wiring it up
+
+`initStorage()` is intentionally not awaited, so the user can already be typing before the
+IndexedDB mirror opens — and on a fresh browser there is no migration to catch those writes either.
+Without a catch-up pass, a user's first session would leave IndexedDB permanently behind by
+whatever happened in the first few hundred milliseconds. `catchUp()` closes it, with a test.
+
+`/api/state` is registered **NetworkOnly** in workbox. A cached snapshot served to the merge would
+look like the server's current state and could push a stale version back over newer data — the
+exact failure this phase exists to fix.
+
+**Files changed** — new: `src/lib/merge.ts`, `src/stores/rehydrate.ts`, `src/data/{repository,index,migrate}.ts`,
+`docs/{SYNC,DATA_MODEL}.md`, and five suites. Rewritten: `src/components/CloudSync.tsx`,
+`src/lib/{cloud,db}.ts`, `api/state.ts`. Modified: `src/stores/persist.ts`, `src/main.tsx`,
+`vite.config.ts`.
+
+**Dependencies added** — `fake-indexeddb` (dev only). `idb` was already present via workbox but is
+not used: the migration needs raw `IDBRequest` control to verify each write, which the promise
+wrapper hides.
+
+**Tests added** — 82 (278 total): merge 29, cloud transport 14, rehydration 6, migration 21,
+repository 12.
+
+**Bundle** — entry 438.81 → 441.2 kB. The merge policy and the storage boundary are shell-level;
+sync runs on every page.
+
+**Risks**
+
+- **The two-device path cannot be automated.** Real Clerk tokens and a real Postgres row need
+  either credentials in CI or an auth bypass in the app, and the second is a security surface kept
+  out of the repository. `merge.ts` and the 409 handling are unit-tested against a mocked fetch;
+  the six-step manual check in `docs/SYNC.md` is the rest, and it has **not been run** — there is
+  no deployed instance in this environment to run it against.
+- `api/state.ts` gained an `ALTER TABLE … ADD COLUMN IF NOT EXISTS` that has never executed against
+  a real database.
+- `rehydrateStores` names every persisted slice by hand. A slice added and forgotten there would
+  silently stop refreshing after a sync — the guard test scrapes the store sources and fails naming
+  the key, and was canary-verified, but it is regex over source and could be defeated by an unusual
+  call shape.
+
+**Known limitations**
+
+- **Deletions can come back.** The merge is a union, so deleting a task on one device while another
+  still holds it means it returns. Tombstones are the fix and are not done. Erring toward keeping
+  data is the right trade — the behaviour being replaced lost data outright.
+- Three or more devices editing simultaneously can produce a second 409 after the retry; the push
+  is deferred to the next local change. Nothing is lost.
+- Reads have not moved to IndexedDB, and no `updatedAt` exists on records yet.
+- No encryption at rest. Highly-sensitive data (journal, screening results, finance) sits in
+  plaintext locally and in one JSONB column. Phase 12.
+
+**Next phase** — Phase 9: cognitive engine unification.
+
+---

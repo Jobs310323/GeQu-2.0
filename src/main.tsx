@@ -4,6 +4,12 @@ import { ClerkProvider } from '@clerk/clerk-react'
 import { ruRU } from '@clerk/localizations'
 import './index.css'
 import App from './App.tsx'
+import { initStorage } from './data'
+
+// Migrates localStorage into IndexedDB and opens the write mirror. Deliberately
+// not awaited: reads come from localStorage, so nothing on screen depends on
+// this finishing, and a failure leaves the app working exactly as before.
+void initStorage()
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined
 
