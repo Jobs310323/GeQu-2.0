@@ -1,23 +1,27 @@
 import { useState, useMemo } from 'react';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import { toLocalDateKey } from '../lib/datetime';
+import type { CalendarProps } from '../types/props';
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
     'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
-const KINDS: Record<string, { color: string; label: string; icon: string }> = {
+type EventKind = 'workout' | 'log' | 'diary' | 'reminder';
+
+const KINDS: Record<EventKind, { color: string; label: string; icon: string }> = {
     workout:  { color: '#EA580C', label: 'Тренировка', icon: 'dumbbell' },
     log:      { color: '#0284C7', label: 'День закрыт', icon: 'moon' },
     diary:    { color: '#7C3AED', label: 'Дневник', icon: 'book' },
     reminder: { color: '#DB2777', label: 'Напоминание', icon: 'bell' },
 };
 
-/** Local-time YYYY-MM-DD. Using toISOString here would shift evening entries. */
-const dayKey = (d: Date | string) =>
-    (typeof d === 'string' ? new Date(d) : d).toLocaleDateString('sv-SE');
+// This page worked the timezone problem out first; `toLocalDateKey` is that
+// same fix, moved to lib/datetime so the rest of the app shares it.
+const dayKey = toLocalDateKey;
 
-export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: any) {
+export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: CalendarProps) {
     const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
     const [selected, setSelected] = useState<string>(() => dayKey(new Date()));
     const [draft, setDraft] = useState('');
@@ -26,12 +30,12 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
 
     // Index each source by local day once — every cell lookup is then O(1).
     const index = useMemo(() => {
-        const m: Record<string, Set<string>> = {};
-        const add = (k: string, kind: string) => { (m[k] ||= new Set()).add(kind); };
-        (logs ?? []).forEach((l: any) => l?.date && add(dayKey(l.date), 'log'));
-        (diary ?? []).forEach((e: any) => e?.date && add(dayKey(e.date), 'diary'));
-        (gymData?.history ?? []).forEach((w: any) => w?.date && add(dayKey(w.date), 'workout'));
-        (reminders ?? []).forEach((r: any) => r?.date && add(r.date, 'reminder'));
+        const m: Record<string, Set<EventKind>> = {};
+        const add = (k: string, kind: EventKind) => { (m[k] ||= new Set()).add(kind); };
+        (logs ?? []).forEach((l) => l?.date && add(dayKey(l.date), 'log'));
+        (diary ?? []).forEach((e) => e?.date && add(dayKey(e.date), 'diary'));
+        (gymData?.history ?? []).forEach((w) => w?.date && add(dayKey(w.date), 'workout'));
+        (reminders ?? []).forEach((r) => r?.date && add(r.date, 'reminder'));
         return m;
     }, [logs, diary, gymData, reminders]);
 
@@ -46,23 +50,23 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
     }, [cursor]);
 
     const dayItems = useMemo(() => ({
-        reminders: (reminders ?? []).filter((r: any) => r.date === selected),
-        workouts: (gymData?.history ?? []).filter((w: any) => dayKey(w.date) === selected),
-        diary: (diary ?? []).filter((e: any) => dayKey(e.date) === selected),
-        log: (logs ?? []).find((l: any) => dayKey(l.date) === selected) ?? null,
+        reminders: (reminders ?? []).filter((r) => r.date === selected),
+        workouts: (gymData?.history ?? []).filter((w) => dayKey(w.date) === selected),
+        diary: (diary ?? []).filter((e) => dayKey(e.date) === selected),
+        log: (logs ?? []).find((l) => dayKey(l.date) === selected) ?? null,
     }), [selected, reminders, gymData, diary, logs]);
 
     const upcoming = useMemo(() =>
         (reminders ?? [])
-            .filter((r: any) => !r.done && r.date >= todayKey)
-            .sort((a: any, b: any) => a.date.localeCompare(b.date))
+            .filter((r) => !r.done && r.date >= todayKey)
+            .sort((a, b) => a.date.localeCompare(b.date))
             .slice(0, 8),
         [reminders, todayKey]);
 
     // Counts for the month currently on screen.
     const monthStats = useMemo(() => {
         const prefix = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
-        const count = (kind: string) =>
+        const count = (kind: EventKind) =>
             Object.entries(index).filter(([k, kinds]) => k.startsWith(prefix) && kinds.has(kind)).length;
         return { log: count('log'), workout: count('workout'), diary: count('diary'), reminder: count('reminder') };
     }, [index, cursor]);
@@ -73,9 +77,9 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
         setDraft('');
     };
     const toggleReminder = (id: number) =>
-        setReminders((reminders ?? []).map((r: any) => (r.id === id ? { ...r, done: !r.done } : r)));
+        setReminders((reminders ?? []).map((r) => (r.id === id ? { ...r, done: !r.done } : r)));
     const removeReminder = (id: number) =>
-        setReminders((reminders ?? []).filter((r: any) => r.id !== id));
+        setReminders((reminders ?? []).filter((r) => r.id !== id));
 
     const shift = (d: number) => setCursor(c => new Date(c.getFullYear(), c.getMonth() + d, 1));
     const goToday = () => {
@@ -127,7 +131,7 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                             const kinds = index[key];
                             const isToday = key === todayKey;
                             const isSelected = key === selected;
-                            const dayReminders = (reminders ?? []).filter((r: any) => r.date === key && !r.done);
+                            const dayReminders = (reminders ?? []).filter((r) => r.date === key && !r.done);
                             return (
                                 <button
                                     key={i}
@@ -148,12 +152,12 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                                         <span className="flex gap-1 mb-1">
                                             {[...kinds].map(k => (
                                                 <span key={k} className="w-1.5 h-1.5 rounded-full"
-                                                    style={{ background: KINDS[k]?.color }} title={KINDS[k]?.label} />
+                                                    style={{ background: KINDS[k].color }} title={KINDS[k].label} />
                                             ))}
                                         </span>
                                     )}
 
-                                    {dayReminders.slice(0, 2).map((r: any) => (
+                                    {dayReminders.slice(0, 2).map((r) => (
                                         <span key={r.id} className="text-[9px] text-pink-400 truncate leading-tight w-full">
                                             {r.text}
                                         </span>
@@ -171,7 +175,7 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                             <span key={k} className="flex items-center gap-1.5 text-xs text-gray-400">
                                 <span className="w-2 h-2 rounded-full" style={{ background: v.color }} />
                                 {v.label}
-                                <span className="text-gray-600">· {(monthStats as any)[k]}</span>
+                                <span className="text-gray-600">· {monthStats[k as keyof typeof monthStats]}</span>
                             </span>
                         ))}
                     </div>
@@ -191,14 +195,14 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                                     День закрыт · сон {dayItems.log.sleep}, фокус {dayItems.log.focus}, настроение {dayItems.log.mood}
                                 </div>
                             )}
-                            {dayItems.workouts.map((w: any) => (
+                            {dayItems.workouts.map((w) => (
                                 <div key={w.id ?? w.date} className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)] flex items-center gap-2">
                                     <Icon name={KINDS.workout.icon} size={14} className="text-[var(--text-muted)] shrink-0" />
                                     {w.dayName || 'Тренировка'}
                                     <span className="text-gray-500"> · {(w.exercises ?? []).length} упр.</span>
                                 </div>
                             ))}
-                            {dayItems.diary.map((e: any) => (
+                            {dayItems.diary.map((e) => (
                                 <div key={e.id} className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)] flex items-center gap-2">
                                     <Icon name={KINDS.diary.icon} size={14} className="text-[var(--text-muted)] shrink-0" />
                                     {String(e.content).slice(0, 80)}{String(e.content).length > 80 ? '…' : ''}
@@ -215,7 +219,7 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                                 Напоминания
                             </div>
                             <div className="space-y-1.5 mb-3">
-                                {dayItems.reminders.map((r: any) => (
+                                {dayItems.reminders.map((r) => (
                                     <div key={r.id} className="flex items-start gap-2 group">
                                         <input type="checkbox" checked={r.done} onChange={() => toggleReminder(r.id)}
                                             className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer" />
@@ -252,7 +256,7 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                             <p className="text-sm text-gray-500">Всё чисто — активных напоминаний нет.</p>
                         ) : (
                             <div className="space-y-2">
-                                {upcoming.map((r: any) => (
+                                {upcoming.map((r) => (
                                     <button key={r.id} onClick={() => {
                                         setSelected(r.date);
                                         const d = new Date(r.date + 'T12:00:00');

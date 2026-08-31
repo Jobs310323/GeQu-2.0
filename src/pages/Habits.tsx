@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import { todayKey } from '../lib/datetime';
+import type { HabitsProps } from '../types/props';
 
-export function Habits({ habits, setHabits }: any) {
+export function Habits({ habits, setHabits }: HabitsProps) {
     const [name, setName] = useState('');
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayKey();
 
     const addHabit = () => {
         if (!name.trim()) return;
@@ -12,7 +14,7 @@ export function Habits({ habits, setHabits }: any) {
         setName('');
     };
     const toggleHabit = (id: number) => {
-        setHabits(habits.map((h: any) => {
+        setHabits(habits.map((h) => {
             if (h.id === id) {
                 const done = h.history.includes(todayStr);
                 return { ...h, history: done ? h.history.filter((d: string) => d !== todayStr) : [...h.history, todayStr] };
@@ -20,7 +22,7 @@ export function Habits({ habits, setHabits }: any) {
             return h;
         }));
     };
-    const deleteHabit = (id: number) => setHabits(habits.filter((h: any) => h.id !== id));
+    const deleteHabit = (id: number) => setHabits(habits.filter((h) => h.id !== id));
 
     return (
         <div className="max-w-3xl">
@@ -44,7 +46,7 @@ export function Habits({ habits, setHabits }: any) {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {habits.map((h: any) => {
+                    {habits.map((h) => {
                         const doneToday = h.history.includes(todayStr);
                         const streak = h.history.length;
                         return (

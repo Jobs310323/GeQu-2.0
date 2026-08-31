@@ -4,21 +4,16 @@ import { PageHeader } from '../../components/PageHeader';
 import { SnowmanDay } from './SnowmanDay';
 import { SnowmanCircles } from './SnowmanCircles';
 import { findRecord, imbalanceBanner, todayStr } from './logic';
-import { SPHERES, type ActivityLabel, type DayRecord } from './types';
+import { SPHERES } from './types';
+import type { SnowmanProps } from '../../types/props';
+import { Modal } from '../../components/Modal';
 
 const TABS = [
     { id: 'today', label: 'Сегодня' },
     { id: 'history', label: 'История' },
 ];
 
-type Props = {
-    labels: ActivityLabel[];
-    setLabels: (fn: (prev: ActivityLabel[]) => ActivityLabel[]) => void;
-    days: DayRecord[];
-    setDays: (fn: (prev: DayRecord[]) => DayRecord[]) => void;
-};
-
-export function Snowman({ labels, setLabels, days, setDays }: Props) {
+export function Snowman({ labels, setLabels, days, setDays }: SnowmanProps) {
     const [tab, setTab] = useState('today');
     const [editingDate, setEditingDate] = useState<string | null>(null);
     const today = todayStr();
@@ -84,20 +79,13 @@ export function Snowman({ labels, setLabels, days, setDays }: Props) {
             )}
 
             {editingDate && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-start justify-center z-50 p-4 overflow-y-auto"
-                    onClick={() => setEditingDate(null)}>
-                    <div className="max-w-lg w-full my-8" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-3">
-                            <h2 className="text-lg font-bold text-white">
-                                {new Date(editingDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
-                            </h2>
-                            <button onClick={() => setEditingDate(null)} className="text-gray-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5">
-                                <Icon name="close" size={18} />
-                            </button>
-                        </div>
-                        <SnowmanDay date={editingDate} labels={labels} setLabels={setLabels} days={days} setDays={setDays} />
-                    </div>
-                </div>
+                <Modal
+                    title={new Date(editingDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    onClose={() => setEditingDate(null)}
+                    size="md"
+                >
+                    <SnowmanDay date={editingDate} labels={labels} setLabels={setLabels} days={days} setDays={setDays} />
+                </Modal>
             )}
         </div>
     );

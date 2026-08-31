@@ -19,12 +19,19 @@ import { mindNodeTypes } from './mindmap/MindMapNode';
 import { NodeInspector } from './mindmap/NodeInspector';
 import type { MindColor, MindEdge, MindMapDoc, MindNode, MindViewMode } from '../types/mindmap';
 import type { MindFlowNode, MindNodeData } from './mindmap/MindMapNode';
+import { todayKey, toLocalDateKey, addDays, nowInstant } from '../lib/datetime';
+import type { CSSProperties } from 'react';
+import { Modal } from '../components/Modal';
 
 type Callbacks = Pick<MindNodeData, 'onEdit' | 'onRecolor' | 'onDelete' | 'onOpen' | 'onSnooze' | 'onToggleDone'>;
 type StoredData = Omit<MindNode, 'id' | 'x' | 'y'> & Callbacks;
 type StoredFlowNode = Node<StoredData, 'mind'>;
 
-function edgeStyle(color: MindColor): Edge['style'] {
+// Returns CSSProperties rather than Edge['style'], which under
+// exactOptionalPropertyTypes is `CSSProperties | undefined` — assigning that
+// into `style:` would set the property to an explicit undefined. This always
+// produces a real style object.
+function edgeStyle(color: MindColor): CSSProperties {
     return { stroke: COLOR_HEX[color], strokeWidth: 1.75 };
 }
 
@@ -39,7 +46,7 @@ function toDomainNode(n: StoredFlowNode): MindNode {
 }
 
 function loadInitial(callbacks: Callbacks): { nodes: StoredFlowNode[]; edges: Edge[] } {
-    const doc = DB.get('mindmap', { nodes: [], edges: [] }) as MindMapDoc;
+    const doc = DB.get<MindMapDoc>('mindmap', { nodes: [], edges: [] });
     const colorOf = new Map(doc.nodes.map(n => [n.id, n.color]));
     return {
         nodes: doc.nodes.map(raw => {
@@ -51,7 +58,7 @@ function loadInitial(callbacks: Callbacks): { nodes: StoredFlowNode[]; edges: Ed
         }),
         edges: doc.edges.map(e => ({
             id: e.id, source: e.source, target: e.target,
-            sourceHandle: e.sourceHandle ?? undefined, targetHandle: e.targetHandle ?? undefined,
+            sourceHandle: e.sourceHandle ?? null, targetHandle: e.targetHandle ?? null,
             style: edgeStyle(colorOf.get(e.source) ?? 'cyan'),
         })),
     };
@@ -102,19 +109,18 @@ function MindMapCanvas() {
         onOpen: id => {
             commitTimeSpent(selectedNodeId);
             inspectorSession.current = { id, start: Date.now() };
-            setNodes(nds => nds.map(n => (n.id === id ? { ...n, data: { ...n.data, lastOpenedAt: new Date().toISOString() } } : n)));
+            setNodes(nds => nds.map(n => (n.id === id ? { ...n, data: { ...n.data, lastOpenedAt: nowInstant() } } : n)));
             setSelectedNodeId(id);
         },
         onSnooze: id => setNodes(nds => nds.map(n => {
             if (n.id !== id) return n;
-            const base = n.data.dueDate ? new Date(n.data.dueDate) : new Date();
-            base.setDate(base.getDate() + 1);
-            return { ...n, data: { ...n.data, dueDate: base.toISOString().slice(0, 10), updatedAt: new Date().toISOString() } };
+            const from = n.data.dueDate ? toLocalDateKey(n.data.dueDate) : todayKey();
+            return { ...n, data: { ...n.data, dueDate: addDays(from, 1), updatedAt: nowInstant() } };
         })),
         onToggleDone: id => setNodes(nds => nds.map(n => {
             if (n.id !== id) return n;
             const nowDone = n.data.status !== 'done';
-            return { ...n, data: { ...n.data, status: nowDone ? 'done' : 'in_progress', progress: nowDone ? 100 : n.data.progress, updatedAt: new Date().toISOString() } };
+            return { ...n, data: { ...n.data, status: nowDone ? 'done' : 'in_progress', progress: nowDone ? 100 : n.data.progress, updatedAt: nowInstant() } };
         })),
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }), []);
@@ -183,7 +189,7 @@ function MindMapCanvas() {
     const addNodeAt = (text: string, x: number, y: number) => {
         const jitter = () => Math.random() * 70 - 35;
         setNodes(nds => {
-            const domain = createNode(text, x + jitter(), y + jitter(), MIND_COLORS[nds.length % MIND_COLORS.length]);
+            const domain = createNode(text, x + jitter(), y + jitter(), MIND_COLORS[nds.length % MIND_COLORS.length] ?? 'cyan');
             return [...nds, { id: domain.id, type: 'mind', position: { x: domain.x, y: domain.y }, data: { ...stripDomain(domain), ...callbacks } }];
         });
     };
@@ -265,7 +271,7 @@ function MindMapCanvas() {
                 </ReactFlow>
 
                 {inboxOpen && (
-                    <div className="absolute bottom-24 right-6 z-20 glass-card rounded-xl p-2 flex items-center gap-2 w-72">
+                    <div className="absolute bottom-24 right-3 sm:right-6 z-20 glass-card rounded-xl p-2 flex items-center gap-2 w-[calc(100%-1.5rem)] sm:w-72">
                         <input
                             autoFocus
                             value={inboxDraft}
@@ -301,19 +307,11 @@ function MindMapCanvas() {
             )}
 
             {showAnalytics && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowAnalytics(false)}>
-                    <div className="glass-card rounded-2xl p-5 max-w-sm w-full" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-semibold text-[var(--text-main)]">Итог за неделю</h3>
-                            <button onClick={() => setShowAnalytics(false)} className="text-[var(--text-muted)] hover:text-[var(--text-main)]">
-                                <Icon name="close" size={16} />
-                            </button>
-                        </div>
-                        <ul className="space-y-2 text-sm text-[var(--text-main)]">
-                            {generateWeeklyReport(domainNodes).map((line, i) => <li key={i}>{line}</li>)}
-                        </ul>
-                    </div>
-                </div>
+                <Modal title="Итог за неделю" onClose={() => setShowAnalytics(false)} size="sm">
+                    <ul className="space-y-2 t-small text-[var(--gq-text-primary)]">
+                        {generateWeeklyReport(domainNodes).map((line, i) => <li key={i}>{line}</li>)}
+                    </ul>
+                </Modal>
             )}
             </div>
         </div>

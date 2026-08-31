@@ -1,20 +1,23 @@
 import { useState } from 'react';
 import { getGroqKey, setGroqKey } from '../lib/ai';
-import { NAV_GROUPS, LOCKED_TABS } from '../lib/nav';
+import { SECTIONS, LOCKED_IDS } from '../lib/nav';
 import { DASHBOARD_WIDGETS, toggleIn } from '../lib/prefs';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import { todayKey } from '../lib/datetime';
+import type { SettingsProps } from '../types/props';
+import type { ChangeEvent } from 'react';
 
-export function Settings({ diary, logs, prefs, setPrefs }: any) {
+export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
     const hiddenTabs: string[] = prefs?.hiddenTabs ?? [];
     const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
 
     const toggleTab = (id: string) => {
-        if (LOCKED_TABS.has(id)) return;
-        setPrefs((p: any) => ({ ...p, hiddenTabs: toggleIn(p.hiddenTabs ?? [], id) }));
+        if (LOCKED_IDS.has(id)) return;
+        setPrefs((p) => ({ ...p, hiddenTabs: toggleIn(p.hiddenTabs ?? [], id) }));
     };
     const toggleWidget = (id: string) =>
-        setPrefs((p: any) => ({ ...p, hiddenWidgets: toggleIn(p.hiddenWidgets ?? [], id) }));
+        setPrefs((p) => ({ ...p, hiddenWidgets: toggleIn(p.hiddenWidgets ?? [], id) }));
     const [groqKey, setGroqKeyState] = useState(getGroqKey());
     const [savedMsg, setSavedMsg] = useState('');
     const saveGroqKey = () => {
@@ -25,13 +28,13 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
 
     const exportTxt = () => { 
         let text = "=== Дневник GeQu ===\n\n"; 
-        diary.forEach((d:any) => { text += `${new Date(d.date).toLocaleString('ru-RU')}\n${d.content}\n--------------------\n\n`; }); 
+        diary.forEach(d => { text += `${new Date(d.date).toLocaleString('ru-RU')}\n${d.content}\n--------------------\n\n`; }); 
         downloadFile(text, "gequ_diary.txt", "text/plain"); 
     };
     
     const exportCsv = () => { 
         let csv = "Дата,Сон,Фокус,Настроение,Помогло,Мешало,Событие\n"; 
-        logs.forEach((l:any) => { 
+        logs.forEach(l => { 
             const helped = l.helped ? l.helped.join('; ') : '';
             const hindered = l.hindered ? l.hindered.join('; ') : '';
             csv += `${new Date(l.date).toLocaleString('ru-RU')},${l.sleep},${l.focus},${l.mood},"${helped}","${hindered}","${l.mainEvent || ''}"\n`; 
@@ -52,7 +55,8 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
     };
 
     const exportAllData = () => {
-        const backup: any = {};
+        // Whatever `gequ_*` keys exist at export time, as their raw stored JSON.
+        const backup: Record<string, unknown> = {};
         Object.keys(localStorage).forEach(key => {
             if (key.startsWith('gequ_')) {
                 backup[key] = localStorage.getItem(key);
@@ -62,15 +66,15 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `gequ_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `gequ_backup_${todayKey()}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     };
 
-    const importAllData = (e: any) => {
-        const file = e.target.files[0];
+    const importAllData = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -101,7 +105,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
                         <Icon name="columns" size={17} className="text-[var(--text-muted)]" /> Разделы меню
                     </h2>
                     {hiddenTabs.length > 0 && (
-                        <button onClick={() => setPrefs((p: any) => ({ ...p, hiddenTabs: [] }))}
+                        <button onClick={() => setPrefs((p) => ({ ...p, hiddenTabs: [] }))}
                             className="text-xs text-cyan-400 hover:underline">
                             Показать все ({hiddenTabs.length} скрыто)
                         </button>
@@ -111,12 +115,12 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
                     Убери ненужные разделы из меню — данные останутся на месте, раздел можно вернуть в любой момент.
                 </p>
                 <div className="space-y-4">
-                    {NAV_GROUPS.map(group => (
-                        <div key={group.id}>
-                            <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-2">{group.title}</div>
+                    {SECTIONS.map(section => (
+                        <div key={section.id}>
+                            <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-2">{section.title}</div>
                             <div className="flex flex-wrap gap-2">
-                                {group.items.map(item => {
-                                    const locked = LOCKED_TABS.has(item.id);
+                                {section.items.map(item => {
+                                    const locked = LOCKED_IDS.has(item.id);
                                     const visible = !hiddenTabs.includes(item.id);
                                     return (
                                         <button
@@ -130,7 +134,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
                                                     : 'border-[var(--border)] text-gray-500 hover:text-white line-through'
                                             }`}
                                         >
-                                            <span>{item.icon}</span>{item.label}
+                                            <Icon name={item.icon} size={13} />{item.label}
                                             {locked && <Icon name="lock" size={11} />}
                                         </button>
                                     );
@@ -148,7 +152,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: any) {
                         <Icon name="grid" size={17} className="text-[var(--text-muted)]" /> Виджеты дашборда
                     </h2>
                     {hiddenWidgets.length > 0 && (
-                        <button onClick={() => setPrefs((p: any) => ({ ...p, hiddenWidgets: [] }))}
+                        <button onClick={() => setPrefs((p) => ({ ...p, hiddenWidgets: [] }))}
                             className="text-xs text-cyan-400 hover:underline">
                             Показать все ({hiddenWidgets.length} скрыто)
                         </button>

@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { callAIJson, hasGroqKey } from '../../lib/ai';
-import { Icon } from '../../components/Icons';
+import type { ProgramDay } from '../../types/domain';
+import type { ProgramImportProps } from '../../types/props';
+import { errorMessage } from '../../lib/helpers';
+import type { Program, ProgramExercise } from '../../types/domain';
+import { Modal } from '../../components/Modal';
 
 type ParsedExercise = { name: string; muscle: string; sets: number; reps: string };
 type ParsedDay = { name: string; exercises: ParsedExercise[] };
@@ -22,7 +26,7 @@ const IMPORT_SYSTEM = `Ты — парсер программ тренирово
 Никакого текста вне JSON.`;
 
 /** Shapes whatever came back into exactly what the gym state expects. */
-function normalize(parsed: ParsedProgram) {
+function normalize(parsed: ParsedProgram): Program {
     const now = Date.now();
     return {
         id: now,
@@ -35,6 +39,10 @@ function normalize(parsed: ParsedProgram) {
                 id: now + (di + 1) * 1000 + ei,
                 name: String(e?.name || 'Упражнение').slice(0, 80),
                 muscle: String(e?.muscle || '—').slice(0, 30),
+                // Imported programs are treated as strength work: the pasted
+                // formats carry sets and reps but nothing that identifies cardio,
+                // and guessing would mis-shape the logging UI for that exercise.
+                type: 'strength' as const,
                 sets: Math.min(Math.max(parseInt(String(e?.sets)) || 3, 1), 12),
                 reps: String(e?.reps || '8-12').slice(0, 20),
             })),
@@ -42,9 +50,9 @@ function normalize(parsed: ParsedProgram) {
     };
 }
 
-export function ProgramImport({ gymData, setGymData, onClose }: any) {
+export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportProps) {
     const [text, setText] = useState('');
-    const [preview, setPreview] = useState<any>(null);
+    const [preview, setPreview] = useState<Program | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -86,14 +94,17 @@ export function ProgramImport({ gymData, setGymData, onClose }: any) {
             } else {
                 setPreview(normalized);
             }
-        } catch (e: any) {
-            setError(e?.message || 'Не удалось разобрать программу.');
+        } catch (e) {
+            setError(errorMessage(e, 'Не удалось разобрать программу.'));
         } finally {
             setLoading(false);
         }
     };
 
     const confirm = () => {
+        // The button is only rendered with a preview, but the type does not know
+        // that and a stale click during a re-parse should be a no-op, not a crash.
+        if (!preview) return;
         setGymData({
             ...gymData,
             programs: [...(gymData.programs ?? []), preview],
@@ -102,23 +113,15 @@ export function ProgramImport({ gymData, setGymData, onClose }: any) {
         onClose();
     };
 
-    const exerciseCount = preview?.days.reduce((s: number, d: any) => s + d.exercises.length, 0) ?? 0;
+    const exerciseCount = preview?.days.reduce((s: number, d: ProgramDay) => s + d.exercises.length, 0) ?? 0;
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="glass-card p-6 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-cyan-400/30"
-                onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-start mb-4">
-                    <div>
-                        <h2 className="text-2xl font-bold text-white">Импорт программы</h2>
-                        <p className="text-gray-400 text-sm mt-1">
-                            Вставь программу в любом виде — списком, таблицей, текстом от ИИ. Я разберу её сам.
-                        </p>
-                    </div>
-                    <button onClick={onClose} className="text-gray-500 hover:text-white p-1 rounded-lg hover:bg-white/5 transition">
-                        <Icon name="close" size={18} />
-                    </button>
-                </div>
+        <Modal
+            title="Импорт программы"
+            subtitle="Вставь программу в любом виде — списком, таблицей, текстом от ИИ. Я разберу её сам."
+            onClose={onClose}
+            size="lg"
+        >
 
                 {!preview ? (
                     <>
@@ -152,11 +155,11 @@ export function ProgramImport({ gymData, setGymData, onClose }: any) {
                         />
 
                         <div className="space-y-3 mb-5">
-                            {preview.days.map((d: any) => (
+                            {preview.days.map((d: ProgramDay) => (
                                 <div key={d.id} className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
                                     <div className="font-bold text-cyan-400 mb-2">{d.name}</div>
                                     <div className="space-y-1">
-                                        {d.exercises.map((ex: any, i: number) => (
+                                        {d.exercises.map((ex: ProgramExercise, i: number) => (
                                             <div key={i} className="flex justify-between text-sm gap-3">
                                                 <span className="text-gray-200 truncate">{ex.name}</span>
                                                 <span className="text-gray-500 whitespace-nowrap">
@@ -181,7 +184,6 @@ export function ProgramImport({ gymData, setGymData, onClose }: any) {
                         </div>
                     </>
                 )}
-            </div>
-        </div>
+        </Modal>
     );
 }

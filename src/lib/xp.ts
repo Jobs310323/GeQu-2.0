@@ -4,12 +4,16 @@
 // habits, kanban, gym history, test results). Nothing new has to be tracked,
 // so past activity counts retroactively and there is no migration.
 
+import { toLocalDateKey, daysBetween } from './datetime';
+import type { DayLog, Habit, KanbanTask, GymData, TestResult } from '../types/domain';
+import { lastOf, type NonEmptyArray } from './nonEmpty';
+
 export type GameData = {
-    logs: any[];
-    habits: any[];
-    kanban: any[];
-    gymData: any;
-    testResults: any[];
+    logs: DayLog[];
+    habits: Habit[];
+    kanban: KanbanTask[];
+    gymData: GymData;
+    testResults: TestResult[];
 };
 
 export const XP_RULES = [
@@ -32,11 +36,11 @@ export function computeXp(data: GameData): { total: number; breakdown: XpBreakdo
 
     const counts: Record<string, number> = {
         day: logs.length,
-        habit: habits.reduce((sum: number, h: any) => sum + (h.history?.length ?? 0), 0),
-        task: kanban.filter((t: any) => t.status === 'done').length,
+        habit: habits.reduce((sum: number, h) => sum + (h.history?.length ?? 0), 0),
+        task: kanban.filter((t) => t.status === 'done').length,
         workout: workouts.length,
         test: tests.length,
-        gratitude: logs.reduce((sum: number, l: any) => sum + (l.gratitude?.length ?? 0), 0),
+        gratitude: logs.reduce((sum: number, l) => sum + (l.gratitude?.length ?? 0), 0),
     };
 
     const breakdown = XP_RULES.map(rule => ({
@@ -75,7 +79,7 @@ export function levelFromXp(totalXp: number): LevelInfo {
 
 // --- Story chapters -------------------------------------------------------
 
-export const CHAPTERS = [
+export const CHAPTERS: NonEmptyArray<{ from: number; to: number; title: string; text: string }> = [
     { from: 1, to: 10, title: 'Глава 1: Начало', text: 'Ты только начинаешь путь. Каждый день — маленькая победа.' },
     { from: 11, to: 25, title: 'Глава 2: Первые успехи', text: 'Ты чувствуешь силу ритуалов. Привычки закрепляются.' },
     { from: 26, to: 50, title: 'Глава 3: Мастерство', text: 'Ты знаешь свои паттерны. Рутина — твой союзник, а не враг.' },
@@ -83,7 +87,7 @@ export const CHAPTERS = [
 ];
 
 export function chapterFor(level: number) {
-    return CHAPTERS.find(c => level >= c.from && level <= c.to) ?? CHAPTERS[CHAPTERS.length - 1];
+    return CHAPTERS.find(c => level >= c.from && level <= c.to) ?? lastOf(CHAPTERS);
 }
 
 // --- Achievements ---------------------------------------------------------
@@ -98,14 +102,13 @@ export type Achievement = {
     goal: number;
 };
 
-/** Longest run of consecutive days present in a list of YYYY-MM-DD strings. */
+/** Longest run of consecutive days in a list of dates, counted in the user's timezone. */
 function longestDayStreak(dates: string[]): number {
-    const days = [...new Set(dates)].map(d => new Date(d).setHours(0, 0, 0, 0)).sort((a, b) => a - b);
+    const days = [...new Set(dates.map(toLocalDateKey))].filter(Boolean).sort();
     if (days.length === 0) return 0;
     let best = 1, run = 1;
     for (let i = 1; i < days.length; i++) {
-        if (days[i] - days[i - 1] === 86400000) run++;
-        else if (days[i] !== days[i - 1]) run = 1;
+        run = daysBetween(days[i - 1]!, days[i]!) === 1 ? run + 1 : 1;
         best = Math.max(best, run);
     }
     return best;
@@ -114,15 +117,15 @@ function longestDayStreak(dates: string[]): number {
 export const ACHIEVEMENTS: Achievement[] = [
     {
         id: 'phoenix', icon: '🔥', title: 'Феникс', desc: '7 дней подряд закрывал день', goal: 7,
-        progress: d => longestDayStreak((d.logs ?? []).map((l: any) => l.date)),
+        progress: d => longestDayStreak((d.logs ?? []).map((l) => l.date)),
     },
     {
         id: 'marathon', icon: '🏃', title: 'Марафонец', desc: '30 дней подряд закрывал день', goal: 30,
-        progress: d => longestDayStreak((d.logs ?? []).map((l: any) => l.date)),
+        progress: d => longestDayStreak((d.logs ?? []).map((l) => l.date)),
     },
     {
         id: 'owl', icon: '🌙', title: 'Совёнок', desc: 'Сон ≥ 8/10 десять раз', goal: 10,
-        progress: d => (d.logs ?? []).filter((l: any) => Number(l.sleep) >= 8).length,
+        progress: d => (d.logs ?? []).filter((l) => Number(l.sleep) >= 8).length,
     },
     {
         id: 'iron', icon: '💪', title: 'Железный человек', desc: '100 тренировок', goal: 100,
@@ -138,27 +141,27 @@ export const ACHIEVEMENTS: Achievement[] = [
     },
     {
         id: 'sunny', icon: '😊', title: 'Солнечный', desc: '30 записей благодарности', goal: 30,
-        progress: d => (d.logs ?? []).reduce((s: number, l: any) => s + (l.gratitude?.length ?? 0), 0),
+        progress: d => (d.logs ?? []).reduce((s: number, l) => s + (l.gratitude?.length ?? 0), 0),
     },
     {
         id: 'rocket', icon: '🚀', title: 'Ракета', desc: 'Закрыто 10 задач', goal: 10,
-        progress: d => (d.kanban ?? []).filter((t: any) => t.status === 'done').length,
+        progress: d => (d.kanban ?? []).filter((t) => t.status === 'done').length,
     },
     {
         id: 'centurion', icon: '🎯', title: 'Центурион', desc: 'Закрыто 100 задач', goal: 100,
-        progress: d => (d.kanban ?? []).filter((t: any) => t.status === 'done').length,
+        progress: d => (d.kanban ?? []).filter((t) => t.status === 'done').length,
     },
     {
         id: 'ritual', icon: '♻️', title: 'Ритуал', desc: '100 выполненных привычек', goal: 100,
-        progress: d => (d.habits ?? []).reduce((s: number, h: any) => s + (h.history?.length ?? 0), 0),
+        progress: d => (d.habits ?? []).reduce((s: number, h) => s + (h.history?.length ?? 0), 0),
     },
     {
         id: 'explorer', icon: '🗺️', title: 'Исследователь', desc: 'Попробовал 5 разных тестов', goal: 5,
-        progress: d => new Set((d.testResults ?? []).map((t: any) => t.type)).size,
+        progress: d => new Set((d.testResults ?? []).map((t) => t.type)).size,
     },
     {
         id: 'balanced', icon: '⚖️', title: 'Равновесие', desc: 'Настроение ≥ 8/10 десять раз', goal: 10,
-        progress: d => (d.logs ?? []).filter((l: any) => Number(l.mood) >= 8).length,
+        progress: d => (d.logs ?? []).filter((l) => Number(l.mood) >= 8).length,
     },
 ];
 

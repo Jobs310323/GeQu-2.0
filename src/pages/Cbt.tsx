@@ -3,6 +3,10 @@ import { DISTORTIONS, PRACTICES, RECORD_FIELDS } from '../lib/cbt';
 import { streamAI, hasGroqKey } from '../lib/ai';
 import { marked } from 'marked';
 import { Icon } from '../components/Icons';
+import { nowInstant } from '../lib/datetime';
+import type { CbtProps } from '../types/props';
+import type { CbtRecord } from '../types/domain';
+import { errorMessage } from '../lib/helpers';
 
 const TABS = [
     { id: 'record', label: 'Дневник мыслей' },
@@ -25,7 +29,7 @@ function emptyRecord() {
     return RECORD_FIELDS.reduce((acc, f) => ({ ...acc, [f.key]: '' }), {} as Record<string, string>);
 }
 
-export function Cbt({ cbtRecords, setCbtRecords }: any) {
+export function Cbt({ cbtRecords, setCbtRecords }: CbtProps) {
     const [tab, setTab] = useState('record');
     const [draft, setDraft] = useState<Record<string, string>>(emptyRecord);
     const [aiOut, setAiOut] = useState('');
@@ -37,8 +41,12 @@ export function Cbt({ cbtRecords, setCbtRecords }: any) {
     const canSave = draft.situation?.trim() && draft.thought?.trim();
 
     const save = () => {
+        // `canSave` has already checked both required fields are non-empty; the
+        // cast only tells TypeScript what that guard established, since `draft`
+        // is keyed dynamically from RECORD_FIELDS.
         if (!canSave) return;
-        setCbtRecords([{ id: Date.now(), date: new Date().toISOString(), ...draft }, ...records]);
+        const record = { id: Date.now(), date: nowInstant(), ...draft } as CbtRecord;
+        setCbtRecords([record, ...records]);
         setDraft(emptyRecord());
         setAiOut('');
     };
@@ -56,8 +64,8 @@ export function Cbt({ cbtRecords, setCbtRecords }: any) {
                 messages: [{ role: 'user', content: `Вот моя запись:\n\n${body}\n\nПомоги разобрать.` }],
                 onToken: c => setAiOut(p => p + c),
             });
-        } catch (e: any) {
-            setAiError(e?.message || 'Не удалось получить разбор.');
+        } catch (e) {
+            setAiError(errorMessage(e, 'Не удалось получить разбор.'));
         } finally {
             setAiLoading(false);
         }
@@ -134,13 +142,13 @@ export function Cbt({ cbtRecords, setCbtRecords }: any) {
                             <p className="text-sm text-gray-500">Пока пусто. Первая запись — самая полезная.</p>
                         ) : (
                             <div className="space-y-3 max-h-[480px] overflow-y-auto pr-2">
-                                {records.map((r: any) => (
+                                {records.map((r) => (
                                     <div key={r.id} className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border)] anim-fade-in">
                                         <div className="flex justify-between items-start gap-3 mb-2">
                                             <span className="text-xs text-cyan-400">
                                                 {new Date(r.date).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                             </span>
-                                            <button onClick={() => setCbtRecords(records.filter((x: any) => x.id !== r.id))}
+                                            <button onClick={() => setCbtRecords(records.filter((x) => x.id !== r.id))}
                                                 className="text-red-400 text-xs hover:underline">Удалить</button>
                                         </div>
                                         {RECORD_FIELDS.filter(f => r[f.key]?.trim()).map(f => (

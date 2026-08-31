@@ -5,6 +5,8 @@
 // multiplies the raw score by 4. Getting these wrong would quietly produce
 // meaningless numbers, so each one is spelled out.
 
+import { lastOf, type NonEmptyArray } from './nonEmpty';
+
 export type Option = { text: string; val: number };
 export type Band = { min: number; max: number; label: string; tone: 'good' | 'mild' | 'moderate' | 'high' };
 
@@ -23,7 +25,7 @@ export type ClinicalTest = {
     /** Multiplier applied to the raw score (WHO-5 reports 0–100). */
     multiplier?: number;
     maxScore: number;
-    bands: Band[];
+    bands: NonEmptyArray<Band>;
     note?: string;
 };
 
@@ -477,7 +479,13 @@ export function scoreTest(test: ClinicalTest, answers: (number | null)[]): numbe
     const vals = answers.map(a => (a === null ? 0 : a));
 
     if (test.thresholds) {
-        return vals.reduce((n, v, i) => n + (v >= test.thresholds![i] ? 1 : 0), 0);
+        // ASRS counts items crossing their own threshold. An answer with no
+        // matching threshold cannot cross one, so it does not count.
+        const thresholds = test.thresholds;
+        return vals.reduce((n, v, i) => {
+            const t = thresholds[i];
+            return n + (t !== undefined && v >= t ? 1 : 0);
+        }, 0);
     }
 
     const maxOpt = Math.max(...test.options.map(o => o.val));
@@ -488,7 +496,7 @@ export function scoreTest(test: ClinicalTest, answers: (number | null)[]): numbe
 }
 
 export function bandFor(test: ClinicalTest, score: number): Band {
-    return test.bands.find(b => score >= b.min && score <= b.max) ?? test.bands[test.bands.length - 1];
+    return test.bands.find(b => score >= b.min && score <= b.max) ?? lastOf(test.bands);
 }
 
 export const TONE_CLASS: Record<Band['tone'], string> = {

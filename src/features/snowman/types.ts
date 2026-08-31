@@ -2,6 +2,8 @@
 // Three spheres — intellect, emotion, body — stack into a snowman whose
 // circles grow with the points earned in each sphere today.
 
+import type { NonEmptyArray } from '../../lib/nonEmpty';
+
 export type Sphere = 'intellect' | 'emotion' | 'body';
 
 export type Difficulty = 1 | 2 | 3;
@@ -38,7 +40,7 @@ export interface DayRecord {
     closedAt: string | null;
 }
 
-export const SPHERES: { id: Sphere; label: string; icon: string; color: string }[] = [
+export const SPHERES: NonEmptyArray<{ id: Sphere; label: string; icon: string; color: string }> = [
     { id: 'intellect', label: 'Интеллект', icon: '🧠', color: '#6366f1' },
     { id: 'emotion', label: 'Эмоции', icon: '❤️', color: '#ec4899' },
     { id: 'body', label: 'Тело', icon: '💪', color: '#22c55e' },

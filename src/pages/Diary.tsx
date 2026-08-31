@@ -3,12 +3,15 @@ import { marked } from 'marked';
 import { streamAI } from '../lib/ai';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
+import { nowInstant } from '../lib/datetime';
+import type { DiaryProps } from '../types/props';
+import { errorMessage } from '../lib/helpers';
 
 const JOURNAL_SYSTEM = `Ты — тёплый, бережный собеседник в приложении GeQu (пользователь — человек с СДВГ, ему важны ясность и поддержка).
 Тебе дают последние записи из личного дневника с датами. Мягко отрефлексируй их: подметь повторяющиеся темы и настроения, что радует и что тревожит, отметь сильные стороны и маленькие победы. Дай 1–2 бережных выполнимых предложения на подумать — без давления и нравоучений.
 Пиши по-русски, тепло, во втором лице («ты»), кратко и по делу, без клише и без медицинских диагнозов. Формат — Markdown с короткими разделами, например: **Что я заметил**, **Повторяющиеся темы**, **Мягкое предложение**. Опирайся только на то, что есть в записях.`;
 
-export function Diary({ diary, setDiary }: any) {
+export function Diary({ diary, setDiary }: DiaryProps) {
     const [newEntry, setNewEntry] = useState('');
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editText, setEditText] = useState('');
@@ -21,7 +24,7 @@ export function Diary({ diary, setDiary }: any) {
         const entries = diary.slice(0, 15); // diary is newest-first
         if (entries.length === 0) { setAiError('Пока нет записей для разбора.'); return; }
         const context = entries
-            .map((e: any) => `[${new Date(e.date).toLocaleDateString('ru-RU')}] ${e.content}`)
+            .map((e) => `[${new Date(e.date).toLocaleDateString('ru-RU')}] ${e.content}`)
             .join('\n\n');
         setAiLoading(true);
         setAiError('');
@@ -33,18 +36,18 @@ export function Diary({ diary, setDiary }: any) {
                 messages: [{ role: 'user', content: `Мои последние записи дневника:\n\n${context}\n\nБережно разбери их.` }],
                 onToken: (chunk) => setAiOutput(prev => prev + chunk),
             });
-        } catch (e: any) {
-            setAiError(e?.message || 'Не удалось получить разбор.');
+        } catch (e) {
+            setAiError(errorMessage(e, 'Не удалось получить разбор.'));
         } finally {
             setAiLoading(false);
         }
     };
-    const addEntry = () => { if (!newEntry.trim()) return; setDiary([{ id: Date.now(), date: new Date().toISOString(), content: newEntry }, ...diary]); setNewEntry(''); };
-    const deleteEntry = (id: number) => setDiary(diary.filter((entry:any) => entry.id !== id));
-    const saveEdit = (id: number) => { setDiary(diary.map((entry:any) => entry.id === id ? { ...entry, content: editText } : entry)); setEditingId(null); };
+    const addEntry = () => { if (!newEntry.trim()) return; setDiary([{ id: Date.now(), date: nowInstant(), content: newEntry }, ...diary]); setNewEntry(''); };
+    const deleteEntry = (id: number) => setDiary(diary.filter(entry => entry.id !== id));
+    const saveEdit = (id: number) => { setDiary(diary.map(entry => (entry.id === id ? { ...entry, content: editText } : entry))); setEditingId(null); };
 
     const q = query.trim().toLowerCase();
-    const visible = q ? diary.filter((e: any) => e.content.toLowerCase().includes(q)) : diary;
+    const visible = q ? diary.filter((e) => e.content.toLowerCase().includes(q)) : diary;
 
     return (
         <div>
@@ -100,7 +103,7 @@ export function Diary({ diary, setDiary }: any) {
                     {visible.length === 0 && (
                         <p className="text-gray-500 text-sm text-center py-6">{diary.length === 0 ? 'Записей пока нет.' : 'По запросу ничего не найдено.'}</p>
                     )}
-                    {visible.map((entry:any) => (
+                    {visible.map(entry => (
                         <div key={entry.id} className="border-b border-[var(--border)] pb-4 anim-fade-in">
                             <div className="text-xs text-cyan-400 mb-2">{new Date(entry.date).toLocaleString('ru-RU')}</div>
                             {editingId === entry.id ? (

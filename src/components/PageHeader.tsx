@@ -8,7 +8,7 @@ type Props = {
     action?: ReactNode;
 };
 
-/** Consistent page title row — icon badge + heading, ported from the concept-v2 design pass. */
+/** Consistent page title row — icon badge + heading. Every page starts with one. */
 export function PageHeader({ page, title, subtitle, action }: Props) {
     return (
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
@@ -17,8 +17,8 @@ export function PageHeader({ page, title, subtitle, action }: Props) {
                     <Icon name={NAV_ICON[page] ?? 'grid'} size={20} />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold text-[var(--text-main)] leading-tight">{title}</h1>
-                    {subtitle && <p className="text-sm text-[var(--text-muted)]">{subtitle}</p>}
+                    <h1 className="t-h1 text-[var(--gq-text-primary)]">{title}</h1>
+                    {subtitle && <p className="t-small text-[var(--gq-text-tertiary)]">{subtitle}</p>}
                 </div>
             </div>
             {action}

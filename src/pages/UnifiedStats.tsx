@@ -1,27 +1,38 @@
 import { PageHeader } from '../components/PageHeader';
 import { RadialGauge } from '../components/RadialGauge';
 import { BentoCard } from '../components/BentoCard';
+import type { UnifiedStatsProps } from '../types/props';
 
-export function UnifiedStats({ logs, testResults, gymData }: any) {
+/** The three self-rated numbers a day log carries. */
+type DayMetric = 'sleep' | 'focus' | 'mood';
+
+/** The three day metrics shown as gauges, in fixed order. */
+const GAUGES: { key: DayMetric; label: string; textClass: string }[] = [
+    { key: 'sleep', label: 'Средний сон', textClass: 'text-purple-400' },
+    { key: 'focus', label: 'Средний фокус', textClass: 'text-cyan-400' },
+    { key: 'mood', label: 'Настроение', textClass: 'text-green-400' },
+];
+
+export function UnifiedStats({ logs, testResults, gymData }: UnifiedStatsProps) {
     const last7Logs = logs.slice(-7);
     // Only average entries that actually carry a finite number — older logs may
     // predate a field (e.g. mood), which otherwise poisoned the sum into NaN.
-    const avg = (key: string) => {
-        const nums = last7Logs.map((l: any) => Number(l[key])).filter((n: number) => Number.isFinite(n));
+    const avg = (key: DayMetric) => {
+        const nums = last7Logs.map(l => Number(l[key])).filter(n => Number.isFinite(n));
         return nums.length ? (nums.reduce((a: number, b: number) => a + b, 0) / nums.length).toFixed(1) : '—';
     };
 
-    const totalTonnage = gymData.history.reduce((acc: number, w: any) => {
-        return acc + w.exercises.reduce((exAcc: number, ex: any) => 
-            exAcc + ex.sets.reduce((sAcc: number, s: any) => s.done ? sAcc + s.weight * s.reps : sAcc, 0), 0);
+    const totalTonnage = gymData.history.reduce((acc: number, w) => {
+        return acc + w.exercises.reduce((exAcc: number, ex) =>
+            exAcc + ex.sets.reduce((sAcc: number, s) => s.done ? sAcc + (s.weight ?? 0) * (s.reps ?? 0) : sAcc, 0), 0);
     }, 0);
 
-    const testCounts: any = {};
-    testResults.forEach((t: any) => { testCounts[t.type] = (testCounts[t.type] || 0) + 1; });
+    const testCounts: Record<string, number> = {};
+    testResults.forEach((t) => { testCounts[t.type] = (testCounts[t.type] || 0) + 1; });
     const uniqueExercises = new Set();
-    gymData.history.forEach((w: any) => w.exercises.forEach((e: any) => uniqueExercises.add(e.name)));
+    gymData.history.forEach((w) => w.exercises.forEach((e) => uniqueExercises.add(e.name)));
 
-    const gaugeValue = (key: string) => {
+    const gaugeValue = (key: DayMetric) => {
         const raw = avg(key);
         return raw === '—' ? null : Number(raw);
     };
@@ -32,11 +43,7 @@ export function UnifiedStats({ logs, testResults, gymData }: any) {
 
             <div className="glass-card p-6 rounded-2xl mb-6 bg-cyan-400/5 border border-cyan-400/20">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                        { key: 'sleep', label: 'Средний сон', textClass: 'text-purple-400' },
-                        { key: 'focus', label: 'Средний фокус', textClass: 'text-cyan-400' },
-                        { key: 'mood', label: 'Настроение', textClass: 'text-green-400' },
-                    ].map(g => {
+                    {GAUGES.map(g => {
                         const value = gaugeValue(g.key);
                         return (
                             <div key={g.key} className={`flex flex-col items-center justify-center ${g.textClass}`}>
@@ -57,7 +64,7 @@ export function UnifiedStats({ logs, testResults, gymData }: any) {
                 <BentoCard title="Когнитивные тесты" icon="flask">
                     {Object.keys(testCounts).length === 0 ? <p className="text-gray-400">Нет данных</p> : (
                         <div className="space-y-3">
-                            {Object.entries(testCounts).map(([type, count]: any) => (
+                            {Object.entries(testCounts).map(([type, count]) => (
                                 <div key={type} className="flex justify-between items-center bg-[var(--bg-input)] p-3 rounded-lg">
                                     <span className="capitalize text-gray-300">{type}</span>
                                     <span className="text-cyan-400 font-bold">{count} раз</span>

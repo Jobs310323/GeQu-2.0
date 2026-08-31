@@ -29,9 +29,11 @@ export type Prefs = {
 const DEFAULTS: Prefs = { hiddenTabs: [], collapsedGroups: [], hiddenWidgets: [] };
 
 export function loadPrefs(): Prefs {
-    const raw = DB.get('prefs', null);
+    // Read as Partial: a stored copy written by an older build can be missing
+    // any of these lists, and each one is normalised rather than trusted.
+    const raw = DB.get<Partial<Prefs> | null>('prefs', null);
     if (!raw || typeof raw !== 'object') return { ...DEFAULTS };
-    const arr = (v: any) => (Array.isArray(v) ? v : []);
+    const arr = (v: unknown): string[] => (Array.isArray(v) ? v.filter(x => typeof x === 'string') : []);
     return {
         hiddenTabs: arr(raw.hiddenTabs),
         collapsedGroups: arr(raw.collapsedGroups),

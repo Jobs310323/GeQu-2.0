@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import Chart from 'chart.js/auto';
+import type { ChartOptions, TooltipItem } from 'chart.js';
+import type { DayLog, TestResult } from '../types/domain';
+
+/** The three self-rated numbers a day log carries. */
+type DayMetric = 'sleep' | 'focus' | 'mood';
 
 /**
  * Categorical series palette.
@@ -66,7 +71,7 @@ function baseOptions(isLight: boolean, yMin?: number, yMax?: number) {
 }
 
 /** Soft vertical gradient under a line, so fills read as depth not as blocks. */
-function fillGradient(ctx: CanvasRenderingContext2D, area: any, hex: string) {
+function fillGradient(ctx: CanvasRenderingContext2D, area: { top: number; bottom: number }, hex: string) {
     if (!area) return 'transparent';
     const g = ctx.createLinearGradient(0, area.top, 0, area.bottom);
     g.addColorStop(0, hex + '40');
@@ -88,7 +93,7 @@ const lineStyle = (hex: string, label: string, fill: boolean) => ({
 });
 
 /** Sleep / focus / mood over time — three categorical series on one 0–10 axis. */
-export function StateChart({ logs }: any) {
+export function StateChart({ logs }: { logs: DayLog[] }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const chartRef = useRef<Chart | null>(null);
     const isLight = useThemeTick();
@@ -98,7 +103,7 @@ export function StateChart({ logs }: any) {
         if (!el) return;
         chartRef.current?.destroy();
 
-        const series = [
+        const series: { key: DayMetric; label: string; color: string }[] = [
             { key: 'sleep', label: 'Сон', color: SERIES[0] },
             { key: 'focus', label: 'Фокус', color: SERIES[1] },
             { key: 'mood', label: 'Настроение', color: SERIES[2] },
@@ -107,16 +112,16 @@ export function StateChart({ logs }: any) {
         chartRef.current = new Chart(el, {
             type: 'line',
             data: {
-                labels: logs.map((l: any) => new Date(l.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })),
+                labels: logs.map((l) => new Date(l.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })),
                 // Three overlapping translucent fills turn to mud, so this chart
                 // is lines only — the single-series TestChart keeps its fill.
                 datasets: series.map(s => ({
                     ...lineStyle(s.color, s.label, false),
-                    data: logs.map((l: any) => (Number.isFinite(Number(l[s.key])) ? Number(l[s.key]) : null)),
+                    data: logs.map((l) => (Number.isFinite(Number(l[s.key])) ? Number(l[s.key]) : null)),
                     spanGaps: true,
                 })),
             },
-            options: baseOptions(isLight, 0, 10) as any,
+            options: baseOptions(isLight, 0, 10) as ChartOptions<'line'>,
         });
 
         return () => { chartRef.current?.destroy(); chartRef.current = null; };
@@ -126,7 +131,7 @@ export function StateChart({ logs }: any) {
 }
 
 /** A single cognitive test over time. One series, so no legend box is needed. */
-export function TestChart({ results, label, lowerIsBetter }: any) {
+export function TestChart({ results, label, lowerIsBetter }: { results: TestResult[]; label: string; lowerIsBetter: boolean }) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const chartRef = useRef<Chart | null>(null);
     const isLight = useThemeTick();
@@ -137,21 +142,32 @@ export function TestChart({ results, label, lowerIsBetter }: any) {
         chartRef.current?.destroy();
 
         const color = SERIES[0];
-        const opts: any = baseOptions(isLight);
-        opts.plugins.legend.display = false; // title names the single series
-        opts.plugins.tooltip.callbacks = {
-            label: (c: any) => `${label ?? 'Результат'}: ${c.parsed.y}${lowerIsBetter ? ' (меньше — лучше)' : ''}`,
+        const base = baseOptions(isLight);
+        const opts: ChartOptions<'line'> = {
+            ...base,
+            plugins: {
+                ...base.plugins,
+                // The title already names the single series.
+                legend: { display: false },
+                tooltip: {
+                    ...base.plugins?.tooltip,
+                    callbacks: {
+                        label: (item: TooltipItem<'line'>) =>
+                            `${label ?? 'Результат'}: ${item.parsed.y}${lowerIsBetter ? ' (меньше — лучше)' : ''}`,
+                    },
+                },
+            },
         };
 
         chartRef.current = new Chart(el, {
             type: 'line',
             data: {
-                labels: results.map((r: any) =>
+                labels: results.map((r) =>
                     new Date(r.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })),
                 datasets: [{
                     ...lineStyle(color, label ?? 'Результат', true),
-                    data: results.map((r: any) => Number(r.value)),
-                    backgroundColor: (c: any) => fillGradient(c.chart.ctx, c.chart.chartArea, color),
+                    data: results.map((r) => Number(r.value)),
+                    backgroundColor: (c) => fillGradient(c.chart.ctx, c.chart.chartArea, color),
                 }],
             },
             options: opts,

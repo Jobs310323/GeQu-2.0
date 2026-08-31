@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push supersedes an in-flight run on the same branch. CI that is still
+# grinding on a commit nobody is looking at costs minutes and tells no one
+# anything.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast feedback first: lint and types fail in seconds and catch most mistakes.
+  static:
+    name: Lint and types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The app files entries under the user's calendar day, and that logic
+        # was wrong for every non-UTC user until Phase 1. A CI runner is UTC, so
+        # a UTC-only run would pass with the bug reintroduced. These two zones
+        # sit on either side of the date line and reproduce it directly.
+        timezone: [UTC, Pacific/Niue, Pacific/Kiritimati]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+        env:
+          TZ: ${{ matrix.timezone }}
+
+  # Everything that needs a real browser. Split from `unit` so a Chromium
+  # problem cannot be mistaken for a logic failure.
+  browser:
+    name: Build and browser gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+
+      # Design tokens: the values are sound, and the app resolves to them.
+      - run: npm run check:contrast
+      - run: npm run check:theme
+
+      # Accessibility: focus, dialogs, viewports, axe, static width analysis.
+      - run: npm run check:a11y
+
+      # The build boots and the SPA fallback serves deep links.
+      - run: npm run smoke

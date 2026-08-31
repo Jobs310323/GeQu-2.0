@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { CLINICAL_TESTS, scoreTest, bandFor, TONE_CLASS, type ClinicalTest } from '../lib/clinicalTests';
 import { PageHeader } from '../components/PageHeader';
 import { Cbt } from './Cbt';
+import { nowInstant } from '../lib/datetime';
+import type { ClinicalTestsProps } from '../types/props';
 
 /** One completed run, kept so trends over time are visible. */
 type Result = { id: number; testId: string; date: string; score: number; label: string };
@@ -69,7 +71,7 @@ function Runner({ test, onFinish, onCancel }: { test: ClinicalTest; onFinish: (s
     );
 }
 
-function ClinicalTestsView({ clinicalResults, setClinicalResults }: any) {
+function ClinicalTestsView({ clinicalResults, setClinicalResults }: Pick<ClinicalTestsProps, 'clinicalResults' | 'setClinicalResults'>) {
     const [running, setRunning] = useState<ClinicalTest | null>(null);
     const [justFinished, setJustFinished] = useState<{ test: ClinicalTest; score: number } | null>(null);
 
@@ -79,7 +81,7 @@ function ClinicalTestsView({ clinicalResults, setClinicalResults }: any) {
         const band = bandFor(test, score);
         setClinicalResults([
             ...results,
-            { id: Date.now(), testId: test.id, date: new Date().toISOString(), score, label: band.label },
+            { id: Date.now(), testId: test.id, date: nowInstant(), score, label: band.label },
         ]);
         setRunning(null);
         setJustFinished({ test, score });
@@ -240,8 +242,8 @@ function AdhdScreeningTest() {
         { text: "Очень часто", val: 4 }
     ];
 
-    const [answers, setAnswers] = useState<any[]>(Array(18).fill(null));
-    const [result, setResult] = useState<any>(null);
+    const [answers, setAnswers] = useState<(number | null)[]>(Array(18).fill(null));
+    const [result, setResult] = useState<{ score: number; percent: number; verdict: string } | null>(null);
 
     const handleAnswer = (qIndex: number, val: number) => {
         const newAnswers = [...answers];
@@ -250,12 +252,12 @@ function AdhdScreeningTest() {
     };
 
     const calculateResult = () => {
-        const total = answers.reduce((sum, val) => sum + val, 0);
+        const total = answers.reduce<number>((sum, val) => sum + (val ?? 0), 0);
         const maxScore = 18 * 4;
         const percent = Math.round((total / maxScore) * 100);
         let verdict = "";
 
-        const partA = answers.slice(0, 6).filter(v => v >= 3).length;
+        const partA = answers.slice(0, 6).filter(v => v !== null && v >= 3).length;
 
         if (partA >= 4 || percent >= 60) {
             verdict = "Высокая вероятность СДВГ. Ваши ответы сильно соответствуют клинической картине. Рекомендуется обратиться к врачу-психиатру для точной диагностики.";
@@ -314,7 +316,7 @@ function AdhdScreeningTest() {
     );
 }
 
-export function ClinicalTests({ clinicalResults, setClinicalResults, cbtRecords, setCbtRecords }: any) {
+export function ClinicalTests({ clinicalResults, setClinicalResults, cbtRecords, setCbtRecords }: ClinicalTestsProps) {
     const [tab, setTab] = useState('clinical');
 
     return (

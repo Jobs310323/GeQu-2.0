@@ -1,0 +1,60 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc", "jsx-a11y"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+
+    // Phase 2 drove `any` out of the codebase and Phase 9 finished the job —
+    // but Phase 2 measured it with a grep for `: any`, which silently missed
+    // `useRef<any>` and `any[]`, so the "zero" it reported was wrong by 26.
+    // A rule cannot be fooled the way a grep was.
+    "typescript/no-explicit-any": "error",
+
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/anchor-has-content": "error",
+    "jsx-a11y/anchor-is-valid": "error",
+    "jsx-a11y/aria-activedescendant-has-tabindex": "error",
+    "jsx-a11y/aria-props": "error",
+    "jsx-a11y/aria-role": "error",
+    "jsx-a11y/aria-unsupported-elements": "error",
+    "jsx-a11y/click-events-have-key-events": "error",
+    "jsx-a11y/control-has-associated-label": "error",
+    "jsx-a11y/heading-has-content": "error",
+    "jsx-a11y/html-has-lang": "error",
+    "jsx-a11y/iframe-has-title": "error",
+    "jsx-a11y/label-has-associated-control": "error",
+    "jsx-a11y/no-noninteractive-element-interactions": "error",
+    "jsx-a11y/no-static-element-interactions": "error",
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "jsx-a11y/role-supports-aria-props": "error",
+    "jsx-a11y/scope": "error",
+    "jsx-a11y/tabindex-no-positive": "error",
+
+    // Off: it rejects `<ul role="listbox">` and `<li role="option">`, which is
+    // the ARIA Authoring Practices listbox pattern verbatim and is explicitly
+    // permitted by ARIA in HTML. The command palette is a combobox and there is
+    // no alternative the rule would accept. `no-static-element-interactions`
+    // stays on and still catches a bare div with a handler.
+    "jsx-a11y/no-noninteractive-element-to-interactive-role": "off",
+
+    // Off: a style preference, not a WCAG requirement, and wrong in both places
+    // it fires here. It proposes `<select>` for the command palette's listbox,
+    // and a real `<button>` for a MindMap node card that contains an `<input>`
+    // during inline rename — invalid nesting that browsers silently reparent.
+    "jsx-a11y/prefer-tag-over-role": "off",
+
+    // Off: the rule cannot distinguish autofocus on page load (bad — steals
+    // focus the user did not ask to move) from autofocus inside a panel the
+    // user just opened (correct — it is how HTML expresses initial focus).
+    // All 13 uses were audited individually; every one is the second kind.
+    // See docs/ACCESSIBILITY.md for the per-site record.
+    "jsx-a11y/no-autofocus": "off"
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**"],
+      "rules": { "react/only-export-components": "off" }
+    }
+  ]
+}

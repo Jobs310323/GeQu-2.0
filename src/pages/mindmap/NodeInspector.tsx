@@ -1,6 +1,8 @@
+import { useId } from 'react';
 import { Icon } from '../../components/Icons';
 import type { EffortType, MindNode, NodeStatus, Priority } from '../../types/mindmap';
 import { EFFORT_LABEL, PRIORITY_LABEL } from '../../lib/mindTree';
+import { nowInstant } from '../../lib/datetime';
 
 type Props = {
     node: MindNode;
@@ -25,7 +27,10 @@ const fieldLabel = 'text-xs font-medium text-[var(--text-muted)] mb-1 block';
 const fieldInput = 'w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-main)] outline-none focus:border-cyan-400';
 
 export function NodeInspector({ node, hasChildren, effectiveProgress, subtreeHours, onPatch, onClose }: Props) {
-    const patch = (p: Partial<MindNode>) => onPatch(node.id, { ...p, updatedAt: new Date().toISOString() });
+    // The inspector renders per selected node, so field ids must be unique per
+    // instance or a second inspector would steal the first one's labels.
+    const uid = useId();
+    const patch = (p: Partial<MindNode>) => onPatch(node.id, { ...p, updatedAt: nowInstant() });
 
     return (
         <div className="glass-card rounded-2xl p-4 w-full sm:w-80 shrink-0 flex flex-col gap-4 max-h-[75vh] overflow-y-auto">
@@ -51,54 +56,56 @@ export function NodeInspector({ node, hasChildren, effectiveProgress, subtreeHou
             </div>
 
             <div>
-                <label className={fieldLabel}>Приоритет (матрица Эйзенхауэра)</label>
-                <select className={fieldInput} value={node.priority} onChange={e => patch({ priority: e.target.value as Priority })}>
+                <label htmlFor={`${uid}-priority`} className={fieldLabel}>Приоритет (матрица Эйзенхауэра)</label>
+                <select id={`${uid}-priority`} className={fieldInput} value={node.priority} onChange={e => patch({ priority: e.target.value as Priority })}>
                     {PRIORITIES.map(p => <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>)}
                 </select>
             </div>
 
             <div>
-                <label className={fieldLabel}>Срок</label>
-                <input type="date" className={fieldInput} value={node.dueDate ?? ''}
+                <label htmlFor={`${uid}-due`} className={fieldLabel}>Срок</label>
+                <input id={`${uid}-due`} type="date" className={fieldInput} value={node.dueDate ?? ''}
                     onChange={e => patch({ dueDate: e.target.value || null })} />
             </div>
 
             <div>
-                <label className={fieldLabel}>Оценка часов{hasChildren && subtreeHours > 0 ? ` (в ветке: ${subtreeHours}ч)` : ''}</label>
-                <input type="number" min={0} step={0.5} className={fieldInput}
+                <label htmlFor={`${uid}-hours`} className={fieldLabel}>Оценка часов{hasChildren && subtreeHours > 0 ? ` (в ветке: ${subtreeHours}ч)` : ''}</label>
+                <input id={`${uid}-hours`} type="number" min={0} step={0.5} className={fieldInput}
                     value={node.estimatedHours ?? ''}
                     onChange={e => patch({ estimatedHours: e.target.value === '' ? null : Number(e.target.value) })} />
             </div>
 
             <div>
-                <label className={fieldLabel}>Тип усилия</label>
-                <select className={fieldInput} value={node.effortType} onChange={e => patch({ effortType: e.target.value as EffortType })}>
+                <label htmlFor={`${uid}-effort`} className={fieldLabel}>Тип усилия</label>
+                <select id={`${uid}-effort`} className={fieldInput} value={node.effortType} onChange={e => patch({ effortType: e.target.value as EffortType })}>
                     {EFFORTS.map(f => <option key={f} value={f}>{EFFORT_LABEL[f]}</option>)}
                 </select>
             </div>
 
-            <div>
-                <label className={fieldLabel}>Энергозатратность</label>
+            <fieldset>
+                <legend className={fieldLabel}>Энергозатратность</legend>
                 <div className="flex gap-1.5">
                     {[1, 2, 3, 4, 5].map(n => (
-                        <button key={n} onClick={() => patch({ energyScore: n as 1 | 2 | 3 | 4 | 5 })}
-                            className={`flex-1 h-7 rounded-lg text-xs border transition ${node.energyScore >= n ? 'bg-yellow-400/20 border-yellow-400 text-yellow-400' : 'border-[var(--border)] text-[var(--text-muted)]'}`}>
+                        <button key={n} type="button" onClick={() => patch({ energyScore: n as 1 | 2 | 3 | 4 | 5 })}
+                            aria-pressed={node.energyScore >= n}
+                            aria-label={`Энергозатратность ${n} из 5`}
+                            className={`flex-1 h-7 rounded-lg text-xs border transition ${node.energyScore >= n ? 'bg-yellow-400/20 border-yellow-400 text-yellow-400' : 'border-[var(--border)] text-[var(--gq-text-tertiary)]'}`}>
                             {n}
                         </button>
                     ))}
                 </div>
-            </div>
+            </fieldset>
 
             <div>
-                <label className={fieldLabel}>Статус</label>
-                <select className={fieldInput} value={node.status} onChange={e => patch({ status: e.target.value as NodeStatus })}>
+                <label htmlFor={`${uid}-status`} className={fieldLabel}>Статус</label>
+                <select id={`${uid}-status`} className={fieldInput} value={node.status} onChange={e => patch({ status: e.target.value as NodeStatus })}>
                     {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
             </div>
 
             <div>
-                <label className={fieldLabel}>Теги (через запятую)</label>
-                <input type="text" className={fieldInput}
+                <label htmlFor={`${uid}-tags`} className={fieldLabel}>Теги (через запятую)</label>
+                <input id={`${uid}-tags`} type="text" className={fieldInput}
                     defaultValue={node.tags.join(', ')}
                     onBlur={e => patch({ tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })} />
             </div>

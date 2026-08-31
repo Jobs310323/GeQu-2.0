@@ -2,65 +2,35 @@ import { useEffect, useRef, useState } from 'react';
 import Chart from 'chart.js/auto';
 import { PageHeader } from '../components/PageHeader';
 import { Icon } from '../components/Icons';
+import { todayKey, toLocalDateKey, daysBetween, isToday, nowInstant } from '../lib/datetime';
+import { DEFAULT_FINANCE, DEFAULT_EXPENSE_CATS, DEFAULT_INCOME_CATS, type Category, type FinanceEntry, type Debt, type Subscription, type FinanceData } from '../features/finance/types';
+import type { FinanceProps } from '../types/props';
+import type { NonEmptyArray } from '../lib/nonEmpty';
 
-export type Category = { id: string; icon: string; label: string; color: string };
-export type FinanceEntry = { id: number; type: 'expense' | 'income'; categoryId: string; amount: number; date: string };
-export type Debt = { id: number; title: string; amount: number; direction: 'i_owe' | 'owed_to_me'; status: 'active' | 'paid'; createdAt: string; paidAt?: string };
-export type Subscription = { id: string; name: string; amount: number; nextPaymentDate: string };
-export type FinanceData = {
-    pin: string | null;
-    initialBalance: number;
-    categories: { expense: Category[]; income: Category[] };
-    entries: FinanceEntry[];
-    debts: Debt[];
-    subscriptions: Subscription[];
-};
+// The data model lives in features/finance/types so the app's initial state can
+// import the defaults without dragging this page (and Chart.js) into the entry
+// bundle. Re-exported here because call sites already reach for it by this path.
+export type { Category, FinanceEntry, Debt, Subscription, FinanceData } from '../features/finance/types';
+export { DEFAULT_FINANCE };
 
-const DEFAULT_EXPENSE_CATS: Category[] = [
-    { id: 'food', icon: '🍔', label: 'Еда', color: '#EA580C' },
-    { id: 'transport', icon: '🚌', label: 'Транспорт', color: '#0284C7' },
-    { id: 'home', icon: '🏠', label: 'Жильё', color: '#7C3AED' },
-    { id: 'fun', icon: '🎮', label: 'Развлечения', color: '#DB2777' },
-    { id: 'health', icon: '💊', label: 'Здоровье', color: '#16A34A' },
-    { id: 'shopping', icon: '🛍️', label: 'Покупки', color: '#CA8A04' },
-    { id: 'subscription', icon: '🔁', label: 'Подписки', color: '#0EA5E9' },
-    { id: 'debt', icon: '💳', label: 'Погашение долга', color: '#7C3AED' },
-    { id: 'other_e', icon: '📦', label: 'Прочее', color: '#64748B' },
-];
-const DEFAULT_INCOME_CATS: Category[] = [
-    { id: 'salary', icon: '💰', label: 'Зарплата', color: '#16A34A' },
-    { id: 'gift', icon: '🎁', label: 'Подарок', color: '#DB2777' },
-    { id: 'freelance', icon: '💻', label: 'Фриланс', color: '#0284C7' },
-    { id: 'debt', icon: '💳', label: 'Возврат долга', color: '#7C3AED' },
-    { id: 'other_i', icon: '📦', label: 'Прочее', color: '#64748B' },
-];
+const PALETTE: NonEmptyArray<string> = ['#0284C7', '#EA580C', '#7C3AED', '#DB2777', '#16A34A', '#CA8A04', '#64748B', '#0EA5E9', '#F43F5E'];
 
-export const DEFAULT_FINANCE: FinanceData = {
-    pin: null,
-    initialBalance: 0,
-    categories: { expense: DEFAULT_EXPENSE_CATS, income: DEFAULT_INCOME_CATS },
-    entries: [],
-    debts: [],
-    subscriptions: [],
-};
-
-const PALETTE = ['#0284C7', '#EA580C', '#7C3AED', '#DB2777', '#16A34A', '#CA8A04', '#64748B', '#0EA5E9', '#F43F5E'];
-
+// Periods are counted in the user's calendar days, not in elapsed hours: "this
+// week" means the last seven days including today, so an entry made yesterday
+// evening still counts as yesterday rather than dropping out 168 hours later.
 function inPeriod(dateStr: string, period: 'day' | 'week' | 'month') {
+    if (period === 'day') return isToday(dateStr);
+    if (period === 'week') {
+        const age = daysBetween(toLocalDateKey(dateStr), todayKey());
+        return age >= 0 && age < 7;
+    }
     const d = new Date(dateStr);
     const now = new Date();
-    if (period === 'day') return d.toDateString() === now.toDateString();
-    if (period === 'week') {
-        const diff = (now.getTime() - d.getTime()) / 86400000;
-        return diff >= 0 && diff < 7;
-    }
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
 }
 
 function daysUntil(dateStr: string) {
-    const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
-    const now = new Date(); now.setHours(0, 0, 0, 0);
-    return Math.round((d.getTime() - now.getTime()) / 86400000);
+    return daysBetween(todayKey(), toLocalDateKey(dateStr));
 }
 
 function useLightTick() {
@@ -157,9 +127,9 @@ function FinanceSettings({ data, setPin, setInitialBalance, onClose }: {
         <div className="glass-card p-6 rounded-2xl mb-6">
             <h2 className="font-bold mb-4">Настройки раздела</h2>
             <div className="mb-4">
-                <label className="text-sm text-[var(--text-muted)] block mb-1">Начальный баланс сбережений</label>
+                <label htmlFor="initial-balance" className="text-sm text-[var(--text-muted)] block mb-1">Начальный баланс сбережений</label>
                 <div className="flex gap-2">
-                    <input type="number" value={balance} onChange={e => setBalance(e.target.value)}
+                    <input id="initial-balance" type="number" value={balance} onChange={e => setBalance(e.target.value)}
                         className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-cyan-400" />
                     <button onClick={() => setInitialBalance(parseFloat(balance) || 0)} className="bg-cyan-400 text-black font-bold px-4 py-2 rounded-lg">Сохранить</button>
                 </div>
@@ -182,7 +152,7 @@ function FinanceSettings({ data, setPin, setInitialBalance, onClose }: {
     );
 }
 
-function CategoryForm({ initial, onSave, onClose }: { initial?: Category; onSave: (c: { icon: string; label: string; color: string }) => void; onClose: () => void }) {
+function CategoryForm({ initial, onSave, onClose }: { initial?: Category | undefined; onSave: (c: { icon: string; label: string; color: string }) => void; onClose: () => void }) {
     const [icon, setIcon] = useState(initial?.icon ?? '🔖');
     const [label, setLabel] = useState(initial?.label ?? '');
     const [color, setColor] = useState(initial?.color ?? PALETTE[0]);
@@ -195,11 +165,21 @@ function CategoryForm({ initial, onSave, onClose }: { initial?: Category; onSave
                 <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Название категории"
                     className="flex-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-cyan-400" />
             </div>
-            <div className="flex gap-2 mb-3">
-                {PALETTE.map(c => (
-                    <button key={c} onClick={() => setColor(c)} className={`w-7 h-7 rounded-full ${color === c ? 'ring-2 ring-white' : ''}`} style={{ backgroundColor: c }} />
-                ))}
-            </div>
+            {/* Swatches carry no text, so colour alone would be their only
+                label — unusable to a screen reader and to anyone who cannot
+                distinguish these hues. Name each one and expose selection. */}
+            <fieldset className="mb-3">
+                <legend className="sr-only">Цвет категории</legend>
+                <div className="flex gap-2">
+                    {PALETTE.map((c, i) => (
+                        <button key={c} type="button" onClick={() => setColor(c)}
+                            aria-pressed={color === c}
+                            aria-label={`Цвет ${i + 1}`}
+                            className={`w-7 h-7 rounded-full ${color === c ? 'ring-2 ring-white' : ''}`}
+                            style={{ backgroundColor: c }} />
+                    ))}
+                </div>
+            </fieldset>
             <div className="flex gap-2">
                 <button onClick={() => { if (!label.trim()) return; onSave({ icon: icon || '🔖', label: label.trim(), color }); }}
                     className="bg-cyan-400 text-black font-bold px-5 py-2 rounded-lg">{initial ? 'Сохранить' : 'Добавить'}</button>
@@ -367,7 +347,7 @@ function SubscriptionsPanel({ subs, addSub, markPaid, deleteSub, updateSub, fmt 
 }) {
     const [name, setName] = useState('');
     const [amount, setAmount] = useState('');
-    const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+    const [date, setDate] = useState(() => todayKey());
 
     const submit = () => {
         const val = parseFloat(amount);
@@ -412,7 +392,7 @@ function SubscriptionsPanel({ subs, addSub, markPaid, deleteSub, updateSub, fmt 
     );
 }
 
-export function Finance({ finance, setFinance }: { finance: FinanceData; setFinance: (f: FinanceData) => void }) {
+export function Finance({ finance, setFinance }: FinanceProps) {
     const savedExpenseCats = finance?.categories?.expense ?? DEFAULT_EXPENSE_CATS;
     const withSubscription = savedExpenseCats.some(c => c.id === 'subscription')
         ? savedExpenseCats
@@ -460,7 +440,7 @@ export function Finance({ finance, setFinance }: { finance: FinanceData; setFina
     const confirmQuickAdd = () => {
         const val = parseFloat(amount.replace(',', '.'));
         if (!val || val <= 0 || !quickCat) return;
-        const entry: FinanceEntry = { id: Date.now(), type: tab, categoryId: quickCat.id, amount: val, date: new Date().toISOString() };
+        const entry: FinanceEntry = { id: Date.now(), type: tab, categoryId: quickCat.id, amount: val, date: nowInstant() };
         setFinance({ ...data, entries: [entry, ...entries] });
         setAmount(''); setQuickCat(null);
     };
@@ -477,7 +457,7 @@ export function Finance({ finance, setFinance }: { finance: FinanceData; setFina
     const switchTab = (t: 'expense' | 'income') => { setTab(t); setQuickCat(null); setEditingCatId(null); setManageCats(false); setShowAddCat(false); };
 
     const addDebt = (title: string, amount: number, direction: Debt['direction']) => {
-        const debt: Debt = { id: Date.now(), title: title.trim(), amount, direction, status: 'active', createdAt: new Date().toISOString() };
+        const debt: Debt = { id: Date.now(), title: title.trim(), amount, direction, status: 'active', createdAt: nowInstant() };
         setFinance({ ...data, debts: [debt, ...data.debts] });
     };
     // Repaying a debt moves real money: settling what I owe is an expense,
@@ -490,12 +470,12 @@ export function Finance({ finance, setFinance }: { finance: FinanceData; setFina
             type: debt.direction === 'i_owe' ? 'expense' : 'income',
             categoryId: 'debt',
             amount: debt.amount,
-            date: new Date().toISOString(),
+            date: nowInstant(),
         };
         setFinance({
             ...data,
             entries: [entry, ...data.entries],
-            debts: data.debts.map(d => d.id === id ? { ...d, status: 'paid' as const, paidAt: new Date().toISOString() } : d),
+            debts: data.debts.map(d => d.id === id ? { ...d, status: 'paid' as const, paidAt: nowInstant() } : d),
         });
     };
     const deleteDebt = (id: number) => setFinance({ ...data, debts: data.debts.filter(d => d.id !== id) });
@@ -512,11 +492,11 @@ export function Finance({ finance, setFinance }: { finance: FinanceData; setFina
         if (!sub) return;
         const next = new Date(sub.nextPaymentDate);
         next.setMonth(next.getMonth() + 1);
-        const entry: FinanceEntry = { id: Date.now(), type: 'expense', categoryId: 'subscription', amount: sub.amount, date: new Date().toISOString() };
+        const entry: FinanceEntry = { id: Date.now(), type: 'expense', categoryId: 'subscription', amount: sub.amount, date: nowInstant() };
         setFinance({
             ...data,
             entries: [entry, ...data.entries],
-            subscriptions: data.subscriptions.map(s => s.id === id ? { ...s, nextPaymentDate: next.toISOString().slice(0, 10) } : s),
+            subscriptions: data.subscriptions.map(s => s.id === id ? { ...s, nextPaymentDate: toLocalDateKey(next) } : s),
         });
     };
 
@@ -581,7 +561,7 @@ export function Finance({ finance, setFinance }: { finance: FinanceData; setFina
                                     {manageCats ? 'Готово' : '✎ Управление'}
                                 </button>
                             </div>
-                            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 sm:grid-cols-5 gap-3">
                                 {categories[tab].map(cat => (
                                     <div key={cat.id} className="relative flex flex-col items-center gap-1">
                                         <button onClick={() => manageCats ? setEditingCatId(cat.id) : (setQuickCat(cat), setAmount(''))} className="flex flex-col items-center gap-1 group w-full">

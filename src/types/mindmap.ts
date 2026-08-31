@@ -38,8 +38,8 @@ export interface MindEdge {
     // Each node exposes a source+target handle per side (see MindMapNode), so
     // xyflow needs to be told which pair an edge binds to — without these it
     // silently fails to render the edge at all once the page reloads.
-    sourceHandle?: string | null;
-    targetHandle?: string | null;
+    sourceHandle?: string | null | undefined;
+    targetHandle?: string | null | undefined;
 }
 
 export interface MindMapDoc {

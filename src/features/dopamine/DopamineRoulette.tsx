@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icons';
+import type { DopamineRouletteProps } from '../../types/props';
+import { isNonEmpty, lastOf, type NonEmptyArray } from '../../lib/nonEmpty';
+import { Modal } from '../../components/Modal';
 
-export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineMenu, energy = 5, onClose }: any) {
+export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineMenu, energy = 5, onClose }: DopamineRouletteProps) {
     const [phase, setPhase] = useState<'idle' | 'spinning' | 'result'>('idle');
     const [result, setResult] = useState<{ text: string; type: 'task' | 'break' } | null>(null);
     const [displayText, setDisplayText] = useState('?');
@@ -17,27 +20,30 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
         // Weighted pool rather than a flat 50/50: on low energy the wheel should
         // mostly offer recovery, on high energy mostly work — and among tasks,
         // the urgent ones should come up more often than 'buy a lightbulb'.
-        const todoTasks = kanban.filter((t: any) => t.status === 'todo');
+        const todoTasks = kanban.filter((t) => t.status === 'todo');
         const taskShare = energy >= 7 ? 3 : energy >= 4 ? 1 : 0.35;
         const priorityWeight = (p: string) => (p === 'high' ? 3 : p === 'medium' ? 2 : 1);
 
         const pool: { text: string; type: 'task' | 'break'; w: number }[] = [
-            ...todoTasks.map((t: any) => ({
+            ...todoTasks.map((t) => ({
                 text: t.text, type: 'task' as const,
                 w: priorityWeight(t.priority) * taskShare,
             })),
             ...dopamineMenu.map((b: string) => ({ text: b, type: 'break' as const, w: 1 })),
         ];
 
-        if (pool.length === 0) {
+        if (!isNonEmpty(pool)) {
             pool.push({ text: 'Список пуст. Просто подыши 1 минуту!', type: 'break', w: 1 });
         }
+        // Non-empty from here: either the pool had entries or the line above
+        // added the fallback, so `pick` can always return something.
+        const weighted = pool as NonEmptyArray<(typeof pool)[number]>;
 
-        const totalWeight = pool.reduce((s, i) => s + i.w, 0);
+        const totalWeight = weighted.reduce((s, i) => s + i.w, 0);
         const pick = () => {
             let r = Math.random() * totalWeight;
-            for (const item of pool) { r -= item.w; if (r <= 0) return item; }
-            return pool[pool.length - 1];
+            for (const item of weighted) { r -= item.w; if (r <= 0) return item; }
+            return lastOf(weighted);
         };
 
         // Анимация прокрутки текста
@@ -58,8 +64,8 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
     const acceptMission = () => {
         if (result?.type === 'task') {
             // Переносим задачу в Doing
-            const updatedKanban = kanban.map((t: any) => 
-                t.text === result.text ? { ...t, status: 'doing' } : t
+            const updatedKanban = kanban.map((t) => 
+                t.text === result.text ? { ...t, status: 'doing' as const } : t
             );
             setKanban(updatedKanban);
         }
@@ -74,16 +80,10 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
     };
 
     return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={onClose}>
-            <div className="glass-card p-8 rounded-3xl max-w-md w-full text-center border border-cyan-400/30 relative" onClick={e => e.stopPropagation()}>
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition">
-                    <Icon name="close" size={18} />
-                </button>
-                
-                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-2">
-                    Генератор Драйва
-                </h2>
-                <p className="text-gray-400 text-sm mb-2">Судьба решит, что тебе сейчас нужнее: задача или перезагрузка.</p>
+        <Modal title="Генератор Драйва"
+            subtitle="Судьба решит, что тебе сейчас нужнее: задача или перезагрузка."
+            onClose={onClose} size="md">
+            <div className="text-center">
                 <p className="text-xs mb-6">
                     <span className="text-gray-500">Энергия {energy.toFixed(1)} — </span>
                     <span className={energy >= 7 ? 'text-cyan-400' : energy >= 4 ? 'text-gray-400' : 'text-pink-400'}>
@@ -96,7 +96,7 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
                     {phase === 'idle' && <Icon name="thought" size={44} className="text-[var(--text-muted)]" />}
                     {phase === 'spinning' && <span className="text-xl font-bold text-cyan-400 animate-pulse">{displayText}</span>}
                     {phase === 'result' && result && (
-                        <div className="animate-fade-in">
+                        <div className="anim-fade-in">
                             <span className={`flex items-center justify-center gap-1.5 text-xs uppercase mb-2 font-bold ${result.type === 'task' ? 'text-purple-400' : 'text-green-400'}`}>
                                 <Icon name={result.type === 'task' ? 'target' : 'pause'} size={14} />
                                 {result.type === 'task' ? 'Рабочая задача' : 'Легальный перерыв'}
@@ -166,6 +166,6 @@ export function DopamineRoulette({ kanban, setKanban, dopamineMenu, setDopamineM
                     )}
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 }

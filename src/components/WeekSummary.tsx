@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { callAIJson, hasGroqKey } from '../lib/ai';
 import { DB } from '../lib/db';
+import type { WeekSummaryProps } from '../types/props';
+import { errorMessage } from '../lib/helpers';
+
+/** What gets written to `gequ_weekSummary`: the generated summary plus when it was made. */
+type CachedSummary = {
+    summary: Summary;
+    /** Human-readable stamp shown in the UI. */
+    madeAt?: string;
+    /** Epoch ms, used to decide the summary has gone stale. */
+    at?: number;
+};
 
 type Summary = {
     headline?: string;
@@ -30,16 +41,16 @@ const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length
 const r1 = (n: number) => Number(n.toFixed(1));
 
 /** Everything that happened inside a [from, to) window, as plain numbers. */
-function windowStats(from: number, to: number, d: any) {
+function windowStats(from: number, to: number, d: WeekSummaryProps) {
     const inRange = (iso: string) => {
         const t = new Date(iso).getTime();
         return t >= from && t < to;
     };
-    const logs = (d.logs ?? []).filter((l: any) => inRange(l.date));
-    const num = (k: string) => logs.map((l: any) => Number(l[k])).filter((n: number) => Number.isFinite(n));
-    const tags = (field: string) => {
+    const logs = (d.logs ?? []).filter(l => inRange(l.date));
+    const num = (k: 'sleep' | 'focus' | 'mood') => logs.map(l => Number(l[k])).filter(n => Number.isFinite(n));
+    const tags = (field: 'helped' | 'hindered') => {
         const c: Record<string, number> = {};
-        logs.forEach((l: any) => (l[field] ?? []).forEach((t: string) => { c[t] = (c[t] || 0) + 1; }));
+        logs.forEach(l => (l[field] ?? []).forEach(t => { c[t] = (c[t] || 0) + 1; }));
         return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([tag, n]) => ({ tag, n }));
     };
     return {
@@ -49,19 +60,19 @@ function windowStats(from: number, to: number, d: any) {
         mood: r1(avg(num('mood'))),
         helped: tags('helped'),
         hindered: tags('hindered'),
-        workouts: (d.gymData?.history ?? []).filter((w: any) => inRange(w.date)).length,
-        tests: (d.testResults ?? []).filter((t: any) => inRange(t.date)).length,
-        diaryEntries: (d.diary ?? []).filter((e: any) => inRange(e.date)).length,
-        habitTicks: (d.habits ?? []).reduce((s: number, h: any) =>
+        workouts: (d.gymData?.history ?? []).filter((w) => inRange(w.date)).length,
+        tests: (d.testResults ?? []).filter((t) => inRange(t.date)).length,
+        diaryEntries: (d.diary ?? []).filter((e) => inRange(e.date)).length,
+        habitTicks: (d.habits ?? []).reduce((s: number, h) =>
             s + (h.history ?? []).filter((day: string) => {
                 const t = new Date(day + 'T12:00:00').getTime();
                 return t >= from && t < to;
             }).length, 0),
-        tasksDone: (d.kanban ?? []).filter((t: any) => t.status === 'done').length,
+        tasksDone: (d.kanban ?? []).filter((t) => t.status === 'done').length,
     };
 }
 
-export function WeekSummary(props: any) {
+export function WeekSummary(props: WeekSummaryProps) {
     const [summary, setSummary] = useState<Summary | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -73,7 +84,7 @@ export function WeekSummary(props: any) {
     const lastWeek = windowStats(now - 2 * week, now - week, props);
 
     useEffect(() => {
-        const cached = DB.get('weekSummary', null);
+        const cached = DB.get<CachedSummary | null>('weekSummary', null);
         // A summary older than a day is stale — the week it describes has moved.
         if (cached?.summary && now - (cached.at ?? 0) < 86400000) {
             setSummary(cached.summary);
@@ -104,14 +115,14 @@ export function WeekSummary(props: any) {
             const stamp = new Date().toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
             setSummary(res); setMadeAt(stamp);
             DB.save('weekSummary', { summary: res, madeAt: stamp, at: Date.now() });
-        } catch (e: any) {
-            setError(e?.message || 'Не удалось подвести итог.');
+        } catch (e) {
+            setError(errorMessage(e, 'Не удалось подвести итог.'));
         } finally {
             setLoading(false);
         }
     };
 
-    const Tile = ({ label, value, change }: any) => (
+    const Tile = ({ label, value, change }: { label: string; value: number | string; change: number | null }) => (
         <div className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
             <div className="text-xs text-gray-400 mb-0.5">{label}</div>
             <div className="text-xl font-bold text-white tabular-nums">{value || '—'}</div>
@@ -123,7 +134,7 @@ export function WeekSummary(props: any) {
         </div>
     );
 
-    const List = ({ title, items, tone, icon }: any) =>
+    const List = ({ title, items, tone, icon }: { title: string; items?: string[] | undefined; tone: string; icon: string }) =>
         items?.length ? (
             <div>
                 <div className={`text-sm font-bold mb-2 ${tone}`}>{icon} {title}</div>

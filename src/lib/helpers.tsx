@@ -1,17 +1,24 @@
-export function calculateStreak(logs: any[]) {
-    if (logs.length === 0) return 0;
-    const days = [...new Set(logs.map((l: any) => new Date(l.date).setHours(0,0,0,0)))].sort((a,b) => b-a);
-    const today = new Date().setHours(0,0,0,0);
-    const yesterday = today - 86400000;
-    if (days[0] !== today && days[0] !== yesterday) return 0;
-    let streak = 1;
-    for (let i = 0; i < days.length - 1; i++) {
-        if (days[i] - days[i+1] === 86400000) streak++;
-        else break;
-    }
-    return streak;
+import { streakLength, nowInstant } from './datetime';
+import type { DayLog, TestResult } from '../types/domain';
+import type { Setter } from '../types/props';
+
+/** Consecutive days of check-ins ending today (or yesterday, until the day is missed). */
+export function calculateStreak(logs: DayLog[]) {
+    return streakLength((logs ?? []).map(l => l.date));
 }
 
-export function saveResult(setTestResults: any, type: string, value: number) {
-    setTestResults((prev: any[]) => [...prev, { id: Date.now(), date: new Date().toISOString(), type, value }]);
+export function saveResult(setTestResults: Setter<TestResult[]>, type: string, value: number) {
+    setTestResults(prev => [...prev, { id: Date.now(), date: nowInstant(), type, value }]);
+}
+
+/**
+ * A human-readable message from a caught value, with `fallback` when there
+ * isn't one.
+ *
+ * `catch` binds `unknown` under `strict`, and a thrown value need not be an
+ * Error at all — so this narrows once here instead of every call site widening
+ * back to `any` to reach `.message`.
+ */
+export function errorMessage(e: unknown, fallback: string): string {
+    return e instanceof Error && e.message ? e.message : fallback;
 }

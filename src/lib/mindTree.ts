@@ -1,7 +1,8 @@
 import type { EffortType, MindEdge, MindNode, Priority } from '../types/mindmap';
+import { nowInstant } from './datetime';
 
 export function createNode(text: string, x: number, y: number, color: MindNode['color']): MindNode {
-    const now = new Date().toISOString();
+    const now = nowInstant();
     return {
         id: crypto.randomUUID(), text, x, y, color,
         dueDate: null, estimatedHours: null, progress: 0, isMilestone: false,
@@ -13,7 +14,7 @@ export function createNode(text: string, x: number, y: number, color: MindNode['
 }
 
 export function normalizeNode(raw: Partial<MindNode> & { id: string; text: string; x: number; y: number; color: MindNode['color'] }): MindNode {
-    const now = new Date().toISOString();
+    const now = nowInstant();
     return {
         id: raw.id, text: raw.text, x: raw.x, y: raw.y, color: raw.color,
         dueDate: raw.dueDate ?? null,

@@ -1,34 +1,28 @@
-// Local-storage persistence layer for GeQu.
-// Hardened against corrupted / missing entries so a single bad key
-// can never crash the whole app on startup.
-const PREFIX = 'gequ_';
+import { repository } from '../data';
 
-// Cloud sync listens here so it knows when there is something new to push.
-const listeners = new Set<() => void>();
+// Local persistence, now a thin alias over the repository boundary (`src/data`).
+//
+// The storage decision moved to `src/data/index.ts` in Phase 8b: writes go to
+// both localStorage and IndexedDB, reads come from localStorage. This module
+// stays because ~30 call sites import `DB` and there is no value in churning
+// them — but it holds no policy any more.
+//
+// New code should import `repository` from `src/data` directly.
 
 /** Subscribe to writes. Returns an unsubscribe function. */
-export function onDbChange(fn: () => void): () => void {
-    listeners.add(fn);
-    return () => { listeners.delete(fn); };
-}
+export const onDbChange = (fn: () => void): (() => void) => repository.subscribe(fn);
 
 export const DB = {
-    get: (key: string, def: any = []): any => {
-        try {
-            const raw = localStorage.getItem(`${PREFIX}${key}`);
-            if (raw === null) return def;
-            return JSON.parse(raw) || def;
-        } catch {
-            // Corrupted JSON — fall back to the default instead of throwing.
-            return def;
-        }
-    },
-    save: (key: string, data: any): void => {
-        try {
-            localStorage.setItem(`${PREFIX}${key}`, JSON.stringify(data));
-        } catch {
-            // Storage full or unavailable (private mode): ignore silently.
-        }
-        listeners.forEach(fn => fn());
-    },
+    /**
+     * Reads a stored value, falling back to `def` when the key is absent or the
+     * stored JSON is unparseable.
+     *
+     * The return type is the caller's assertion about what is stored, not a
+     * guarantee: nothing validates the parsed shape against `T`. That is honest
+     * for data this app wrote itself. Schema validation lands with the record
+     * envelopes described in docs/DATA_MODEL.md.
+     */
+    get: <T,>(key: string, def: T): T => repository.get<T>(key, def),
+
+    save: <T,>(key: string, data: T): void => repository.set<T>(key, data),
 };

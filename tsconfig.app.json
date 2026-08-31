@@ -16,6 +16,13 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Type safety. Enabled in two steps -- see docs/GEQU_PROGRESS.md, Phase 2.
+       Step 1 (this): strict, which implies noImplicitAny and strictNullChecks.
+       Step 2 (this): noUncheckedIndexedAccess and exactOptionalPropertyTypes. */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
