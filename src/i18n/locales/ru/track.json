@@ -1,0 +1,121 @@
+{
+    "finance": {
+        "title": "Финансы",
+        "savings": "Личные сбережения",
+        "totalIncome": "Доходы всего",
+        "totalExpense": "Расходы всего",
+        "noDataForPeriod": "Нет данных за период",
+        "tab": {
+            "ledger": "Учёт",
+            "debts": "Долги",
+            "subscriptions": "Подписки"
+        },
+        "kind": {
+            "expense": "Расходы",
+            "income": "Доходы"
+        },
+        "period": {
+            "day": "День",
+            "week": "Неделя",
+            "month": "Месяц"
+        },
+        "lock": {
+            "heading": "Финансы защищены",
+            "prompt": "Введите пароль, чтобы открыть раздел",
+            "placeholder": "Пароль",
+            "submit": "Войти",
+            "wrong": "Неверный пароль",
+            "close": "Закрыть"
+        },
+        "settings": {
+            "open": "Настройки",
+            "heading": "Настройки раздела",
+            "initialBalance": "Начальный баланс сбережений",
+            "save": "Сохранить",
+            "changePin": "Изменить или снять пароль",
+            "setPin": "Установить пароль на раздел",
+            "currentPin": "Текущий пароль",
+            "newPin": "Новый пароль (пусто — снять пароль)",
+            "repeatPin": "Повторите новый пароль",
+            "wrongCurrent": "Неверный текущий пароль",
+            "mismatch": "Пароли не совпадают",
+            "apply": "Применить",
+            "close": "Закрыть"
+        },
+        "category": {
+            "namePlaceholder": "Название категории",
+            "colourLegend": "Цвет категории",
+            "colourOption": "Цвет {{n}}",
+            "add": "Добавить",
+            "save": "Сохранить",
+            "cancel": "Отмена",
+            "manage": "Управление",
+            "done": "Готово",
+            "own": "Своя",
+            "food": "Еда",
+            "transport": "Транспорт",
+            "home": "Жильё",
+            "fun": "Развлечения",
+            "health": "Здоровье",
+            "shopping": "Покупки",
+            "subscription": "Подписки",
+            "debtPayment": "Погашение долга",
+            "otherExpense": "Прочее",
+            "salary": "Зарплата",
+            "gift": "Подарок",
+            "freelance": "Фриланс",
+            "debtReturn": "Возврат долга",
+            "otherIncome": "Прочее"
+        },
+        "quickAdd": {
+            "heading": "Быстрое добавление",
+            "amount": "Сумма",
+            "done": "Готово"
+        },
+        "stats": {
+            "heading": "Статистика",
+            "spent": "Расход: ",
+            "earned": "Доход: "
+        },
+        "entries": {
+            "heading": "Последние записи",
+            "empty": "Пока нет записей"
+        },
+        "debt": {
+            "iOwe": "Я должен",
+            "owedToMe": "Мне должны",
+            "settledOn": " · погашен {{date}}",
+            "markPaid": "Погашен",
+            "newHeading": "Новый долг",
+            "who": "Кому/от кого, за что",
+            "activeHeading": "Активные долги",
+            "activeEmpty": "Активных долгов нет",
+            "settledHeading": "Погашенные"
+        },
+        "subscription": {
+            "monthlyTotal": "Расход на подписки в месяц",
+            "perMonth": "{{amount}}/мес",
+            "newHeading": "Новая подписка",
+            "name": "Название",
+            "heading": "Подписки",
+            "empty": "Подписок пока нет",
+            "nextPayment": "Следующая оплата: {{date}}",
+            "overdue_one": "Просрочено на {{count}} день",
+            "overdue_few": "Просрочено на {{count}} дня",
+            "overdue_many": "Просрочено на {{count}} дней",
+            "overdue_other": "Просрочено на {{count}} дня",
+            "dueToday": "Оплата сегодня",
+            "dueIn_one": "Оплата через {{count}} день",
+            "dueIn_few": "Оплата через {{count}} дня",
+            "dueIn_many": "Оплата через {{count}} дней",
+            "dueIn_other": "Оплата через {{count}} дня",
+            "markPaid": "Оплачено"
+        },
+        "form": {
+            "amount": "Сумма",
+            "add": "Добавить",
+            "save": "Сохранить",
+            "cancel": "Отмена"
+        }
+    }
+}

@@ -1,0 +1,117 @@
+{
+    "finance": {
+        "title": "Money",
+        "savings": "Personal savings",
+        "totalIncome": "Income, all time",
+        "totalExpense": "Spending, all time",
+        "noDataForPeriod": "Nothing recorded in this period",
+        "tab": {
+            "ledger": "Ledger",
+            "debts": "Debts",
+            "subscriptions": "Subscriptions"
+        },
+        "kind": {
+            "expense": "Spending",
+            "income": "Income"
+        },
+        "period": {
+            "day": "Day",
+            "week": "Week",
+            "month": "Month"
+        },
+        "lock": {
+            "heading": "Money is locked",
+            "prompt": "Enter the passcode to open this section",
+            "placeholder": "Passcode",
+            "submit": "Unlock",
+            "wrong": "Wrong passcode",
+            "close": "Lock"
+        },
+        "settings": {
+            "open": "Settings",
+            "heading": "Section settings",
+            "initialBalance": "Starting savings balance",
+            "save": "Save",
+            "changePin": "Change or remove the passcode",
+            "setPin": "Set a passcode on this section",
+            "currentPin": "Current passcode",
+            "newPin": "New passcode (empty removes it)",
+            "repeatPin": "Repeat the new passcode",
+            "wrongCurrent": "That is not the current passcode",
+            "mismatch": "The two passcodes do not match",
+            "apply": "Apply",
+            "close": "Close"
+        },
+        "category": {
+            "namePlaceholder": "Category name",
+            "colourLegend": "Category colour",
+            "colourOption": "Colour {{n}}",
+            "add": "Add",
+            "save": "Save",
+            "cancel": "Cancel",
+            "manage": "Manage",
+            "done": "Done",
+            "own": "Custom",
+            "food": "Food",
+            "transport": "Transport",
+            "home": "Home",
+            "fun": "Fun",
+            "health": "Health",
+            "shopping": "Shopping",
+            "subscription": "Subscriptions",
+            "debtPayment": "Debt repayment",
+            "otherExpense": "Other",
+            "salary": "Salary",
+            "gift": "Gift",
+            "freelance": "Freelance",
+            "debtReturn": "Debt repaid to me",
+            "otherIncome": "Other"
+        },
+        "quickAdd": {
+            "heading": "Quick add",
+            "amount": "Amount",
+            "done": "Done"
+        },
+        "stats": {
+            "heading": "Statistics",
+            "spent": "Spent: ",
+            "earned": "Earned: "
+        },
+        "entries": {
+            "heading": "Latest entries",
+            "empty": "Nothing recorded yet"
+        },
+        "debt": {
+            "iOwe": "I owe",
+            "owedToMe": "Owed to me",
+            "settledOn": " · settled {{date}}",
+            "markPaid": "Settled",
+            "newHeading": "New debt",
+            "who": "Who, and what for",
+            "activeHeading": "Active debts",
+            "activeEmpty": "No active debts",
+            "settledHeading": "Settled"
+        },
+        "subscription": {
+            "monthlyTotal": "Subscriptions per month",
+            "perMonth": "{{amount}}/mo",
+            "newHeading": "New subscription",
+            "name": "Name",
+            "heading": "Subscriptions",
+            "empty": "No subscriptions yet",
+            "nextPayment": "Next payment: {{date}}",
+            "overdue_one": "{{count}} day overdue",
+            "overdue_other": "{{count}} days overdue",
+            "dueToday": "Due today",
+            "dueIn_one": "Due in {{count}} day",
+            "dueIn_other": "Due in {{count}} days",
+            "markPaid": "Paid"
+        },
+        "form": {
+            "amount": "Amount",
+            "add": "Add",
+            "save": "Save",
+            "cancel": "Cancel"
+        }
+    }
+}

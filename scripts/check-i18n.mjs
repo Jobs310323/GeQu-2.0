@@ -209,7 +209,10 @@ for (const ns of allNamespaces) {
 console.log('Migrated files');
 const manifest = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
 
-/** Removes `//` and block comments without being fooled by `//` inside a string. */
+/**
+ * Removes `//` and block comments without being fooled by `//` inside a string,
+ * and without changing how many lines the file has.
+ */
 function stripComments(src) {
     let out = '';
     let i = 0;
@@ -226,7 +229,14 @@ function stripComments(src) {
         if (c === '/' && next === '/') { while (i < src.length && src[i] !== '\n') i++; continue; }
         if (c === '/' && next === '*') {
             i += 2;
-            while (i < src.length && !(src[i] === '*' && src[i + 1] === '/')) i++;
+            // Keep the newlines. A block comment that swallowed them would shift
+            // every line number after it, which reports the wrong line AND looks
+            // for the `i18n-allow` pragma on the wrong source line — silently, in
+            // the direction of a false failure.
+            while (i < src.length && !(src[i] === '*' && src[i + 1] === '/')) {
+                if (src[i] === '\n') out += '\n';
+                i++;
+            }
             i += 2;
             continue;
         }

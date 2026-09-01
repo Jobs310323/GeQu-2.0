@@ -1,11 +1,6 @@
 {
     "_comment": "Files whose user-facing strings have all moved to translation keys. `npm run check:i18n` fails on any Cyrillic literal outside a comment in these files, which is what stops a finished screen regressing while the rest of the app is still being migrated. Add a file here only once it is actually done.",
     "files": [
-        "src/i18n/locale.ts",
-        "src/lib/format.ts",
-        "src/lib/nav.ts",
-        "src/main.tsx",
-        "src/routes/AppLayout.tsx",
         "src/components/AuthGate.tsx",
         "src/components/BottomNav.tsx",
         "src/components/CloudSync.tsx",
@@ -15,11 +10,21 @@
         "src/components/TagChips.tsx",
         "src/features/capture/CommandPalette.tsx",
         "src/features/capture/actions.ts",
+        "src/features/finance/types.ts",
+        "src/features/gym/Gym.tsx",
+        "src/features/gym/ProgramImport.tsx",
+        "src/features/gym/vocabulary.ts",
         "src/features/insights/engine.ts",
         "src/features/insights/types.ts",
         "src/features/today/NextAction.tsx",
         "src/features/today/Today.tsx",
         "src/features/today/TodayHabit.tsx",
-        "src/features/today/TodayInsight.tsx"
+        "src/features/today/TodayInsight.tsx",
+        "src/i18n/locale.ts",
+        "src/lib/format.ts",
+        "src/lib/nav.ts",
+        "src/main.tsx",
+        "src/pages/Finance.tsx",
+        "src/routes/AppLayout.tsx"
     ]
 }
