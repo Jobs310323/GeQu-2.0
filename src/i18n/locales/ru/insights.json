@@ -1,0 +1,17 @@
+{
+    "claim": {
+        "observed": "наблюдение",
+        "associated": "связь",
+        "inferred": "предположение",
+        "uncertain": "догадка"
+    },
+    "metric": { "sleep": "сон", "focus": "фокус", "mood": "настроение" },
+    "direction": { "above": "выше", "below": "ниже" },
+    "baseline": {
+        "steady": "Твой обычный {{metric}} за {{windowDays, number}} дней — около {{typical, number}}. Последняя неделя держится примерно там же.",
+        "trend": "Твой обычный {{metric}} — около {{typical, number}}. Последняя неделя идёт {{direction}}: примерно {{recent, number}}."
+    },
+    "association": "В дни, когда {{driver}} был выше обычного, {{outcome}} был в среднем {{direction}} на {{delta, number}}. Это совпадение по дням, а не доказанная причина.",
+    "blocker": "«{{tag}}» ты отмечал как помеху в {{hits, number}} из {{days, number}} оценённых дней — чаще всего остального.",
+    "coverage": "За последние {{windowDays, number}} дней ты оценил {{ratedDays, number}}. Всё остальное здесь опирается только на них."
+}

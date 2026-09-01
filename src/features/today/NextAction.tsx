@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icons';
 import type { KanbanTask, Habit } from '../../types/domain';
 
@@ -21,13 +22,19 @@ type Props = {
  * it is reflection, not action.
  */
 export function NextAction({ dayClosed, openTasks, habits, doneToday }: Props) {
+    const { t } = useTranslation('today');
     const suggestion = suggest({ dayClosed, openTasks, habits, doneToday });
     if (!suggestion) return null;
+
+    const { title } = suggestion;
+    // A suggestion's title is either the user's own task text, which is never
+    // translated, or one of ours, which always is.
+    const heading = 'text' in title ? title.text : t(title.key, { count: title.count });
 
     return (
         <section aria-labelledby="next-action">
             <h2 id="next-action" className="t-small font-medium text-[var(--gq-text-tertiary)] mb-3">
-                Дальше
+                {t('next.heading')}
             </h2>
             <Link
                 to={suggestion.to}
@@ -37,8 +44,8 @@ export function NextAction({ dayClosed, openTasks, habits, doneToday }: Props) {
                     <Icon name={suggestion.icon} size={20} />
                 </span>
                 <span className="flex-1 min-w-0">
-                    <span className="block font-medium leading-snug">{suggestion.title}</span>
-                    <span className="block t-small text-[var(--gq-text-tertiary)] mt-0.5">{suggestion.why}</span>
+                    <span className="block font-medium leading-snug">{heading}</span>
+                    <span className="block t-small text-[var(--gq-text-tertiary)] mt-0.5">{t(suggestion.whyKey)}</span>
                 </span>
                 <Icon
                     name="chevronRight"
@@ -50,15 +57,26 @@ export function NextAction({ dayClosed, openTasks, habits, doneToday }: Props) {
     );
 }
 
-type Suggestion = { icon: string; title: string; why: string; to: string };
+/**
+ * `suggest` stays free of translation so it can be unit-tested on its logic
+ * alone: it decides *what* to suggest and returns keys, and the component
+ * decides how that reads in the user's language.
+ */
+type Suggestion = {
+    icon: string;
+    /** Literal user text, or a key of ours to translate. */
+    title: { text: string } | { key: string; count?: number };
+    whyKey: string;
+    to: string;
+};
 
 function suggest({ dayClosed, openTasks, habits, doneToday }: Props): Suggestion | null {
     const inProgress = openTasks.find(t => t.status === 'doing');
     if (inProgress) {
         return {
             icon: 'target',
-            title: inProgress.text,
-            why: 'Уже начато — закончить проще, чем начать заново',
+            title: { text: inProgress.text },
+            whyKey: 'next.why.started',
             to: '/plan/tasks',
         };
     }
@@ -67,8 +85,8 @@ function suggest({ dayClosed, openTasks, habits, doneToday }: Props): Suggestion
     if (urgent) {
         return {
             icon: 'flame',
-            title: urgent.text,
-            why: 'Самый высокий приоритет из открытых задач',
+            title: { text: urgent.text },
+            whyKey: 'next.why.topPriority',
             to: '/plan/tasks',
         };
     }
@@ -77,8 +95,8 @@ function suggest({ dayClosed, openTasks, habits, doneToday }: Props): Suggestion
         const remaining = habits.length - doneToday;
         return {
             icon: 'repeat',
-            title: `Отметить привычки (${remaining})`,
-            why: 'Короткий шаг, который держит серию',
+            title: { key: 'next.habits', count: remaining },
+            whyKey: 'next.why.habitStreak',
             to: '/track/habits',
         };
     }
@@ -86,23 +104,23 @@ function suggest({ dayClosed, openTasks, habits, doneToday }: Props): Suggestion
     if (openTasks.length > 0) {
         const first = openTasks[0];
         if (first) {
-            return { icon: 'columns', title: first.text, why: 'Следующая в очереди', to: '/plan/tasks' };
+            return { icon: 'columns', title: { text: first.text }, whyKey: 'next.why.queue', to: '/plan/tasks' };
         }
     }
 
     if (!dayClosed) {
         return {
             icon: 'moon',
-            title: 'Закрыть день',
-            why: 'Оценить сон, фокус и настроение — это данные для всех выводов',
+            title: { key: 'next.closeDay' },
+            whyKey: 'next.why.checkin',
             to: '/today/checkin',
         };
     }
 
     return {
         icon: 'check',
-        title: 'На сегодня всё',
-        why: 'Задачи закрыты, привычки отмечены, день оценён',
+        title: { key: 'next.allDone' },
+        whyKey: 'next.why.allDone',
         to: '/insights/progress',
     };
 }

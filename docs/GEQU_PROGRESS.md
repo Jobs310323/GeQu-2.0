@@ -1111,3 +1111,131 @@ suites. Deleted: `observe.ts` and its tests, superseded and no longer imported. 
 **Next phase** — Phase 11: internationalization.
 
 ---
+
+## Phase 11a — Internationalization: infrastructure
+
+**Completed**
+
+The app can now be read in English or Russian, and the mechanism that makes the
+remaining migration safe is in place.
+
+Measured before starting, because the brief's estimate and the repo disagreed:
+**2278 lines containing Cyrillic across 136 files**. Those lines are not one
+kind of thing, and the plan splits accordingly — UI chrome (~1400 lines) becomes
+keys; long-form editorial content (~310) becomes per-locale Markdown; validated
+instrument wording (290) is not translated at all.
+
+- **`src/i18n/`** — i18next with bundled resources, five namespaces mirroring the
+  IA (`common`, `nav`, `today`, `capture`, `insights`), fallback to `en`.
+- **`src/lib/format.ts`** — every date, time, relative day, number, currency and
+  sort, on `Intl` directly. Replaces the 41 `toLocale*` sites, including the two
+  hardcoded `'ru-RU'` ones. `datetime.ts` is untouched: it decides which day a
+  record belongs to, this decides how a value reads, and the two must not merge.
+- **Locale resolution** with the existing-user rule (below), `<html lang>` kept
+  in step, and Clerk's own bundle selected to match.
+- **Currency as a user setting**, defaulting to `RUB`. The 13 hardcoded `₽` in
+  `Finance.tsx` are next, in 11b.
+- **Language and currency controls** in `/profile/settings`.
+- **Migrated as the reference implementation:** navigation (sidebar, bottom nav,
+  drawer), app shell, error boundary, modal, sync chip, tag chips, auth gate,
+  command palette, and the whole Today surface including the insights engine.
+
+**The insights engine changed shape.** `Insight.text` (a finished Russian
+sentence) became `messageKey` + `params` + `paramKeys`. A detector that returns
+prose can only be tested by matching that prose and can only ever speak one
+language. `params` and `paramKeys` are deliberately separate: i18next's inline
+`$t()` nesting needs `skipOnVariables: false`, which would also apply to
+`params` — and `params` carries the user's own tag text, so a tag named
+`$t(...)` would be evaluated against the translation table.
+
+**A fabricated instrument was deleted, not translated.**
+`pages/ClinicalTests.tsx` carried a second ADHD questionnaire beside the
+registry's ASRS entry. It was labelled "ASRS-v1.1" but scored Part A with a flat
+`answer >= 3` where the real screener uses per-item thresholds; it divided the
+raw total by 72 and presented the result as *"вероятность наличия симптомов
+СДВГ"* — a probability neither ASRS nor any sum of Likert answers produces; its
+60% / 35% cutoffs were invented; and its results were never persisted. Two ADHD
+instruments disagreeing in one app is a defect on its own. One of them
+fabricating a clinical likelihood is what the product principles exist to
+prevent. The validated Part A screener remains, scored correctly.
+
+**The existing-user rule.** Locale resolution is: stored choice → **`ru` if this
+browser already holds `gequ_*` data** → `navigator.languages` → `en`. Every
+existing user is Russian-speaking and none can have expressed a preference,
+because there was no setting until now. Falling through to `navigator.language`
+would open their app in English one morning with the way back written in
+English. `src/i18n/locale.test.ts` asserts it.
+
+**A new gate: `npm run check:i18n`.** Key parity, plural completeness against
+`Intl.PluralRules` per locale, interpolation parity, unused keys, and a Cyrillic
+escape check scoped to the files listed in `src/i18n/migrated.json`. That last
+one is what makes the migration incremental — a finished screen is protected
+while the other ~110 files are still Russian literals.
+
+All five were **canary-tested by being deliberately broken**, and two of them
+failed to fire the first time. The unused-key check passed a dead key twice:
+first because a parent-path escape hatch matched any sibling, then because
+`common:action` appears inside every `t('common:action.close')`, so a substring
+test could never distinguish the object from its members. Both are fixed and the
+reasons are in the script. This is the Phase-6 lesson holding: a gate that has
+never failed on purpose is not known to work.
+
+**Files changed** — new: `src/i18n/{index,locale,migrated.json}.ts`,
+`src/i18n/locales/{en,ru}/{common,nav,today,capture,insights}.json`,
+`src/lib/format.ts`, `scripts/check-i18n.mjs`, `docs/I18N.md`,
+`docs/adr/ADR-006-i18n.md`, plus `format.test.ts` and `locale.test.ts`.
+Modified: `main.tsx`, `index.html`, `routes/AppLayout.tsx`, `lib/nav.ts`,
+`lib/prefs.ts`, six shell components, the Today surface, the insights engine and
+its types, `pages/Settings.tsx`, `pages/ClinicalTests.tsx` (−103 lines),
+`package.json`, `.github/workflows/ci.yml`.
+
+**Dependencies added** — `i18next@25`, `react-i18next@16`. ~20 kB gzipped
+including both locales.
+
+**Tests added** — 31 (383 total). `format.test.ts` covers the locale seams that
+are invisible in English: the decimal comma, Russian's three plural categories
+and where they break (11–14 are `many`, 21 is `one`), genitive month names,
+collation. `locale.test.ts` covers the existing-user rule and storage failure.
+`Today.test.tsx` gains a language-switch test and one asserting a user's own
+task text survives it. `engine.test.ts`'s causal-language assertion now runs
+against the **rendered sentence in every locale** rather than a key — the
+boundary belongs to what the user reads, and a translation is exactly where a
+stray "improves" would reappear.
+
+**Also fixed:** `check:emoji` had flagged U+1F9E0 in `snowman/types.ts` since
+Phase 5 but was never wired into CI. It is wired in now, so the emoji was
+replaced rather than the gate weakened.
+
+**Risks**
+
+- Nothing has been seen rendering in a browser in either language; everything
+  above Today is behind Clerk auth and there is still no authenticated E2E
+  harness. Coverage is unit tests plus the unauthenticated shell.
+- English translations are mine. They are faithful, but no native reviewer has
+  read them, and the product voice in Russian is informal (`ты`) in a way English
+  has no direct equivalent for.
+- Russian is typically longer than English. The layouts were built for Russian,
+  so English should fit — but the reverse has not been checked at 320px.
+
+**Known limitations**
+
+- **~110 files are still Russian literals.** 11a is the foundation and the
+  reference implementation, not the migration. `src/i18n/migrated.json` is the
+  live record of what is actually done; it currently lists 20 files.
+- **The questionnaires are Russian-only**, and stay that way until the published
+  English wording is entered as content. A machine-translated PHQ-9 is not
+  PHQ-9, and shipping one would be exactly the fabrication the brief forbids.
+- The knowledge base and CBT content are Russian-only for the same structural
+  reason: they need per-locale Markdown files, not JSON string values.
+- `Finance.tsx` still writes `₽` at 13 sites. `formatCurrency` exists and the
+  preference is stored; the call sites move in 11b.
+- No RTL support. The layout uses physical `left`/`right` utilities throughout;
+  converting to logical properties is its own change.
+- The unused-key check is approximate by design — it matches a key path anywhere
+  in the sources rather than resolving each component's active namespace. It
+  reliably catches a key nothing references; it would not catch a key referenced
+  only under the wrong namespace.
+
+**Next phase** — 11b: the remaining pages, largest first.
+
+---

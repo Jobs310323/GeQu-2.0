@@ -1,0 +1,55 @@
+{
+    "action": {
+        "close": "Close",
+        "retry": "Try again",
+        "home": "Go home"
+    },
+    "nav": {
+        "main": "Main navigation",
+        "expand": "Expand menu",
+        "collapse": "Collapse menu",
+        "more": "More",
+        "sections": "Sections",
+        "skipToContent": "Skip to main content",
+        "showMore": "{{count}} more",
+        "openProfile": "Open profile",
+        "profileWithLevel": "Profile · level {{level}}"
+    },
+    "profile": {
+        "level": "Level {{level}}",
+        "energy": "Energy"
+    },
+    "theme": {
+        "toLight": "Switch to the light theme",
+        "toDark": "Switch to the dark theme"
+    },
+    "dopamine": { "roulette": "Dopamine roulette" },
+    "sync": {
+        "syncing": "Syncing…",
+        "offline": "Offline — changes saved on this device",
+        "error": "Couldn't sync"
+    },
+    "error": {
+        "featureFailed": "\"{{feature}}\" didn't open",
+        "generic": "Something went wrong",
+        "body": "The rest of the app still works — come back to this later, or go somewhere else. Your data is saved on this device and is untouched.",
+        "details": "Error details"
+    },
+    "tag": {
+        "remove": "Remove tag",
+        "add": "Add tag",
+        "placeholder": "tag…",
+        "short": "tag"
+    },
+    "auth": {
+        "signIn": "Sign in",
+        "signUp": "Sign up"
+    },
+    "language": {
+        "heading": "Language and formats",
+        "label": "Interface language",
+        "hint": "Your own entries — tasks, journal, tags — are never translated.",
+        "currency": "Currency",
+        "currencyHint": "How amounts are displayed. It does not convert anything: the numbers you have entered stay exactly as they are."
+    }
+}

@@ -1,5 +1,6 @@
 import { Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { Sidebar } from '../components/Sidebar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { HyperfocusOverlay } from '../features/hyperfocus/HyperfocusOverlay';
@@ -9,6 +10,7 @@ import { BottomNav } from '../components/BottomNav';
 import { CommandPalette } from '../features/capture/CommandPalette';
 import { findByPath } from '../lib/nav';
 import { useAppUi } from '../stores/app-ui.store';
+import { setCurrency } from '../lib/format';
 import { useTasks } from '../stores/tasks.store';
 import { useJournal } from '../stores/journal.store';
 import { useCheckins } from '../stores/checkins.store';
@@ -24,8 +26,10 @@ import { useEnergy, useLevelInfo, useTodayLog } from '../stores/derived';
  * fallback until a full reload.
  */
 export function AppLayout() {
+    const { t } = useTranslation(['common', 'nav']);
     const location = useLocation();
-    const feature = findByPath(location.pathname)?.label;
+    const item = findByPath(location.pathname);
+    const feature = item ? t(item.labelKey) : undefined;
 
     const theme = useAppUi(s => s.theme);
     const setTheme = useAppUi(s => s.setTheme);
@@ -47,6 +51,11 @@ export function AppLayout() {
     const levelInfo = useLevelInfo();
     const todayLog = useTodayLog();
 
+    // Keyed on `prefs.currency` rather than set once at boot, so a change made
+    // in Settings — or arriving from another device through cloud sync — takes
+    // effect without a reload.
+    useEffect(() => { setCurrency(prefs.currency); }, [prefs.currency]);
+
     useEffect(() => {
         // Toggle only the theme classes. Assigning to `className` here used to
         // replace the whole list, silently dropping anything else on <html>.
@@ -58,7 +67,7 @@ export function AppLayout() {
         <div className="flex h-screen overflow-hidden">
             {/* First thing in the tab order: a keyboard user should not have to
                 walk the whole sidebar on every navigation to reach the content. */}
-            <a href="#main" className="gq-skip-link">К основному содержимому</a>
+            <a href="#main" className="gq-skip-link">{t('common:nav.skipToContent')}</a>
 
             <Sidebar
                 theme={theme} setTheme={setTheme} energy={energy} todayLog={todayLog}

@@ -1,0 +1,17 @@
+{
+    "claim": {
+        "observed": "observation",
+        "associated": "association",
+        "inferred": "reading",
+        "uncertain": "guess"
+    },
+    "metric": { "sleep": "sleep", "focus": "focus", "mood": "mood" },
+    "direction": { "above": "higher", "below": "lower" },
+    "baseline": {
+        "steady": "Your usual {{metric}} over {{windowDays, number}} days is around {{typical, number}}. The last week is holding about there.",
+        "trend": "Your usual {{metric}} is around {{typical, number}}. The last week is running {{direction}}: about {{recent, number}}."
+    },
+    "association": "On days when your {{driver}} was above your usual, your {{outcome}} was on average {{direction}} by {{delta, number}}. That is a co-occurrence across days, not a proven cause.",
+    "blocker": "You marked \"{{tag}}\" as getting in the way on {{hits, number}} of {{days, number}} rated days — more often than anything else.",
+    "coverage": "Over the last {{windowDays, number}} days you rated {{ratedDays, number}}. Everything else here rests on those alone."
+}

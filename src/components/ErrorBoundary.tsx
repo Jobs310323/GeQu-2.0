@@ -1,4 +1,14 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import i18next from 'i18next';
+
+// `i18next.t` directly rather than `useTranslation`, and not because this is a
+// class component — the fallback could easily be extracted into one. It is
+// because this is the thing that renders when rendering has already failed. A
+// hook here would add a Suspense boundary and a subscription to the one code
+// path that must not have any: if the fallback itself throws, React remounts
+// it, and it throws again. A plain function call cannot suspend.
+const t = (key: string, params?: Record<string, string>) =>
+    i18next.t(key, params as never) as unknown as string;
 
 type Props = {
     children: ReactNode;
@@ -44,28 +54,29 @@ export class ErrorBoundary extends Component<Props, State> {
         return (
             <div role="alert" className="glass-card rounded-2xl p-6 max-w-lg">
                 <h2 className="text-lg font-medium mb-2">
-                    {this.props.feature ? `Раздел «${this.props.feature}» не открылся` : 'Что-то пошло не так'}
+                    {this.props.feature
+                        ? t('common:error.featureFailed', { feature: this.props.feature })
+                        : t('common:error.generic')}
                 </h2>
                 <p className="text-sm text-[var(--text-muted)] mb-4">
-                    Остальное приложение работает — можно вернуться сюда позже или перейти в другой раздел.
-                    Твои данные сохранены локально и не пострадали.
+                    {t('common:error.body')}
                 </p>
                 <div className="flex flex-wrap gap-2">
                     <button
                         onClick={this.reset}
                         className="px-4 py-2 rounded-lg bg-cyan-400/10 text-cyan-400 border border-cyan-400/25 text-sm hover:bg-cyan-400/15 transition"
                     >
-                        Попробовать снова
+                        {t('common:action.retry')}
                     </button>
                     <a
                         href="/"
                         className="px-4 py-2 rounded-lg border border-[var(--border)] text-sm hover:bg-white/5 transition"
                     >
-                        На главную
+                        {t('common:action.home')}
                     </a>
                 </div>
                 <details className="mt-4">
-                    <summary className="text-xs text-[var(--text-muted)] cursor-pointer">Подробности ошибки</summary>
+                    <summary className="text-xs text-[var(--text-muted)] cursor-pointer">{t('common:error.details')}</summary>
                     <pre className="mt-2 text-xs text-[var(--text-muted)] whitespace-pre-wrap break-words">
                         {error.message}
                     </pre>

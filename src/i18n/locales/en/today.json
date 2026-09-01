@@ -1,0 +1,65 @@
+{
+    "greeting": {
+        "night": "Still up?",
+        "morning": "Good morning",
+        "afternoon": "Good afternoon",
+        "evening": "Good evening"
+    },
+    "state": {
+        "heading": "State",
+        "energy": "Energy",
+        "streak": "Streak",
+        "habits": "Habits",
+        "dayNotClosed": "day not closed",
+        "none": "none yet",
+        "today": "today",
+        "noHabits": "none set up"
+    },
+    "energy": { "full": "fully charged", "mid": "middling", "low": "running out" },
+    "streak": {
+        "inARow_one": "{{count}} day in a row",
+        "inARow_other": "{{count}} days in a row"
+    },
+    "tasks": {
+        "today": "Today",
+        "all": "All tasks",
+        "empty": "No open tasks.",
+        "add": "Add a task",
+        "inProgress": "in progress"
+    },
+    "reminders": {
+        "ahead_one": "{{count}} reminder ahead",
+        "ahead_other": "{{count}} reminders ahead"
+    },
+    "next": {
+        "heading": "Next",
+        "habits": "Tick habits ({{count}})",
+        "closeDay": "Close the day",
+        "allDone": "That's everything for today",
+        "why": {
+            "started": "Already started — finishing beats starting over",
+            "topPriority": "Highest priority of the open tasks",
+            "habitStreak": "A short step that keeps the streak",
+            "queue": "Next in the queue",
+            "checkin": "Rate sleep, focus and mood — this is the data every insight is built from",
+            "allDone": "Tasks closed, habits ticked, day rated"
+        }
+    },
+    "habit": {
+        "heading": "Habit",
+        "all": "All ({{count}} left)",
+        "mark": "Mark \"{{name}}\" done today",
+        "run_one": "{{count}} in a row — don't break it",
+        "run_other": "{{count}} in a row — don't break it",
+        "notStarted": "Not started yet"
+    },
+    "insight": {
+        "heading": "About you",
+        "more": "More insights",
+        "sample_one": "{{count}} day in the sample",
+        "sample_other": "{{count}} days in the sample",
+        "effect": "difference of about {{value}}× your usual spread",
+        "tooLittle": "Not enough data for insights yet — at least {{count}} rated days are needed on each side of the comparison.",
+        "rateToday": "Rate today"
+    }
+}

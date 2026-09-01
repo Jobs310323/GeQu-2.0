@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { SECTIONS, TODAY_ITEM, sectionForPath } from '../lib/nav';
 import { Icon } from './Icons';
 import { Modal } from './Modal';
@@ -14,6 +15,7 @@ import { Modal } from './Modal';
  * Hidden on desktop; `Sidebar` takes over there.
  */
 export function BottomNav() {
+    const { t } = useTranslation(['common', 'nav']);
     const [drawerOpen, setDrawerOpen] = useState(false);
     const { pathname } = useLocation();
     const current = sectionForPath(pathname);
@@ -25,21 +27,21 @@ export function BottomNav() {
     return (
         <>
             <nav
-                aria-label="Основная навигация"
+                aria-label={t('common:nav.main')}
                 className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-[var(--bg-card)] border-t border-[var(--border)] backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
             >
                 <ul className="flex items-stretch">
                     <li className="flex-1">
                         <NavLink to={TODAY_ITEM.path} end className={({ isActive }) => tabClass(isActive)}>
                             <Icon name={TODAY_ITEM.icon} size={19} />
-                            <span className="text-[10px]">{TODAY_ITEM.label}</span>
+                            <span className="text-[10px]">{t(TODAY_ITEM.labelKey)}</span>
                         </NavLink>
                     </li>
                     {primary.map(section => (
                         <li key={section.id} className="flex-1">
                             <NavLink to={section.path} className={() => tabClass(current?.id === section.id)}>
                                 <Icon name={section.icon} size={19} />
-                                <span className="text-[10px]">{section.title}</span>
+                                <span className="text-[10px]">{t(section.titleKey)}</span>
                             </NavLink>
                         </li>
                     ))}
@@ -51,7 +53,7 @@ export function BottomNav() {
                             className={`${tabClass(drawerActive)} w-full`}
                         >
                             <Icon name="grid" size={19} />
-                            <span className="text-[10px]">Ещё</span>
+                            <span className="text-[10px]">{t('common:nav.more')}</span>
                         </button>
                     </li>
                 </ul>
@@ -72,14 +74,15 @@ function tabClass(isActive: boolean): string {
 
 /** Everything that does not fit the five tabs, one tap away. */
 function MoreDrawer({ onClose }: { onClose: () => void }) {
+    const { t } = useTranslation(['common', 'nav']);
     const sections = SECTIONS.filter(s => ['brain', 'profile', 'today'].includes(s.id));
 
     return (
-        <Modal title="Разделы" onClose={onClose} sheet size="full">
+        <Modal title={t('common:nav.sections')} onClose={onClose} sheet size="full">
 
                 {sections.map(section => (
                     <div key={section.id} className="mb-4 last:mb-0">
-                        <h3 className="t-label mb-1.5 px-1">{section.title}</h3>
+                        <h3 className="t-label mb-1.5 px-1">{t(section.titleKey)}</h3>
                         <div className="grid grid-cols-2 gap-2">
                             {section.items.map(item => (
                                 <NavLink
@@ -93,7 +96,7 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
                                     }`}
                                 >
                                     <Icon name={item.icon} size={16} className="shrink-0" />
-                                    <span className="truncate">{item.label}</span>
+                                    <span className="truncate">{t(item.labelKey)}</span>
                                 </NavLink>
                             ))}
                         </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SignIn, SignUp } from '@clerk/clerk-react';
 import { Logo } from './Logo';
 
@@ -9,6 +10,7 @@ import { Logo } from './Logo';
  * own dark, desaturated look.
  */
 export function AuthGate() {
+    const { t } = useTranslation('common');
     const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
 
     return (
@@ -25,7 +27,7 @@ export function AuthGate() {
                             mode === 'sign-in' ? 'bg-cyan-400/10 text-cyan-400 font-medium' : 'text-[var(--text-muted)] hover:bg-white/5'
                         }`}
                     >
-                        Вход
+                        {t('common:auth.signIn')}
                     </button>
                     <button
                         onClick={() => setMode('sign-up')}
@@ -33,7 +35,7 @@ export function AuthGate() {
                             mode === 'sign-up' ? 'bg-cyan-400/10 text-cyan-400 font-medium' : 'text-[var(--text-muted)] hover:bg-white/5'
                         }`}
                     >
-                        Регистрация
+                        {t('common:auth.signUp')}
                     </button>
                 </div>
 

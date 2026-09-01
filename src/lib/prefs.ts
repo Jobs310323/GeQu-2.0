@@ -24,9 +24,23 @@ export type Prefs = {
     hiddenTabs: string[];
     collapsedGroups: string[];
     hiddenWidgets: string[];
+    /**
+     * ISO-4217 code for how money is displayed.
+     *
+     * Separate from the interface language on purpose: a Russian speaker in
+     * Berlin spends euros, and an English speaker in Moscow spends roubles.
+     * Deriving one from the other gets both wrong for anyone who has moved.
+     */
+    currency: string;
 };
 
-const DEFAULTS: Prefs = { hiddenTabs: [], collapsedGroups: [], hiddenWidgets: [] };
+const DEFAULTS: Prefs = {
+    hiddenTabs: [], collapsedGroups: [], hiddenWidgets: [],
+    // RUB, not a guess from the browser: every stored amount in every existing
+    // install was entered as roubles and displayed with a hardcoded `₽`.
+    // Re-labelling those numbers as dollars would misstate the user's own data.
+    currency: 'RUB',
+};
 
 export function loadPrefs(): Prefs {
     // Read as Partial: a stored copy written by an older build can be missing
@@ -38,6 +52,9 @@ export function loadPrefs(): Prefs {
         hiddenTabs: arr(raw.hiddenTabs),
         collapsedGroups: arr(raw.collapsedGroups),
         hiddenWidgets: arr(raw.hiddenWidgets),
+        currency: typeof raw.currency === 'string' && /^[A-Z]{3}$/.test(raw.currency)
+            ? raw.currency
+            : DEFAULTS.currency,
     };
 }
 

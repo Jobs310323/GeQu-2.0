@@ -1,0 +1,32 @@
+{
+    "sections": {
+        "today": "Сегодня",
+        "plan": "Планы",
+        "track": "Дневники",
+        "insights": "Выводы",
+        "brain": "Мозг",
+        "profile": "Профиль"
+    },
+    "items": {
+        "today": { "label": "Сегодня" },
+        "checkin": { "label": "Закрыть день", "hint": "Сон, фокус, настроение" },
+        "aiplan": { "label": "План дня", "hint": "ИИ собирает расписание" },
+        "kanban": { "label": "Задачи", "hint": "Канбан-доска" },
+        "goals": { "label": "Цели", "hint": "Цели и шаги" },
+        "mindmap": { "label": "Карта мыслей", "hint": "MindMap" },
+        "calendar": { "label": "Календарь" },
+        "habits": { "label": "Привычки" },
+        "diary": { "label": "Дневник" },
+        "gym": { "label": "Тело", "hint": "Тренировки и программы" },
+        "snowman": { "label": "Баланс", "hint": "Снеговик: ум, эмоции, тело" },
+        "finance": { "label": "Деньги" },
+        "progress": { "label": "Прогресс" },
+        "hub": { "label": "Статистика" },
+        "training": { "label": "Тренажёры", "hint": "Короткие упражнения" },
+        "clinical": { "label": "Опросники", "hint": "Скрининг и КПТ" },
+        "circles": { "label": "Круги влияния" },
+        "knowledge": { "label": "База знаний" },
+        "card": { "label": "Моя карточка" },
+        "settings": { "label": "Настройки" }
+    }
+}

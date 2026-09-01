@@ -41,7 +41,12 @@ export interface DayRecord {
 }
 
 export const SPHERES: NonEmptyArray<{ id: Sphere; label: string; icon: string; color: string }> = [
-    { id: 'intellect', label: 'Интеллект', icon: '🧠', color: '#6366f1' },
+    // A lightbulb rather than a brain: U+1F9E0 is Unicode 9 and renders as a
+    // tofu box on the Windows builds this app targets. `npm run check:emoji`
+    // has flagged it since Phase 5 but was never wired into CI; Phase 11 wires
+    // it in, so it is fixed here rather than the gate weakened to accept it.
+    // (The codepoint is named, not written — the checker reads raw text.)
+    { id: 'intellect', label: 'Интеллект', icon: '💡', color: '#6366f1' },
     { id: 'emotion', label: 'Эмоции', icon: '❤️', color: '#ec4899' },
     { id: 'body', label: 'Тело', icon: '💪', color: '#22c55e' },
 ];

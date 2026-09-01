@@ -13,12 +13,20 @@ import { nowInstant } from '../../lib/datetime';
 // structure, so a new screen is reachable from the palette the moment it exists
 // — there is no second list to keep in sync.
 
+// `group` is an id, not a heading. It used to be the Russian word shown in the
+// UI, which the palette then compared against with `group === 'Создать'` — a
+// display string doing load-bearing work, so translating the heading would
+// have silently disabled the capture path.
+export type PaletteGroup = 'create' | 'goto';
+
 export type PaletteAction = {
     id: string;
-    label: string;
-    hint?: string;
+    /** Translation key for the row's title. */
+    labelKey: string;
+    /** Translation key for the row's subtitle. */
+    hintKey?: string;
     icon: string;
-    group: 'Создать' | 'Перейти';
+    group: PaletteGroup;
     /** Receives the text typed after the command word, when there is any. */
     run: (input: string, navigate: NavigateFunction) => void;
 };
@@ -27,10 +35,10 @@ export type PaletteAction = {
 export const CAPTURE_ACTIONS: PaletteAction[] = [
     {
         id: 'task',
-        label: 'Новая задача',
-        hint: 'Добавить в канбан',
+        labelKey: 'capture:actions.task.label',
+        hintKey: 'capture:actions.task.hint',
         icon: 'columns',
-        group: 'Создать',
+        group: 'create',
         run: (input, navigate) => {
             const text = input.trim();
             if (!text) { navigate('/plan/tasks'); return; }
@@ -40,10 +48,10 @@ export const CAPTURE_ACTIONS: PaletteAction[] = [
     },
     {
         id: 'habit',
-        label: 'Новая привычка',
-        hint: 'Отмечать каждый день',
+        labelKey: 'capture:actions.habit.label',
+        hintKey: 'capture:actions.habit.hint',
         icon: 'repeat',
-        group: 'Создать',
+        group: 'create',
         run: (input, navigate) => {
             const name = input.trim();
             if (name) useHabits.getState().add(name);
@@ -52,10 +60,10 @@ export const CAPTURE_ACTIONS: PaletteAction[] = [
     },
     {
         id: 'journal',
-        label: 'Запись в дневник',
-        hint: 'Мысль или наблюдение',
+        labelKey: 'capture:actions.journal.label',
+        hintKey: 'capture:actions.journal.hint',
         icon: 'book',
-        group: 'Создать',
+        group: 'create',
         run: (input, navigate) => {
             const content = input.trim();
             if (content) useJournal.getState().add(content);
@@ -64,10 +72,10 @@ export const CAPTURE_ACTIONS: PaletteAction[] = [
     },
     {
         id: 'expense',
-        label: 'Расход',
-        hint: 'Сумма — например, 450',
+        labelKey: 'capture:actions.expense.label',
+        hintKey: 'capture:actions.expense.hint',
         icon: 'wallet',
-        group: 'Создать',
+        group: 'create',
         run: (input, navigate) => {
             const amount = Number(input.replace(',', '.').replace(/[^\d.]/g, ''));
             if (Number.isFinite(amount) && amount > 0) {
@@ -88,18 +96,18 @@ export const CAPTURE_ACTIONS: PaletteAction[] = [
     },
     {
         id: 'checkin',
-        label: 'Закрыть день',
-        hint: 'Сон, фокус, настроение',
+        labelKey: 'capture:actions.checkin.label',
+        hintKey: 'capture:actions.checkin.hint',
         icon: 'moon',
-        group: 'Создать',
+        group: 'create',
         run: (_input, navigate) => navigate('/today/checkin'),
     },
     {
         id: 'workout',
-        label: 'Тренировка',
-        hint: 'Начать сессию в зале',
+        labelKey: 'capture:actions.workout.label',
+        hintKey: 'capture:actions.workout.hint',
         icon: 'dumbbell',
-        group: 'Создать',
+        group: 'create',
         run: (_input, navigate) => navigate('/track/body'),
     },
 ];
@@ -107,10 +115,10 @@ export const CAPTURE_ACTIONS: PaletteAction[] = [
 /** One action per destination, derived from the nav so the two cannot diverge. */
 export const NAVIGATION_ACTIONS: PaletteAction[] = ALL_ITEMS.map(item => ({
     id: `go-${item.id}`,
-    label: item.label,
-    ...(item.hint ? { hint: item.hint } : {}),
+    labelKey: item.labelKey,
+    ...(item.hintKey ? { hintKey: item.hintKey } : {}),
     icon: item.icon,
-    group: 'Перейти' as const,
+    group: 'goto' as const,
     run: (_input, navigate) => navigate(item.path),
 }));
 
@@ -118,5 +126,5 @@ export const ALL_ACTIONS: PaletteAction[] = [...CAPTURE_ACTIONS, ...NAVIGATION_A
 
 /** The section each navigation action belongs to, for the palette's subtitles. */
 export const SECTION_OF: Record<string, string> = Object.fromEntries(
-    SECTIONS.flatMap(s => s.items.map(i => [`go-${i.id}`, s.title])),
+    SECTIONS.flatMap(s => s.items.map(i => [`go-${i.id}`, s.titleKey])),
 );

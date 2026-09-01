@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { changeLocale } from '../i18n';
+import { SUPPORTED_LOCALES, LOCALE_NAMES, getLocale, type Locale } from '../i18n/locale';
 import { getGroqKey, setGroqKey } from '../lib/ai';
 import { SECTIONS, LOCKED_IDS } from '../lib/nav';
 import { DASHBOARD_WIDGETS, toggleIn } from '../lib/prefs';
@@ -9,6 +12,7 @@ import type { SettingsProps } from '../types/props';
 import type { ChangeEvent } from 'react';
 
 export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
+    const { t } = useTranslation(['common', 'nav']);
     const hiddenTabs: string[] = prefs?.hiddenTabs ?? [];
     const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
 
@@ -98,6 +102,9 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
         <div>
             <PageHeader page="settings" title="Настройки и данные" />
 
+            <LanguageSettings currency={prefs?.currency ?? 'RUB'}
+                onCurrency={code => setPrefs(p => ({ ...p, currency: code }))} />
+
             {/* Which pages appear in the sidebar */}
             <div className="glass-card p-6 rounded-2xl mb-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
@@ -117,7 +124,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
                 <div className="space-y-4">
                     {SECTIONS.map(section => (
                         <div key={section.id}>
-                            <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-2">{section.title}</div>
+                            <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-2">{t(section.titleKey)}</div>
                             <div className="flex flex-wrap gap-2">
                                 {section.items.map(item => {
                                     const locked = LOCKED_IDS.has(item.id);
@@ -134,7 +141,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
                                                     : 'border-[var(--border)] text-gray-500 hover:text-white line-through'
                                             }`}
                                         >
-                                            <Icon name={item.icon} size={13} />{item.label}
+                                            <Icon name={item.icon} size={13} />{t(item.labelKey)}
                                             {locked && <Icon name="lock" size={11} />}
                                         </button>
                                     );
@@ -222,6 +229,65 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
                     <button onClick={exportTxt} className="bg-white/5 text-white font-bold px-6 py-3 rounded-lg border border-[var(--border)]">Дневник (.txt)</button>
                     <button onClick={exportCsv} className="bg-white/5 text-white font-bold px-6 py-3 rounded-lg border border-[var(--border)]">Логи дней (.csv)</button>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+/** Currencies offered by name. Anything else can be typed in — see the input. */
+const COMMON_CURRENCIES = ['RUB', 'USD', 'EUR', 'GBP', 'KZT', 'GEL', 'TRY', 'RSD', 'AMD'];
+
+function LanguageSettings({ currency, onCurrency }: { currency: string; onCurrency: (code: string) => void }) {
+    const { t } = useTranslation('common');
+    // `getLocale()` rather than store state: the language is not domain data,
+    // and re-rendering on `t` changing is what keeps this in step.
+    const current = getLocale();
+
+    return (
+        <div className="glass-card p-6 rounded-2xl mb-6">
+            <h2 className="text-xl flex items-center gap-2 mb-4">
+                <Icon name="library" size={17} className="text-[var(--text-muted)]" />
+                {t('language.heading')}
+            </h2>
+
+            <div className="mb-5">
+                <label htmlFor="locale-select" className="text-sm text-[var(--text-muted)] block mb-2">
+                    {t('language.label')}
+                </label>
+                <select
+                    id="locale-select"
+                    value={current}
+                    onChange={e => { void changeLocale(e.target.value as Locale); }}
+                    className="bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                >
+                    {SUPPORTED_LOCALES.map(code => (
+                        <option key={code} value={code}>{LOCALE_NAMES[code]}</option>
+                    ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-2">{t('language.hint')}</p>
+            </div>
+
+            <div>
+                <label htmlFor="currency-input" className="text-sm text-[var(--text-muted)] block mb-2">
+                    {t('language.currency')}
+                </label>
+                <input
+                    id="currency-input"
+                    list="currency-options"
+                    value={currency}
+                    maxLength={3}
+                    onChange={e => {
+                        const code = e.target.value.toUpperCase();
+                        // Only commit a complete code, so the field stays editable
+                        // while a three-letter code is half-typed.
+                        if (/^[A-Z]{3}$/.test(code)) onCurrency(code);
+                    }}
+                    className="w-24 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm uppercase outline-none focus:border-cyan-400"
+                />
+                <datalist id="currency-options">
+                    {COMMON_CURRENCIES.map(code => <option key={code} value={code}>{code}</option>)}
+                </datalist>
+                <p className="text-xs text-gray-500 mt-2">{t('language.currencyHint')}</p>
             </div>
         </div>
     );
