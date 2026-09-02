@@ -1,4 +1,25 @@
 {
+    "knowledge": {
+        "title": "Knowledge base",
+        "subtitle_one": "{{count}} article on how ADHD works and what to do about it. Each one takes a few minutes.",
+        "subtitle_other": "{{count}} articles on how ADHD works and what to do about it. Each one takes a few minutes.",
+        "searchPlaceholder": "Search every article…",
+        "noResults": "Nothing found",
+        "foundCount": "Found: {{count}}",
+        "backToKnowledge": "Back to the knowledge base",
+        "allSections": "All sections",
+        "minutesRead": "{{count}} min read",
+        "minutes": "{{count}} min",
+        "readDone": "read",
+        "saved": "Bookmarked",
+        "save": "Bookmark",
+        "readMore": "Keep reading",
+        "introHeading": "ADHD — where to start",
+        "introBlurb": "What it is, how it shows up, and what it affects. If you haven't read anything yet, start here.",
+        "bookmarks": "Bookmarks",
+        "sections": "Sections",
+        "ruOnly": "Available in Russian only"
+    },
     "cbt": {
         "tab": {
             "record": "Thought record",
