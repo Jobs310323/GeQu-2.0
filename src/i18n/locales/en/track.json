@@ -159,5 +159,82 @@
         "delete": "Delete",
         "aiSystem": "You are a warm, careful listener inside the GeQu app (the user has ADHD; clarity and support matter to them).\\nYou are given their most recent personal journal entries with dates. Reflect them back gently: notice recurring themes and moods, what brings joy and what worries, name strengths and small wins. Offer one or two kind, doable things to think about — no pressure and no moralising.\\nWrite in English, warmly, in the second person, briefly and to the point, without clichés and without medical diagnoses. Format as Markdown with short sections, for example: **What I noticed**, **Recurring themes**, **A gentle suggestion**. Rely only on what is in the entries.",
         "aiPrompt": "My most recent journal entries:\\n\\n{{entries}}\\n\\nRead them back to me gently."
+    },
+    "snowman": {
+        "title": "Snowman",
+        "subtitle": "The day's balance of intellect, emotion and body",
+        "tab": {
+            "today": "Today",
+            "history": "History"
+        },
+        "sphere": {
+            "intellect": "Intellect",
+            "emotion": "Emotions",
+            "body": "Body"
+        },
+        "banner": {
+            "intellect": "Today is your day for intellect!",
+            "emotion": "Today is your day for emotions!",
+            "body": "Today is your day for the body!"
+        },
+        "difficulty": {
+            "easy": "Easy ×{{multiplier}}",
+            "medium": "Medium ×{{multiplier}}",
+            "hard": "Hard ×{{multiplier}}"
+        },
+        "history": {
+            "empty": "No closed days yet — add activities on the Today tab.",
+            "edited": "edited",
+            "harmony": " · harmony {{value}}%"
+        },
+        "analytics": {
+            "empty": "No Snowman data yet — fill in a couple of days on the Snowman screen.",
+            "avgHeading": "Average score by sphere",
+            "week": "This week",
+            "month": "This month",
+            "bestDayLabel": "Most harmonious day",
+            "bestDayEmpty": "—",
+            "streakLabel": "Balance streak",
+            "streakDays_one": "{{count}} day",
+            "streakDays_other": "{{count}} days",
+            "streakCaption": "in a row with every sphere ≥ 8",
+            "forecastHeading": "Tomorrow's forecast",
+            "forecastPrefix": "Trending down over the 7-day average:",
+            "forecastSuffix": " (average {{avg}}/10).",
+            "noForecast": "Not enough data for a forecast yet — or everything is balanced. Keep it up.",
+            "recommendation": {
+                "intellect": "Add 20 minutes of intellectual practice tomorrow",
+                "emotion": "Add 20 minutes of emotional practice tomorrow",
+                "body": "Add 20 minutes of physical practice tomorrow"
+            }
+        },
+        "day": {
+            "closedNotice": "This day is closed. Editing it will create a new version.",
+            "minutesLabel": "Time (minutes)",
+            "difficultyLegend": "Difficulty",
+            "pointsPrefix": "Points:",
+            "activitiesForSphere": "— activities for the day",
+            "noActivities": "Nothing added to this sphere yet.",
+            "activityMeta": "{{minutes}} min · {{difficulty}} · {{points}} pts",
+            "toast": "+{{points}} points to {{sphere}}! 🎉",
+            "cancel": "Cancel",
+            "save": "Save",
+            "add": "Add"
+        },
+        "labels": {
+            "heading": "Activity labels",
+            "empty": "No labels yet — add your first activity with \"+\".",
+            "deleteTitle": "Delete label",
+            "newHeading": "New label",
+            "nameLabel": "Activity name",
+            "namePlaceholder": "For example: Reading a book",
+            "sphereLegend": "Sphere",
+            "cancel": "Cancel",
+            "save": "Save"
+        },
+        "circles": {
+            "scoreTitle": "{{sphere}}: {{score}}/10",
+            "harmonyLabel": "Harmony"
+        }
     }
 }

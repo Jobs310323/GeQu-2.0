@@ -1,4 +1,5 @@
-import { SPHERES, type DayRecord } from './types';
+import { useTranslation } from 'react-i18next';
+import { SPHERES, sphereLabel, type DayRecord } from './types';
 import type { ElementType } from 'react';
 
 const MAX_RADIUS = 120;
@@ -23,6 +24,7 @@ type Props = {
  *  in each sphere, plus the harmony bar underneath. Reused full-size on the
  *  Snowman page and shrunk down as a little icon in the history list. */
 export function SnowmanCircles({ scores, totalHarmony, onSphereClick, maxRadius = MAX_RADIUS, compact = false }: Props) {
+    const { t } = useTranslation('track');
     const height = maxRadius * 2 * SPHERES.length * 0.62;
 
     return (
@@ -44,7 +46,7 @@ export function SnowmanCircles({ scores, totalHarmony, onSphereClick, maxRadius 
                                 marginTop: i === 0 ? 0 : -r * 0.35,
                                 zIndex: SPHERES.length - i,
                             }}
-                            title={`${s.label}: ${score}/10`}>
+                            title={t('track:snowman.circles.scoreTitle', { sphere: sphereLabel(s.id, t), score })}>
                             {!compact && r > 30 && <span className="text-lg">{s.icon}</span>}
                         </Tag>
                     );
@@ -55,7 +57,7 @@ export function SnowmanCircles({ scores, totalHarmony, onSphereClick, maxRadius 
                 <div className="flex gap-4 mt-3">
                     {SPHERES.map(s => (
                         <div key={s.id} className="text-center">
-                            <div className="text-xs" style={{ color: s.color }}>{s.icon} {s.label}</div>
+                            <div className="text-xs" style={{ color: s.color }}>{s.icon} {sphereLabel(s.id, t)}</div>
                             <div className="text-sm font-bold text-[var(--text-main)] tabular-nums">{scores[s.id]}/10</div>
                         </div>
                     ))}
@@ -65,7 +67,7 @@ export function SnowmanCircles({ scores, totalHarmony, onSphereClick, maxRadius 
             {!compact && (
                 <div className="w-full max-w-xs mt-4">
                     <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1">
-                        <span>Гармония</span><span className="font-bold text-[var(--text-main)]">{totalHarmony}%</span>
+                        <span>{t('track:snowman.circles.harmonyLabel')}</span><span className="font-bold text-[var(--text-main)]">{totalHarmony}%</span>
                     </div>
                     <div className="w-full h-2.5 rounded-full bg-black/30 overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-indigo-400 via-pink-400 to-green-400 transition-all duration-700"
