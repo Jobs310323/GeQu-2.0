@@ -1,15 +1,17 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { calculateStreak } from '../lib/helpers';
 import { Icon } from '../components/Icons';
 import { RadialGauge } from '../components/RadialGauge';
 import { todayKey, toLocalDateKey, instantForDateKey } from '../lib/datetime';
+import { formatNumber } from '../lib/format';
+import {
+    HELPED_TAG_IDS, HINDERED_TAG_IDS, BODY_SCAN_ITEMS, AUTO_SCAN, tagLabel,
+} from '../features/checkin/vocabulary';
 import { useNavigate } from 'react-router';
 import type { DashboardProps } from '../types/props';
 import type { ReactNode, ElementType } from 'react';
 import type { Habit } from '../types/domain';
-
-const HELPED_TAGS = ['Кофе', 'Спорт', 'Сон', 'Pomodoro', 'Интерес к задаче', 'Медитация'];
-const HINDERED_TAGS = ['Телефон', 'Усталость', 'Шум', 'Скука', 'Голод', 'Откладывание'];
 
 const DAY_MS = 86400000;
 /** How many entries in `items` fall inside the last `days` days. */
@@ -66,6 +68,7 @@ function StatTile({ icon, value, label, hint, tone = 'text-[var(--text-main)]', 
 
 export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, gymData, testResults,
                             prefs, habits, setHabits, levelInfo, energy }: DashboardProps) {
+    const { t } = useTranslation(['today', 'common']);
     const navigate = useNavigate();
     const [sleep, setSleep] = useState(5);
     const [focus, setFocus] = useState(5);
@@ -108,7 +111,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
         ? recentLogs.reduce((s: number, l) => s + Number(l[key] ?? 0), 0) / recentLogs.length
         : 0;
     const gaugeSource = todayLog ?? (recentLogs.length ? { sleep: avg('sleep'), focus: avg('focus'), mood: avg('mood') } : null);
-    const gaugeCaption = todayLog ? 'Сегодня' : recentLogs.length ? 'В среднем за 7 дней' : 'Пока нет записей';
+    const gaugeCaption = todayLog ? t('today:checkin.todayLabel')
+        : recentLogs.length ? t('today:checkin.gaugeAverage')
+        : t('today:checkin.gaugeNone');
 
     const habitList: Habit[] = habits ?? [];
     const habitsDone = habitList.filter((h) => h.history?.includes(todayStr)).length;
@@ -119,18 +124,12 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
     const levelPct = Math.round((levelInfo?.progress ?? 0) * 100);
     const energyValue = typeof energy === 'number' ? energy : 5;
 
-    const bodyScanItems = [
-        { id: '☀️ Солнце', label: 'Солнце > 15 мин', auto: false },
-        { id: '💧 Вода', label: 'Вода 1.5+ л', auto: false },
-        { id: '🍽 Питание', label: '3 приема без срывов', auto: false },
-        { id: '📱 Без телефона', label: 'Без телефона 1ч', auto: false },
-        { id: '🌿 Дыхание', label: 'Пауза/Дыхание', auto: false },
-        { id: '📖 Чтение', label: 'Чтение 10+ стр', auto: false },
-        { id: '🚶 Шаги', label: '5000+ шагов', auto: false },
-        { id: '🎯 Задача', label: '1 главная задача', auto: false },
-        { id: '🏋️ Зал', label: 'Тренировка', auto: todayGym },
-        { id: '🎓 Тест', label: 'Когнитивный тест', auto: todayTest },
-    ];
+    const bodyScanItems = BODY_SCAN_ITEMS.map(item => ({
+        id: item.id,
+        icon: item.icon,
+        label: t(item.key),
+        auto: item.id === AUTO_SCAN.gym ? todayGym : item.id === AUTO_SCAN.test ? todayTest : false,
+    }));
     const [bodyScan, setBodyScan] = useState<string[]>(bodyScanItems.filter(b => b.auto).map(b => b.id));
 
     const toggleScan = (id: string) => setBodyScan(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
@@ -177,13 +176,13 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
         setSleep(5); setFocus(5); setMood(5); setHelped([]); setHindered([]);
         setMainEvent(''); setTestTomorrow(''); setGratitude(['', '', '']);
         setCustomQuestion(''); setCustomAnswer(''); setEntryDate(todayStr);
-        setToast('День закрыт! Запись сохранена.');
+        setToast(t('today:checkin.saved'));
         setTimeout(() => setToast(''), 2500);
     };
 
     const startHyper = () => {
         const todoTasks = kanban.filter((t) => t.status === 'todo' || t.status === 'doing');
-        setHyperfocus({ status: 'setup', duration: 25, task: todoTasks[0]?.text || 'Своя задача', todoTasks });
+        setHyperfocus({ status: 'setup', duration: 25, task: todoTasks[0]?.text || t('today:checkin.ownTask'), todoTasks });
     };
 
     const Slider = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
@@ -200,17 +199,17 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
         <div className="max-w-4xl mx-auto pb-24">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <div>
-                    <h1 className="text-2xl font-bold leading-tight">Сегодня</h1>
+                    <h1 className="text-2xl font-bold leading-tight">{t('today:checkin.heading')}</h1>
                     <p className="text-sm text-[var(--text-muted)]">
                         {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
-                        {alreadyClosed && ' · день закрыт'}
+                        {alreadyClosed && t('today:checkin.alreadyClosed')}
                     </p>
                 </div>
                 {show('hyperfocus') && (
                     <button onClick={startHyper}
                         className="glass-card rounded-xl px-4 py-2.5 flex items-center gap-2.5 border border-cyan-400/30 hover:bg-cyan-400/10 transition">
                         <Icon name="rocket" size={18} className="text-cyan-400" />
-                        <span className="font-medium text-cyan-400 text-sm">Гиперфокус</span>
+                        <span className="font-medium text-cyan-400 text-sm">{t('today:checkin.hyperfocus')}</span>
                     </button>
                 )}
             </div>
@@ -220,39 +219,39 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 <div className="mb-4 space-y-3">
                     <div className="glass-card rounded-2xl p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h2 className="t-label">Состояние</h2>
+                            <h2 className="t-label">{t('today:checkin.state')}</h2>
                             <span className="text-[11px] text-[var(--text-muted)]">{gaugeCaption}</span>
                         </div>
                         {gaugeSource ? (
                             <div className="grid grid-cols-3 gap-2">
-                                <RadialGauge value={Number(gaugeSource.sleep)} label="Сон" size={80} />
-                                <RadialGauge value={Number(gaugeSource.focus)} label="Фокус" size={80} color="var(--accent-purple)" />
-                                <RadialGauge value={Number(gaugeSource.mood)} label="Настроение" size={80} color="var(--accent-pink)" />
+                                <RadialGauge value={Number(gaugeSource.sleep)} label={t('today:checkin.sleep')} size={80} />
+                                <RadialGauge value={Number(gaugeSource.focus)} label={t('today:checkin.focus')} size={80} color="var(--accent-purple)" />
+                                <RadialGauge value={Number(gaugeSource.mood)} label={t('today:checkin.mood')} size={80} color="var(--accent-pink)" />
                             </div>
                         ) : (
                             <p className="text-sm text-[var(--text-muted)] py-4 text-center">
-                                Закрой первый день — здесь появятся твои шкалы.
+                                {t('today:checkin.noGauges')}
                             </p>
                         )}
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <StatTile icon="trophy" label="Уровень" value={level} hint={`${levelPct}% до следующего`} tone="text-cyan-400" />
-                        <StatTile icon="flame" label="Энергия" value={energyValue.toFixed(1)}
-                            hint={energyValue >= 7 ? 'полный заряд' : energyValue >= 4 ? 'средний заряд' : 'на исходе'} />
-                        <StatTile icon="repeat" label="Привычки" value={`${habitsDone}/${habitList.length}`}
-                            hint="отмечено сегодня" onClick={() => navigate('/track/habits')} />
-                        <StatTile icon="columns" label="Задачи" value={openTasks.length}
-                            hint="в работе" onClick={() => navigate('/plan/tasks')} />
+                        <StatTile icon="trophy" label={t('today:checkin.level')} value={level} hint={t('today:checkin.levelHint', { pct: levelPct })} tone="text-cyan-400" />
+                        <StatTile icon="flame" label={t('today:checkin.energy')} value={formatNumber(energyValue, 1)}
+                            hint={energyValue >= 7 ? t('today:checkin.energyFull') : energyValue >= 4 ? t('today:checkin.energyMid') : t('today:checkin.energyLow')} />
+                        <StatTile icon="repeat" label={t('today:checkin.habits')} value={`${habitsDone}/${habitList.length}`}
+                            hint={t('today:checkin.habitsHint')} onClick={() => navigate('/track/habits')} />
+                        <StatTile icon="columns" label={t('today:checkin.tasks')} value={openTasks.length}
+                            hint={t('today:checkin.tasksHint')} onClick={() => navigate('/plan/tasks')} />
                         {show('streak') && (
-                            <StatTile icon="calendar" label="Серия" value={streak} hint="дней подряд" tone="text-pink-400" />
+                            <StatTile icon="calendar" label={t('today:checkin.streak')} value={streak} hint={t('today:checkin.streakHint')} tone="text-pink-400" />
                         )}
                         {show('streak') && (
-                            <StatTile icon="star" label="Ачивки" value={achievements.length} hint="получено" />
+                            <StatTile icon="star" label={t('today:checkin.achievements')} value={achievements.length} hint={t('today:checkin.achievementsHint')} />
                         )}
-                        <StatTile icon="dumbbell" label="Тренировки" value={countRecent(gymData.history, 7)} hint="за 7 дней"
+                        <StatTile icon="dumbbell" label={t('today:checkin.workouts')} value={countRecent(gymData.history, 7)} hint={t('today:checkin.recent7')}
                             onClick={() => navigate('/track/body')} />
-                        <StatTile icon="flask" label="Тесты" value={countRecent(testResults, 7)} hint="за 7 дней"
+                        <StatTile icon="flask" label={t('today:checkin.tests')} value={countRecent(testResults, 7)} hint={t('today:checkin.recent7')}
                             onClick={() => navigate('/brain/train')} />
                     </div>
                 </div>
@@ -264,8 +263,8 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     {habitList.length > 0 && (
                         <div className="glass-card rounded-2xl p-4">
                             <div className="flex items-center justify-between mb-3">
-                                <h2 className="t-label">Привычки сегодня</h2>
-                                <span className="text-[11px] text-[var(--text-muted)]">{habitsDone} из {habitList.length}</span>
+                                <h2 className="t-label">{t('today:checkin.habitsToday')}</h2>
+                                <span className="text-[11px] text-[var(--text-muted)]">{t('today:checkin.habitsOf', { done: habitsDone, total: habitList.length })}</span>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {habitList.map((h) => {
@@ -288,9 +287,9 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                     {openTasks.length > 0 && (
                         <div className="glass-card rounded-2xl p-4">
                             <div className="flex items-center justify-between mb-3">
-                                <h2 className="t-label">Ближайшие задачи</h2>
+                                <h2 className="t-label">{t('today:checkin.upcomingTasks')}</h2>
                                 <button onClick={() => navigate('/plan/tasks')}
-                                    className="text-[11px] text-cyan-400 hover:underline">все {openTasks.length}</button>
+                                    className="text-[11px] text-cyan-400 hover:underline">{t('today:checkin.allTasks', { count: openTasks.length })}</button>
                             </div>
                             <ul className="space-y-2">
                                 {nextTasks.map((t) => (
@@ -309,37 +308,37 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
 
             {alreadyClosed && (
                 <div className="glass-card rounded-xl px-4 py-2.5 mb-4 text-sm text-green-400 border border-green-400/30">
-                    Сегодняшний день уже закрыт — новая запись добавится отдельно.
+                    {t('today:checkin.closedNotice')}
                 </div>
             )}
 
             <div className="glass-card rounded-2xl px-5 py-3.5 mb-3 flex items-center gap-3">
                 <Icon name="calendar" size={16} className="text-[var(--text-muted)] shrink-0" />
-                <span className="text-sm font-medium">Дата записи</span>
+                <span className="text-sm font-medium">{t('today:checkin.entryDate')}</span>
                 <input type="date" value={entryDate} max={todayStr} onChange={e => setEntryDate(e.target.value || todayStr)}
                     className="bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:border-cyan-400" />
                 {entryDate !== todayStr && (
-                    <span className="text-xs text-[var(--text-muted)]">закрываем прошлый день задним числом</span>
+                    <span className="text-xs text-[var(--text-muted)]">{t('today:checkin.backdating')}</span>
                 )}
             </div>
 
             {/* ---- The day-closing form ------------------------------------ */}
             <div className="space-y-3">
                 {show('ratings') && (
-                    <Section icon="chart" title="Оценка дня" open={isOpen('ratings')} onToggle={() => toggle('ratings')}
-                        filled summary={`сон ${sleep} · фокус ${focus} · настроение ${mood}`}>
+                    <Section icon="chart" title={t('today:checkin.ratings')} open={isOpen('ratings')} onToggle={() => toggle('ratings')}
+                        filled summary={t('today:checkin.ratingsSummary', { sleep, focus, mood })}>
                         <div className="space-y-3 mt-3">
-                            <Slider label="Сон" value={sleep} onChange={setSleep} />
-                            <Slider label="Фокус" value={focus} onChange={setFocus} />
-                            <Slider label="Настроение" value={mood} onChange={setMood} />
+                            <Slider label={t('today:checkin.sleep')} value={sleep} onChange={setSleep} />
+                            <Slider label={t('today:checkin.focus')} value={focus} onChange={setFocus} />
+                            <Slider label={t('today:checkin.mood')} value={mood} onChange={setMood} />
                         </div>
                     </Section>
                 )}
 
                 {show('bodyscan') && (
-                    <Section icon="search" title="Сканирование тела" open={isOpen('bodyscan')} onToggle={() => toggle('bodyscan')}
+                    <Section icon="search" title={t('today:checkin.bodyScan')} open={isOpen('bodyscan')} onToggle={() => toggle('bodyscan')}
                         filled={bodyScan.length > 0}
-                        summary={bodyScan.length ? `${bodyScan.length} из ${bodyScanItems.length}` : 'ничего не отмечено'}>
+                        summary={bodyScan.length ? t('today:checkin.bodyScanSummary', { done: bodyScan.length, total: bodyScanItems.length }) : t('today:checkin.bodyScanEmpty')}>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
                             {bodyScanItems.map(item => {
                                 const active = bodyScan.includes(item.id);
@@ -351,7 +350,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                                         } ${item.auto ? 'cursor-not-allowed opacity-80' : ''}`}>
                                         <span className="block text-sm font-medium">{item.id}</span>
                                         <span className="text-[11px] opacity-70">{item.label}</span>
-                                        {item.auto && <span className="block text-[10px] text-green-400 mt-0.5">Авто</span>}
+                                        {item.auto && <span className="block text-[10px] text-green-400 mt-0.5">{t('today:checkin.auto')}</span>}
                                     </button>
                                 );
                             })}
@@ -360,46 +359,47 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 )}
 
                 {show('tags') && (
-                    <Section icon="tag" title="Что помогло и что мешало" open={isOpen('tags')} onToggle={() => toggle('tags')}
+                    <Section icon="tag" title={t('today:checkin.tags')} open={isOpen('tags')} onToggle={() => toggle('tags')}
                         filled={helped.length + hindered.length > 0}
                         summary={helped.length + hindered.length
-                            ? `+${helped.length} / −${hindered.length}` : 'не отмечено'}>
+                            ? t('today:checkin.tagsSummary', { helped: helped.length, hindered: hindered.length })
+                            : t('today:checkin.tagsEmpty')}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-3">
                             <div>
-                                <div className="text-sm text-gray-400 mb-2">Помогло</div>
+                                <div className="text-sm text-gray-400 mb-2">{t('today:checkin.helped')}</div>
                                 <div className="flex flex-wrap gap-2 mb-2">
-                                    {[...HELPED_TAGS, ...customHelped].map(tag => (
+                                    {[...HELPED_TAG_IDS, ...customHelped].map(tag => (
                                         <button key={tag} onClick={() => toggleTag(tag, 'helped')}
                                             className={`px-3 py-1 rounded-full text-sm border transition ${
                                                 helped.includes(tag) ? 'bg-green-400/20 border-green-400 text-green-400'
                                                                      : 'border-[var(--border)] text-gray-400 hover:border-green-400'
-                                            }`}>{tag}</button>
+                                            }`}>{tagLabel(tag, t)}</button>
                                     ))}
                                 </div>
                                 <div className="flex gap-2">
                                     <input type="text" value={newHelpedTag} onChange={e => setNewHelpedTag(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomTag('helped'))}
-                                        placeholder="Свой вариант..."
+                                        placeholder={t('today:checkin.ownTag')}
                                         className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-sm outline-none focus:border-green-400 text-white" />
                                     <button onClick={() => addCustomTag('helped')}
                                         className="px-3 py-1 rounded-lg text-sm border border-green-400/40 text-green-400 hover:bg-green-400/10">+</button>
                                 </div>
                             </div>
                             <div>
-                                <div className="text-sm text-gray-400 mb-2">Мешало</div>
+                                <div className="text-sm text-gray-400 mb-2">{t('today:checkin.hindered')}</div>
                                 <div className="flex flex-wrap gap-2 mb-2">
-                                    {[...HINDERED_TAGS, ...customHindered].map(tag => (
+                                    {[...HINDERED_TAG_IDS, ...customHindered].map(tag => (
                                         <button key={tag} onClick={() => toggleTag(tag, 'hindered')}
                                             className={`px-3 py-1 rounded-full text-sm border transition ${
                                                 hindered.includes(tag) ? 'bg-red-400/20 border-red-400 text-red-400'
                                                                        : 'border-[var(--border)] text-gray-400 hover:border-red-400'
-                                            }`}>{tag}</button>
+                                            }`}>{tagLabel(tag, t)}</button>
                                     ))}
                                 </div>
                                 <div className="flex gap-2">
                                     <input type="text" value={newHinderedTag} onChange={e => setNewHinderedTag(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomTag('hindered'))}
-                                        placeholder="Свой вариант..."
+                                        placeholder={t('today:checkin.ownTag')}
                                         className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-sm outline-none focus:border-red-400 text-white" />
                                     <button onClick={() => addCustomTag('hindered')}
                                         className="px-3 py-1 rounded-lg text-sm border border-red-400/40 text-red-400 hover:bg-red-400/10">+</button>
@@ -410,35 +410,35 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 )}
 
                 {show('mainEvent') && (
-                    <Section icon="pin" title="Главное событие дня" open={isOpen('mainEvent')} onToggle={() => toggle('mainEvent')}
+                    <Section icon="pin" title={t('today:checkin.mainEvent')} open={isOpen('mainEvent')} onToggle={() => toggle('mainEvent')}
                         filled={!!mainEvent.trim()}
-                        summary={mainEvent.trim() ? mainEvent.trim().slice(0, 40) : 'не заполнено'}>
+                        summary={mainEvent.trim() ? mainEvent.trim().slice(0, 40) : t('today:checkin.notFilled')}>
                         <textarea value={mainEvent} onChange={e => setMainEvent(e.target.value)}
-                            placeholder="Что было самым важным сегодня?"
+                            placeholder={t('today:checkin.mainEventPlaceholder')}
                             className="w-full mt-3 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 min-h-[80px] text-white" />
                     </Section>
                 )}
 
                 {show('testTomorrow') && (
-                    <Section icon="flask" title="Что проверить завтра" open={isOpen('testTomorrow')} onToggle={() => toggle('testTomorrow')}
+                    <Section icon="flask" title={t('today:checkin.testTomorrow')} open={isOpen('testTomorrow')} onToggle={() => toggle('testTomorrow')}
                         filled={!!testTomorrow.trim()}
-                        summary={testTomorrow.trim() ? testTomorrow.trim().slice(0, 40) : 'не заполнено'}>
+                        summary={testTomorrow.trim() ? testTomorrow.trim().slice(0, 40) : t('today:checkin.notFilled')}>
                         <textarea value={testTomorrow} onChange={e => setTestTomorrow(e.target.value)}
-                            placeholder="Идея для эксперимента над собой..."
+                            placeholder={t('today:checkin.testTomorrowPlaceholder')}
                             className="w-full mt-3 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 min-h-[80px] text-white" />
                     </Section>
                 )}
 
                 {show('gratitude') && (
-                    <Section icon="heart" title="За что благодарен" open={isOpen('gratitude')} onToggle={() => toggle('gratitude')}
+                    <Section icon="heart" title={t('today:checkin.gratitude')} open={isOpen('gratitude')} onToggle={() => toggle('gratitude')}
                         filled={gratitudeCount > 0}
-                        summary={gratitudeCount ? `${gratitudeCount} из 3` : 'не заполнено'}>
-                        <p className="text-gray-500 text-xs mt-3 mb-2">Найди 3 хороших момента. В плохие дни они поддержат.</p>
+                        summary={gratitudeCount ? t('today:checkin.gratitudeSummary', { count: gratitudeCount }) : t('today:checkin.notFilled')}>
+                        <p className="text-gray-500 text-xs mt-3 mb-2">{t('today:checkin.gratitudeBlurb')}</p>
                         <div className="space-y-2">
                             {gratitude.map((g, i) => (
                                 <input key={i} type="text" value={g}
                                     onChange={e => setGratitude(prev => prev.map((item, idx) => idx === i ? e.target.value : item))}
-                                    placeholder={`Момент ${i + 1}...`}
+                                    placeholder={t('today:checkin.gratitudePlaceholder', { n: i + 1 })}
                                     className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 outline-none focus:border-pink-400 text-white" />
                             ))}
                         </div>
@@ -446,15 +446,15 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
                 )}
 
                 {show('customQuestion') && (
-                    <Section icon="edit" title="Свой вопрос" open={isOpen('customQuestion')} onToggle={() => toggle('customQuestion')}
+                    <Section icon="edit" title={t('today:checkin.customQuestion')} open={isOpen('customQuestion')} onToggle={() => toggle('customQuestion')}
                         filled={!!customQuestion.trim()}
-                        summary={customQuestion.trim() ? customQuestion.trim().slice(0, 40) : 'не заполнено'}>
-                        <p className="text-gray-500 text-xs mt-3 mb-2">Задай себе любой свой вопрос — он сохранится вместе с записью.</p>
+                        summary={customQuestion.trim() ? customQuestion.trim().slice(0, 40) : t('today:checkin.notFilled')}>
+                        <p className="text-gray-500 text-xs mt-3 mb-2">{t('today:checkin.customBlurb')}</p>
                         <input type="text" value={customQuestion} onChange={e => setCustomQuestion(e.target.value)}
-                            placeholder="Например: Что я откладывал сегодня?"
+                            placeholder={t('today:checkin.customPlaceholder')}
                             className="w-full mb-2 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-2.5 outline-none focus:border-cyan-400 text-white" />
                         <textarea value={customAnswer} onChange={e => setCustomAnswer(e.target.value)}
-                            placeholder="Ответ..." disabled={!customQuestion.trim()}
+                            placeholder={t('today:checkin.customAnswer')} disabled={!customQuestion.trim()}
                             className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg p-3 outline-none focus:border-cyan-400 min-h-[60px] text-white disabled:opacity-50" />
                     </Section>
                 )}
@@ -464,7 +464,7 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
             <div className="sticky bottom-0 -mx-1 mt-5 pt-3 pb-1 bg-gradient-to-t from-[var(--bg-main)] via-[var(--bg-main)] to-transparent">
                 <button onClick={handleSave}
                     className="w-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold py-3 rounded-xl text-lg">
-                    Закрыть день
+                    {t('today:checkin.closeDay')}
                 </button>
             </div>
 

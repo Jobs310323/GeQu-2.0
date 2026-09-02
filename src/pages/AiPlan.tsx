@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { callAIJson } from '../lib/ai';
 import { DB } from '../lib/db';
 import { Icon } from '../components/Icons';
@@ -36,25 +37,10 @@ const KIND_ICON: Record<string, string> = {
     task: 'target', test: 'flask', break: 'pause', gym: 'dumbbell', habit: 'repeat', closing: 'moon',
 };
 
-const PLANNER_SYSTEM = `Ты — проактивный ассистент по планированию дня в приложении GeQu. Пользователь — человек с СДВГ: ему нужны короткие блоки, ясные формулировки и бережный тон.
-
-Тебе дают JSON с контекстом: уровень энергии (0–10), оценки сна/фокуса/настроения, задачи из Канбана с приоритетами и id, невыполненные сегодня привычки, сколько дней назад был последний когнитивный тест и последняя тренировка, текущее время.
-
-Составь реалистичное расписание на остаток дня. Правила:
-- Тяжёлые задачи ставь на высокую энергию, при низкой энергии (< 4) — щади: меньше задач, больше пауз, начни с самого лёгкого.
-- Блоки короткие: 25–60 минут для работы, 5–15 минут для пауз и тестов.
-- Обязательно вставь паузу/дыхание и закрытие дня вечером.
-- Если тренировки не было 3+ дня — предложи зал. Если когнитивного теста не было 3+ дня — предложи короткий тест.
-- Не более 8 блоков. Время начинай не раньше текущего времени.
-- Если задач больше 6, часть перенеси в deferred с короткой причиной.
-- Для блоков, взятых из Канбана, обязательно укажи taskId из входных данных. Для остальных ставь taskId: null.
-
-Отвечай СТРОГО одним JSON-объектом по схеме:
-{"greeting": "короткое тёплое приветствие", "energyNote": "1 предложение про энергию сегодня", "blocks": [{"time": "08:00–09:00", "title": "что делать", "why": "зачем, кратко", "kind": "task|test|break|gym|habit|closing", "taskId": число или null}], "deferred": [{"taskId": число, "reason": "почему перенёс"}], "tip": "одна полезная заметка"}
-
-Весь текст — по-русски и строго на «ты» (никаких «вы», «давайте», «ваш»). Тон тёплый и поддерживающий. Никакого текста вне JSON.`;
+// The planner's system prompt lives in the locale files — see ADR-006.
 
 export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, energy }: AiPlanProps) {
+    const { t } = useTranslation(['today', 'common']);
     const [plan, setPlan] = useState<Plan | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -106,8 +92,8 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
         try {
             const ctx = buildContext();
             const result = await callAIJson<Plan>({
-                system: PLANNER_SYSTEM,
-                prompt: `Контекст:\n${JSON.stringify(ctx, null, 2)}\n\nСоставь план на остаток дня.`,
+                system: t('today:plan.system'),
+                prompt: t('today:plan.prompt', { json: JSON.stringify(ctx, null, 2) }),
                 maxTokens: 1600,
             });
             const stamp = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -115,13 +101,13 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
             setSavedAt(stamp);
             DB.save('aiplan', { date: todayKey(), plan: result, savedAt: stamp, accepted: false });
         } catch (e) {
-            setError(errorMessage(e, 'Не удалось составить план.'));
+            setError(errorMessage(e, t('today:plan.failed')));
         } finally {
             setLoading(false);
         }
     };
 
-    // Accepting the plan moves its Kanban tasks into "В процессе".
+    // Accepting the plan moves its Kanban tasks into the in-progress column.
     const acceptPlan = () => {
         const ids = (plan?.blocks ?? [])
             .map(b => b.taskId)
@@ -138,19 +124,19 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
 
     return (
         <div className="max-w-3xl">
-            <PageHeader page="aiplan" title="ИИ-план дня"
-                subtitle="Соберу твою энергию, задачи и привычки — и предложу расписание на остаток дня." />
+            <PageHeader page="aiplan" title={t('today:plan.title')}
+                subtitle={t('today:plan.subtitle')} />
 
             <div className="glass-card p-6 rounded-2xl mb-6 border border-cyan-400/25 bg-cyan-400/5">
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="flex-1">
-                        <div className="text-sm text-gray-400">Энергия сейчас</div>
+                        <div className="text-sm text-gray-400">{t('today:plan.energyNow')}</div>
                         <div className="text-3xl font-bold text-white">{energy.toFixed(1)}<span className="text-base text-gray-500">/10</span></div>
-                        {savedAt && <div className="text-xs text-gray-500 mt-1">План составлен в {savedAt}</div>}
+                        {savedAt && <div className="text-xs text-gray-500 mt-1">{t('today:plan.madeAt', { when: savedAt })}</div>}
                     </div>
                     <button onClick={generate} disabled={loading}
                         className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg disabled:opacity-40 whitespace-nowrap">
-                        {loading ? 'Составляю…' : plan ? 'Пересобрать план' : 'Составить план дня'}
+                        {loading ? t('today:plan.building') : plan ? t('today:plan.rebuild') : t('today:plan.build')}
                     </button>
                 </div>
                 {error && <div className="mt-4 p-3 rounded-xl border border-red-400/30 text-red-400 text-sm">{error}</div>}
@@ -158,7 +144,7 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
 
             {loading && !plan && (
                 <div className="glass-card p-8 rounded-2xl text-center text-gray-500 animate-pulse">
-                    Смотрю на твою энергию, задачи и привычки…
+                    {t('today:plan.looking')}
                 </div>
             )}
 
@@ -175,7 +161,7 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
                         <div className="glass-card p-6 rounded-2xl">
                             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                                 <Icon name="calendar" size={18} className="text-cyan-400" />
-                                План на сегодня
+                                {t('today:plan.heading')}
                             </h2>
                             <div className="space-y-3">
                                 {plan.blocks!.map((b, i) => (
@@ -198,14 +184,14 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
                                 <button onClick={acceptPlan} disabled={accepted}
                                     className="bg-gradient-to-r from-green-400 to-cyan-400 text-black font-bold px-6 py-2.5 rounded-lg disabled:opacity-40 flex items-center gap-2">
                                     <Icon name="check" size={16} />
-                                    {accepted ? 'План принят' : 'Принять план'}
+                                    {accepted ? t('today:plan.accepted') : t('today:plan.accept')}
                                 </button>
                                 <span className="text-xs text-gray-500">
                                     {accepted
-                                        ? 'Задачи из плана перенесены в «В процессе».'
+                                        ? t('today:plan.acceptedNote')
                                         : movedCount > 0
-                                            ? `Перенесёт ${movedCount} задач(и) в «В процессе»`
-                                            : 'В плане нет задач из Канбана'}
+                                            ? t('today:plan.willMove', { count: movedCount })
+                                            : t('today:plan.noKanbanTasks')}
                                 </span>
                             </div>
                         </div>
@@ -215,15 +201,15 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
                         <div className="glass-card p-6 rounded-2xl">
                             <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
                                 <Icon name="clock" size={18} className="text-[var(--text-muted)]" />
-                                Перенёс на потом
+                                {t('today:plan.deferred')}
                             </h2>
-                            <p className="text-xs text-gray-500 mb-4">Чтобы сегодня не перегружаться.</p>
+                            <p className="text-xs text-gray-500 mb-4">{t('today:plan.deferredBlurb')}</p>
                             <div className="space-y-2">
                                 {plan.deferred!.map((d, i) => {
                                     const task = kanban.find((t) => t.id === d.taskId);
                                     return (
                                         <div key={i} className="bg-[var(--bg-input)] p-3 rounded-lg border border-[var(--border)]">
-                                            <div className="text-sm text-gray-300">{task?.text ?? d.text ?? 'Задача'}</div>
+                                            <div className="text-sm text-gray-300">{task?.text ?? d.text ?? t('today:plan.task')}</div>
                                             <div className="text-xs text-gray-500 mt-0.5">{d.reason}</div>
                                         </div>
                                     );

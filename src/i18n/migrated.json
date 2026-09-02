@@ -10,6 +10,7 @@
         "src/components/TagChips.tsx",
         "src/features/capture/CommandPalette.tsx",
         "src/features/capture/actions.ts",
+        "src/features/checkin/vocabulary.ts",
         "src/features/finance/types.ts",
         "src/features/gym/Gym.tsx",
         "src/features/gym/ProgramImport.tsx",
@@ -24,7 +25,10 @@
         "src/lib/format.ts",
         "src/lib/nav.ts",
         "src/main.tsx",
+        "src/pages/AiPlan.tsx",
+        "src/pages/Dashboard.tsx",
         "src/pages/Finance.tsx",
+        "src/pages/UserCard.tsx",
         "src/routes/AppLayout.tsx"
     ]
 }

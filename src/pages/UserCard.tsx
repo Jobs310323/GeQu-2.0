@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { marked } from 'marked';
 import { callAIJson, streamAI } from '../lib/ai';
 import { DB } from '../lib/db';
@@ -8,6 +9,7 @@ import { PageHeader } from '../components/PageHeader';
 import type { UserCardProps } from '../types/props';
 import type { TestSummary } from '../lib/profile';
 import { errorMessage } from '../lib/helpers';
+import { formatDate, formatDateTime, formatNumber } from '../lib/format';
 import type { ReactNode } from 'react';
 
 /** The two AI outputs cached on this device, with the stamp shown beside them. */
@@ -24,47 +26,7 @@ type AiCard = {
     recommendations?: string[];
 };
 
-const CARD_SYSTEM = `Ты — внимательный аналитик в приложении GeQu. Пользователь — человек с СДВГ, ведёт дневник, трекает состояние, проходит когнитивные тесты и тренируется.
 
-Тебе дают JSON с точной агрегированной статистикой (средние по сну/фокусу/настроению, теги «что помогло/помешало», привычки, задачи, зал, динамика когнитивных тестов, выдержки из дневника, уровень и ачивки). Числа уже посчитаны — НЕ пересчитывай их и не выдумывай новых.
-
-Составь подробную карточку пользователя: кто он по этим данным, что у него получается, где узкие места, какие видны закономерности.
-
-Важно:
-- В cognitive учитывай поле lowerIsBetter: для времени и реакции меньше = лучше. improvedPct > 0 означает улучшение.
-- Опирайся только на предоставленные данные. Если данных мало — скажи об этом честно, не фантазируй.
-- Никаких диагнозов и медицинских выводов. Ты не врач.
-- Обращайся на «ты», тепло и по делу, без лести и общих фраз.
-
-Отвечай СТРОГО одним JSON-объектом:
-{"headline": "короткая ёмкая характеристика в одну строку", "summary": "2–4 предложения общего портрета", "strengths": ["сильная сторона с опорой на цифру"], "challenges": ["узкое место с опорой на цифру"], "patterns": ["замеченная закономерность, например связь сна и фокуса"], "cognitiveProfile": "2–3 предложения про когнитивные тесты и динамику", "recommendations": ["конкретное выполнимое действие"]}
-
-Массивы — по 2–4 пункта. Всё по-русски. Никакого текста вне JSON.`;
-
-const REPORT_SYSTEM = `Ты — внимательный аналитик в приложении GeQu. Пользователь — человек с СДВГ. Он ведёт дневник и трекер состояния, закрывает задачи и цели, ходит в зал (силовые и кардио), проходит когнитивные и скрининговые тесты, ведёт дневник мыслей КПТ, следит за финансами и разбирает круги контроля.
-
-Тебе дают JSON со всей агрегированной статистикой по нему. Числа уже посчитаны — НЕ пересчитывай и не выдумывай новых.
-
-Составь развёрнутый отчёт в Markdown ровно из этих разделов (в этом порядке, каждый — заголовок ##):
-## Кто ты по этим данным
-## Состояние и энергия
-## Ритм и дисциплина
-## Дела, цели и продуктивность
-## Тело и тренировки
-## Когнитивные показатели
-## Мышление и эмоции
-## Деньги
-## Что связано с чем
-## Что делать дальше
-
-Правила:
-- В каждом разделе 2–5 предложений или короткий список, всегда с опорой на конкретные цифры из JSON.
-- Если по разделу данных нет или их мало — так и напиши одной строкой и переходи дальше. Не выдумывай.
-- В cognitive учитывай lowerIsBetter: для времени и реакции меньше = лучше, improvedPct > 0 = улучшение.
-- В разделе «Что связано с чем» ищи именно связи между областями (сон и фокус, тренировки и настроение, задачи и энергия), но только те, что видно в данных.
-- «Что делать дальше» — 3–5 конкретных выполнимых шагов, а не общие советы.
-- Никаких диагнозов, медицинских выводов и оценок скрининговых тестов как диагноза. Ты не врач.
-- Обращайся на «ты», тепло и по делу, без лести. Всё по-русски.`;
 
 function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: string | undefined }) {
     return (
@@ -85,9 +47,9 @@ function Section({ title, items, icon, tone }: { title: string; items?: string[]
                 {title}
             </h3>
             <ul className="space-y-2">
-                {items.map((t, i) => (
+                {items.map((item, i) => (
                     <li key={i} className="text-sm text-gray-300 flex gap-2">
-                        <span className={tone}>•</span><span>{t}</span>
+                        <span className={tone}>•</span><span>{item}</span>
                     </li>
                 ))}
             </ul>
@@ -97,6 +59,7 @@ function Section({ title, items, icon, tone }: { title: string; items?: string[]
 
 export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData, testResults,
                            clinicalResults, cbtRecords, finance, circles }: UserCardProps) {
+    const { t } = useTranslation(['profile', 'common']);
     const [card, setCard] = useState<AiCard | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -120,19 +83,18 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
         if (cachedReport?.text) { setReport(cachedReport.text); setReportAt(cachedReport.madeAt || ''); }
     }, []);
 
-    const stampNow = () =>
-        new Date().toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const stampNow = () => formatDateTime(Date.now(), 'medium');
 
     const generateReport = async () => {
         setReportLoading(true); setReportError(''); setReport('');
         let text = '';
         try {
             await streamAI({
-                system: REPORT_SYSTEM,
+                system: t('profile:card.reportSystem'),
                 maxTokens: 3500,
                 messages: [{
                     role: 'user',
-                    content: `Вот все мои данные (JSON):\n\n${JSON.stringify(profile)}\n\nСоставь полный отчёт по мне.`,
+                    content: t('profile:card.reportPrompt', { json: JSON.stringify(profile) }),
                 }],
                 onToken: chunk => { text += chunk; setReport(text); },
             });
@@ -140,7 +102,7 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
             setReportAt(stamp);
             DB.save('usercard_report', { text, madeAt: stamp });
         } catch (e) {
-            setReportError(errorMessage(e, 'Не удалось составить отчёт.'));
+            setReportError(errorMessage(e, t('profile:card.reportFailed')));
         } finally {
             setReportLoading(false);
         }
@@ -150,35 +112,35 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
         setLoading(true); setError('');
         try {
             const result = await callAIJson<AiCard>({
-                system: CARD_SYSTEM,
-                prompt: `Вот моя статистика (JSON):\n\n${JSON.stringify(profile)}\n\nСоставь мою карточку.`,
+                system: t('profile:card.cardSystem'),
+                prompt: t('profile:card.cardPrompt', { json: JSON.stringify(profile) }),
                 maxTokens: 2000,
             });
             const stamp = stampNow();
             setCard(result); setMadeAt(stamp);
             DB.save('usercard', { card: result, madeAt: stamp });
         } catch (e) {
-            setError(errorMessage(e, 'Не удалось составить карточку.'));
+            setError(errorMessage(e, t('profile:card.cardFailed')));
         } finally {
             setLoading(false);
         }
     };
 
     const s = profile.state;
-    const trendText = (t: TestSummary) =>
-        t.improvedPct === null ? 'мало данных'
-            : t.improvedPct > 0 ? `↑ лучше на ${t.improvedPct}%`
-            : t.improvedPct < 0 ? `↓ хуже на ${Math.abs(t.improvedPct)}%`
-            : 'без изменений';
+    const trendText = (test: TestSummary) =>
+        test.improvedPct === null ? t('profile:card.littleData')
+            : test.improvedPct > 0 ? t('profile:card.better', { pct: test.improvedPct })
+            : test.improvedPct < 0 ? t('profile:card.worse', { pct: Math.abs(test.improvedPct) })
+            : t('profile:card.unchanged');
 
     return (
         <div className="max-w-5xl">
-            <PageHeader page="card" title="Карточка пользователя"
-                subtitle="Сводка по всем твоим данным: состояние, привычки, задачи, зал, когнитивные тесты и дневник." />
+            <PageHeader page="card" title={t('profile:card.title')}
+                subtitle={t('profile:card.subtitle')} />
 
             {!enough ? (
                 <div className="glass-card p-10 rounded-2xl text-center text-gray-500">
-                    Пока нет данных для карточки. Закрой первый день, пройди тест или сделай запись в дневнике.
+                    {t('profile:card.empty')}
                 </div>
             ) : (
                 <>
@@ -187,44 +149,48 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                         <div className="flex items-baseline justify-between flex-wrap gap-2 mb-4">
                             <h2 className="text-xl font-bold flex items-center gap-2">
                                 <Icon name="idcard" size={18} className="text-cyan-400" />
-                                Факты
+                                {t('profile:card.facts')}
                             </h2>
                             <span className="text-xs text-gray-500">
                                 {profile.period.firstEntry
-                                    ? `${profile.period.firstEntry} — ${profile.period.lastEntry} · ${profile.period.daysTracked} записей`
-                                    : 'нет закрытых дней'}
+                                    ? t('profile:card.period', {
+                                        from: formatDate(profile.period.firstEntry),
+                                        to: formatDate(profile.period.lastEntry ?? profile.period.firstEntry),
+                                        count: profile.period.daysTracked,
+                                    })
+                                    : t('profile:card.noClosedDays')}
                             </span>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                            <Stat label="Уровень" value={profile.gamification.level} hint={`${profile.gamification.xp} XP`} />
-                            <Stat label="Серия" value={`${s.currentStreak} дн.`} hint="подряд закрытых" />
-                            <Stat label="Ачивки" value={`${profile.gamification.achievementsUnlocked.length}/${profile.gamification.achievementsTotal}`} />
-                            <Stat label="Дневник" value={profile.journal.entries} hint={`+${profile.journal.gratitudeEntries} благодарностей`} />
+                            <Stat label={t('profile:card.level')} value={profile.gamification.level} hint={t('profile:card.xp', { count: profile.gamification.xp })} />
+                            <Stat label={t('profile:card.streak')} value={t('profile:card.streakDays', { count: s.currentStreak })} hint={t('profile:card.streakHint')} />
+                            <Stat label={t('profile:card.achievements')} value={`${profile.gamification.achievementsUnlocked.length}/${profile.gamification.achievementsTotal}`} />
+                            <Stat label={t('profile:card.journal')} value={profile.journal.entries} hint={t('profile:card.gratitudeHint', { count: profile.journal.gratitudeEntries })} />
                         </div>
 
                         <div className="grid grid-cols-3 gap-3 mb-4">
-                            <Stat label="Сон (30 дн.)" value={s.last30Days.sleep || '—'} hint={`за всё время ${s.allTime.sleep || '—'}`} />
-                            <Stat label="Фокус (30 дн.)" value={s.last30Days.focus || '—'} hint={`за всё время ${s.allTime.focus || '—'}`} />
-                            <Stat label="Настроение (30 дн.)" value={s.last30Days.mood || '—'} hint={`за всё время ${s.allTime.mood || '—'}`} />
+                            <Stat label={t('profile:card.sleep30')} value={s.last30Days.sleep || '—'} hint={t('profile:card.allTimeHint', { value: s.allTime.sleep || '—' })} />
+                            <Stat label={t('profile:card.focus30')} value={s.last30Days.focus || '—'} hint={t('profile:card.allTimeHint', { value: s.allTime.focus || '—' })} />
+                            <Stat label={t('profile:card.mood30')} value={s.last30Days.mood || '—'} hint={t('profile:card.allTimeHint', { value: s.allTime.mood || '—' })} />
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            <Stat label="Задачи закрыто" value={profile.tasks.done} hint={`${profile.tasks.todo} в очереди`} />
-                            <Stat label="Тренировки" value={profile.gym.workouts} hint={`${profile.gym.totalTonnageKg.toLocaleString('ru-RU')} кг тоннаж`} />
-                            <Stat label="Тестов пройдено" value={profile.cognitive.reduce((a, t) => a + t.count, 0)} hint={`${profile.cognitive.length} видов`} />
-                            <Stat label="Привычек" value={profile.habits.length} hint={`${profile.habits.reduce((a, h) => a + h.done, 0)} отметок`} />
+                            <Stat label={t('profile:card.tasksDone')} value={profile.tasks.done} hint={t('profile:card.tasksQueued', { count: profile.tasks.todo })} />
+                            <Stat label={t('profile:card.workouts')} value={profile.gym.workouts} hint={t('profile:card.tonnage', { value: formatNumber(profile.gym.totalTonnageKg) })} />
+                            <Stat label={t('profile:card.testsTaken')} value={profile.cognitive.reduce((a, test) => a + test.count, 0)} hint={t('profile:card.testKinds', { count: profile.cognitive.length })} />
+                            <Stat label={t('profile:card.habits')} value={profile.habits.length} hint={t('profile:card.habitTicks', { count: profile.habits.reduce((a, h) => a + h.done, 0) })} />
                         </div>
 
                         {(profile.helpedTop.length > 0 || profile.hinderedTop.length > 0) && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5 pt-5 border-t border-[var(--border)]">
                                 {profile.helpedTop.length > 0 && (
                                     <div>
-                                        <div className="text-sm text-gray-400 mb-2">Чаще всего помогало</div>
+                                        <div className="text-sm text-gray-400 mb-2">{t('profile:card.helpedMost')}</div>
                                         <div className="flex flex-wrap gap-2">
-                                            {profile.helpedTop.map(t => (
-                                                <span key={t.tag} className="text-xs px-2 py-1 rounded-full bg-green-400/10 text-green-400 border border-green-400/30">
-                                                    {t.tag} · {t.n}
+                                            {profile.helpedTop.map(tag => (
+                                                <span key={tag.tag} className="text-xs px-2 py-1 rounded-full bg-green-400/10 text-green-400 border border-green-400/30">
+                                                    {tag.tag} · {tag.n}
                                                 </span>
                                             ))}
                                         </div>
@@ -232,11 +198,11 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                                 )}
                                 {profile.hinderedTop.length > 0 && (
                                     <div>
-                                        <div className="text-sm text-gray-400 mb-2">Чаще всего мешало</div>
+                                        <div className="text-sm text-gray-400 mb-2">{t('profile:card.hinderedMost')}</div>
                                         <div className="flex flex-wrap gap-2">
-                                            {profile.hinderedTop.map(t => (
-                                                <span key={t.tag} className="text-xs px-2 py-1 rounded-full bg-red-400/10 text-red-400 border border-red-400/30">
-                                                    {t.tag} · {t.n}
+                                            {profile.hinderedTop.map(tag => (
+                                                <span key={tag.tag} className="text-xs px-2 py-1 rounded-full bg-red-400/10 text-red-400 border border-red-400/30">
+                                                    {tag.tag} · {tag.n}
                                                 </span>
                                             ))}
                                         </div>
@@ -247,18 +213,18 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
 
                         {profile.cognitive.length > 0 && (
                             <div className="mt-5 pt-5 border-t border-[var(--border)]">
-                                <div className="text-sm text-gray-400 mb-2">Когнитивная динамика</div>
+                                <div className="text-sm text-gray-400 mb-2">{t('profile:card.cognitiveTrend')}</div>
                                 <div className="space-y-2">
-                                    {profile.cognitive.map(t => (
-                                        <div key={t.type} className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-[var(--bg-input)] px-3 py-2 rounded-lg border border-[var(--border)]">
-                                            <span className="text-sm text-gray-300 flex-1 min-w-[160px]">{t.label}</span>
-                                            <span className="text-xs text-gray-500">{t.count} раз</span>
-                                            <span className="text-xs text-gray-400 tabular-nums">лучший {t.best}</span>
+                                    {profile.cognitive.map(test => (
+                                        <div key={test.type} className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-[var(--bg-input)] px-3 py-2 rounded-lg border border-[var(--border)]">
+                                            <span className="text-sm text-gray-300 flex-1 min-w-[160px]">{test.label}</span>
+                                            <span className="text-xs text-gray-500">{t('profile:card.timesTaken', { count: test.count })}</span>
+                                            <span className="text-xs text-gray-400 tabular-nums">{t('profile:card.best', { value: test.best })}</span>
                                             <span className={`text-xs font-bold ${
-                                                t.improvedPct === null ? 'text-gray-500'
-                                                    : t.improvedPct > 0 ? 'text-green-400'
-                                                    : t.improvedPct < 0 ? 'text-red-400' : 'text-gray-400'
-                                            }`}>{trendText(t)}</span>
+                                                test.improvedPct === null ? 'text-gray-500'
+                                                    : test.improvedPct > 0 ? 'text-green-400'
+                                                    : test.improvedPct < 0 ? 'text-red-400' : 'text-gray-400'
+                                            }`}>{trendText(test)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -273,7 +239,7 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                             <div className="flex items-baseline justify-between mb-4">
                                 <h2 className="text-xl font-bold flex items-center gap-2">
                                     <Icon name="calendar" size={18} className="text-cyan-400" />
-                                    История записей
+                                    {t('profile:card.history')}
                                 </h2>
                                 <span className="text-xs text-gray-500">{sortedLogs.length}</span>
                             </div>
@@ -282,22 +248,22 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                                     <div key={l.id ?? l.date} className="border-b border-[var(--border)] pb-4 anim-fade-in">
                                         <div className="flex items-baseline justify-between gap-3 mb-2">
                                             <span className="text-xs text-cyan-400">
-                                                {new Date(l.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                {formatDate(l.date, 'long')}
                                             </span>
-                                            <button onClick={() => deleteLog(l.id)} className="text-red-400 text-xs hover:underline shrink-0">Удалить</button>
+                                            <button onClick={() => deleteLog(l.id)} className="text-red-400 text-xs hover:underline shrink-0">{t('profile:card.delete')}</button>
                                         </div>
-                                        <div className="text-sm text-gray-300 mb-1">Сон {l.sleep} · Фокус {l.focus} · Настроение {l.mood}</div>
-                                        {l.mainEvent && <div className="text-sm text-gray-400 mb-1">Главное: {l.mainEvent}</div>}
-                                        {l.testTomorrow && <div className="text-sm text-gray-400 mb-1">Проверить завтра: {l.testTomorrow}</div>}
+                                        <div className="text-sm text-gray-300 mb-1">{t('profile:card.logLine', { sleep: l.sleep, focus: l.focus, mood: l.mood })}</div>
+                                        {l.mainEvent && <div className="text-sm text-gray-400 mb-1">{t('profile:card.mainEvent', { value: l.mainEvent })}</div>}
+                                        {l.testTomorrow && <div className="text-sm text-gray-400 mb-1">{t('profile:card.testTomorrow', { value: l.testTomorrow })}</div>}
                                         {l.customQuestion && (
                                             <div className="text-sm mb-1"><span className="text-purple-400">{l.customQuestion}</span>
                                                 {l.customAnswer && <span className="text-gray-300"> — {l.customAnswer}</span>}</div>
                                         )}
                                         {l.gratitude?.length > 0 && (
-                                            <div className="text-xs text-pink-400 mb-1">Благодарность: {l.gratitude.join(', ')}</div>
+                                            <div className="text-xs text-pink-400 mb-1">{t('profile:card.gratitude', { value: l.gratitude.join(', ') })}</div>
                                         )}
-                                        {l.helped?.length > 0 && <div className="text-xs text-green-400">Помогло: {l.helped.join(', ')}</div>}
-                                        {l.hindered?.length > 0 && <div className="text-xs text-red-400">Мешало: {l.hindered.join(', ')}</div>}
+                                        {l.helped?.length > 0 && <div className="text-xs text-green-400">{t('profile:card.helped', { value: l.helped.join(', ') })}</div>}
+                                        {l.hindered?.length > 0 && <div className="text-xs text-red-400">{t('profile:card.hindered', { value: l.hindered.join(', ') })}</div>}
                                     </div>
                                 ))}
                             </div>
@@ -310,20 +276,20 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                             <div className="flex-1">
                                 <h2 className="text-lg font-bold text-purple-400 mb-1 flex items-center gap-2">
                                     <Icon name="sparkle" size={16} />
-                                    Разбор от ИИ
+                                    {t('profile:card.aiHeading')}
                                 </h2>
                                 <p className="text-sm text-gray-400">
-                                    Соберу из этих цифр портрет: сильные стороны, узкие места и закономерности.
+                                    {t('profile:card.aiBlurb')}
                                 </p>
-                                {madeAt && <p className="text-xs text-gray-500 mt-1">Составлено: {madeAt}</p>}
+                                {madeAt && <p className="text-xs text-gray-500 mt-1">{t('profile:card.madeAt', { when: madeAt })}</p>}
                             </div>
                             <button onClick={generate} disabled={loading}
                                 className="bg-gradient-to-r from-purple-400 to-pink-400 text-black font-bold px-6 py-3 rounded-lg disabled:opacity-40 whitespace-nowrap">
-                                {loading ? 'Анализирую…' : card ? 'Обновить разбор' : 'Составить карточку'}
+                                {loading ? t('profile:card.analysing') : card ? t('profile:card.refresh') : t('profile:card.build')}
                             </button>
                         </div>
                         {error && <div className="mt-4 p-3 rounded-xl border border-red-400/30 text-red-400 text-sm">{error}</div>}
-                        {loading && !card && <div className="mt-4 text-sm text-gray-500 animate-pulse">Свожу данные воедино…</div>}
+                        {loading && !card && <div className="mt-4 text-sm text-gray-500 animate-pulse">{t('profile:card.gathering')}</div>}
                     </div>
 
                     {card && (
@@ -340,23 +306,23 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                             )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <Section title="Сильные стороны" items={card.strengths} icon="flame" tone="text-green-400" />
-                                <Section title="Узкие места" items={card.challenges} icon="alertTriangle" tone="text-yellow-400" />
+                                <Section title={t('profile:card.strengths')} items={card.strengths} icon="flame" tone="text-green-400" />
+                                <Section title={t('profile:card.challenges')} items={card.challenges} icon="alertTriangle" tone="text-yellow-400" />
                             </div>
 
-                            <Section title="Замеченные закономерности" items={card.patterns} icon="search" tone="text-cyan-400" />
+                            <Section title={t('profile:card.patterns')} items={card.patterns} icon="search" tone="text-cyan-400" />
 
                             {card.cognitiveProfile && (
                                 <div className="glass-card p-5 rounded-2xl">
                                     <h3 className="font-bold text-purple-400 mb-2 flex items-center gap-2">
                                         <Icon name="library" size={16} />
-                                        Когнитивный профиль
+                                        {t('profile:card.cognitiveProfile')}
                                     </h3>
                                     <p className="text-sm text-gray-300">{card.cognitiveProfile}</p>
                                 </div>
                             )}
 
-                            <Section title="Что можно сделать" items={card.recommendations} icon="target" tone="text-pink-400" />
+                            <Section title={t('profile:card.recommendations')} items={card.recommendations} icon="target" tone="text-pink-400" />
                         </div>
                     )}
 
@@ -366,21 +332,20 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                             <div className="flex-1">
                                 <h2 className="text-lg font-bold text-cyan-400 mb-1 flex items-center gap-2">
                                     <Icon name="library" size={16} />
-                                    Полный анализ
+                                    {t('profile:card.reportHeading')}
                                 </h2>
                                 <p className="text-sm text-gray-400">
-                                    Развёрнутый отчёт по всем данным сразу: состояние, ритм, дела, тело, когнитивные
-                                    и скрининговые тесты, КПТ-записи, деньги и связи между ними.
+                                    {t('profile:card.reportBlurb')}
                                 </p>
-                                {reportAt && <p className="text-xs text-gray-500 mt-1">Составлено: {reportAt}</p>}
+                                {reportAt && <p className="text-xs text-gray-500 mt-1">{t('profile:card.madeAt', { when: reportAt })}</p>}
                             </div>
                             <button onClick={generateReport} disabled={reportLoading}
                                 className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg disabled:opacity-40 whitespace-nowrap">
-                                {reportLoading ? 'Анализирую…' : report ? 'Обновить отчёт' : 'Провести полный анализ'}
+                                {reportLoading ? t('profile:card.analysing') : report ? t('profile:card.reportRefresh') : t('profile:card.reportBuild')}
                             </button>
                         </div>
                         {reportError && <div className="mt-4 p-3 rounded-xl border border-red-400/30 text-red-400 text-sm">{reportError}</div>}
-                        {reportLoading && !report && <div className="mt-4 text-sm text-gray-500 animate-pulse">Читаю все твои данные…</div>}
+                        {reportLoading && !report && <div className="mt-4 text-sm text-gray-500 animate-pulse">{t('profile:card.reportReading')}</div>}
                     </div>
 
                     {report && (
