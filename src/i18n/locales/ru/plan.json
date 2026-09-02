@@ -1,0 +1,54 @@
+{
+    "goals": {
+        "pageTitle": "Цели и шаги",
+        "newPlaceholder": "Новая большая цель...",
+        "addGoal": "Добавить цель",
+        "copyAllTitle": "Скопировать все цели и шаги для промта",
+        "copied": "Скопировано",
+        "copyAll": "Скопировать всё",
+        "downloadAllTitle": "Скачать все цели и шаги .txt",
+        "downloadAll": "Скачать всё .txt",
+        "empty": "Пока нет целей — добавь первую выше.",
+        "dragHint": "Перетащи за ручку, чтобы поменять порядок · выполненные цели опускаются вниз, остальные группируются по тегу",
+        "dragGoalTitle": "Перетащить цель",
+        "copyGoalTitle": "Скопировать цель и шаги для промта",
+        "copyGoal": "Скопировать",
+        "downloadGoalTitle": "Скачать цель и шаги .txt",
+        "downloadGoal": "Скачать .txt",
+        "deleteGoal": "Удалить цель"
+    },
+    "step": {
+        "dragTitle": "Перетащить шаг",
+        "editHint": "Двойной клик — изменить",
+        "addChildTitle": "Добавить шаг внутри",
+        "noteTitleHas": "Заметка к шагу",
+        "noteTitleAdd": "Добавить заметку",
+        "tagsTitleHas": "Теги шага",
+        "tagsTitleAdd": "Добавить теги",
+        "editTitle": "Изменить шаг",
+        "deleteTitle": "Удалить шаг",
+        "notePlaceholder": "Что выяснилось по этому шагу… (поддерживает Markdown)",
+        "editNoteLabel": "Редактировать заметку",
+        "childPlaceholder": "Шаг внутри шага..."
+    },
+    "description": {
+        "addLabel": "Добавить описание",
+        "editTitle": "Изменить описание",
+        "placeholder": "Описание цели… (поддерживает Markdown)"
+    },
+    "taskInput": {
+        "defaultPlaceholder": "Добавить шаг..."
+    },
+    "circles": {
+        "title": "Круги влияния",
+        "subtitle": "Фокусируйся на красном, отпускай синее. Снижай тревожность.",
+        "config": {
+            "inner": "Мой контроль",
+            "middle": "Мое влияние",
+            "outer": "Вне контроля"
+        },
+        "placeholder": "Например: Погода, Мой сон, Реакция коллеги...",
+        "add": "Добавить",
+        "empty": "Пусто..."
+    }
+}

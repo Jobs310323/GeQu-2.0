@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../components/PageHeader';
 import type { CirclesProps } from '../types/props';
 
 export function CirclesOfInfluence({ circles, setCircles }: CirclesProps) {
+    const { t } = useTranslation('plan');
     const [text, setText] = useState('');
     const [activeCircle, setActiveCircle] = useState<'inner' | 'middle' | 'outer'>('inner');
 
@@ -17,9 +19,9 @@ export function CirclesOfInfluence({ circles, setCircles }: CirclesProps) {
     };
 
     const config = {
-        inner: { label: 'Мой контроль', text: 'text-red-400', border: 'border-red-400/30', bg: 'bg-red-400/10' },
-        middle: { label: 'Мое влияние', text: 'text-yellow-400', border: 'border-yellow-400/30', bg: 'bg-yellow-400/10' },
-        outer: { label: 'Вне контроля', text: 'text-blue-400', border: 'border-blue-400/30', bg: 'bg-blue-400/5' }
+        inner: { label: t('plan:circles.config.inner'), text: 'text-red-400', border: 'border-red-400/30', bg: 'bg-red-400/10' },
+        middle: { label: t('plan:circles.config.middle'), text: 'text-yellow-400', border: 'border-yellow-400/30', bg: 'bg-yellow-400/10' },
+        outer: { label: t('plan:circles.config.outer'), text: 'text-blue-400', border: 'border-blue-400/30', bg: 'bg-blue-400/5' }
     };
 
     const circleOrder = ['inner', 'middle', 'outer'] as const;
@@ -29,14 +31,14 @@ export function CirclesOfInfluence({ circles, setCircles }: CirclesProps) {
 
     return (
         <div className="max-w-5xl mx-auto">
-            <PageHeader page="circles" title="Круги влияния" subtitle="Фокусируйся на красном, отпускай синее. Снижай тревожность." />
+            <PageHeader page="circles" title={t('plan:circles.title')} subtitle={t('plan:circles.subtitle')} />
 
             {/* Визуализация легенды */}
             <div className="glass-card p-8 rounded-2xl mb-6 flex flex-col md:flex-row items-center gap-8">
                 <div className="relative w-48 h-48 flex items-center justify-center flex-shrink-0">
                     <div className="absolute w-48 h-48 rounded-full border-4 border-blue-400/30 bg-blue-400/5"></div>
                     <div className="absolute w-32 h-32 rounded-full border-4 border-yellow-400/30 bg-yellow-400/5"></div>
-                    <div className="absolute w-16 h-16 rounded-full border-4 border-red-400/40 bg-red-400/10 flex items-center justify-center text-[10px] text-center text-red-400 font-bold p-1">Мой контроль</div>
+                    <div className="absolute w-16 h-16 rounded-full border-4 border-red-400/40 bg-red-400/10 flex items-center justify-center text-[10px] text-center text-red-400 font-bold p-1">{t('plan:circles.config.inner')}</div>
                 </div>
                 <div className="flex-1 w-full">
                     <div className="flex gap-2 mb-3">
@@ -53,10 +55,10 @@ export function CirclesOfInfluence({ circles, setCircles }: CirclesProps) {
                             value={text} 
                             onChange={e => setText(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && addItem()}
-                            placeholder="Например: Погода, Мой сон, Реакция коллеги..."
+                            placeholder={t('plan:circles.placeholder')}
                             className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl p-3 outline-none focus:border-cyan-400 text-white"
                         />
-                        <button onClick={addItem} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 rounded-xl">Добавить</button>
+                        <button onClick={addItem} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 rounded-xl">{t('plan:circles.add')}</button>
                     </div>
                 </div>
             </div>
@@ -71,7 +73,7 @@ export function CirclesOfInfluence({ circles, setCircles }: CirclesProps) {
                         </h2>
                         <div className="space-y-2">
                             {circles.filter((c) => c.circle === key).length === 0 && (
-                                <p className="text-[var(--text-muted)] text-sm italic">Пусто...</p>
+                                <p className="text-[var(--text-muted)] text-sm italic">{t('plan:circles.empty')}</p>
                             )}
                             {circles.filter((c) => c.circle === key).map((item) => (
                                 <div key={item.id} className={`flex items-center justify-between p-3 rounded-xl ${config[key].bg} ${key === 'outer' ? 'opacity-60' : ''}`}>

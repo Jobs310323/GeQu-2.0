@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icons';
 import { CollapsibleMarkdown, autoGrow } from '../../components/CollapsibleMarkdown';
 import { TagChips } from '../../components/TagChips';
@@ -18,6 +19,7 @@ type StepRowProps = {
 };
 
 export function StepRow({ task, depth = 0, onPatch, onDelete, onAddChild, gripProps, itemProps, itemClass }: StepRowProps) {
+    const { t } = useTranslation('plan');
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(task.text);
     const [noteOpen, setNoteOpen] = useState(false);
@@ -42,7 +44,7 @@ export function StepRow({ task, depth = 0, onPatch, onDelete, onAddChild, gripPr
         <div className={depth > 0 ? 'pl-6 border-l border-[var(--border)]' : ''}>
             <div {...itemProps} className={`bg-[var(--bg-input)] rounded-xl ${itemClass}`}>
                 <div className="flex items-center gap-2 p-3">
-                    <span {...gripProps} title="Перетащить шаг"
+                    <span {...gripProps} title={t('plan:step.dragTitle')}
                         className="text-[var(--text-muted)] hover:text-cyan-400 transition shrink-0">
                         <Icon name="grip" size={14} />
                     </span>
@@ -63,29 +65,29 @@ export function StepRow({ task, depth = 0, onPatch, onDelete, onAddChild, gripPr
                             className="flex-1 bg-transparent border-b border-cyan-400 outline-none text-sm py-0.5"
                         />
                     ) : (
-                        <span onDoubleClick={startEdit} title="Двойной клик — изменить"
+                        <span onDoubleClick={startEdit} title={t('plan:step.editHint')}
                             className={`flex-1 text-sm cursor-text ${task.done ? 'line-through text-gray-500' : 'text-gray-200'}`}>
                             {task.text}
                         </span>
                     )}
 
-                    <button onClick={() => setAddingChild(v => !v)} title="Добавить шаг внутри"
+                    <button onClick={() => setAddingChild(v => !v)} title={t('plan:step.addChildTitle')}
                         className={`shrink-0 p-1.5 rounded-lg transition ${addingChild ? 'text-purple-400 bg-purple-400/10' : 'text-[var(--text-muted)] hover:text-purple-400'}`}>
                         <Icon name="plus" size={14} />
                     </button>
-                    <button onClick={() => setNoteOpen(o => !o)} title={hasNote ? 'Заметка к шагу' : 'Добавить заметку'}
+                    <button onClick={() => setNoteOpen(o => !o)} title={hasNote ? t('plan:step.noteTitleHas') : t('plan:step.noteTitleAdd')}
                         className={`shrink-0 p-1.5 rounded-lg transition ${hasNote || noteOpen ? 'text-cyan-400 bg-cyan-400/10' : 'text-[var(--text-muted)] hover:text-cyan-400'}`}>
                         <Icon name="note" size={14} />
                     </button>
-                    <button onClick={() => setTagsOpen(o => !o)} title={hasTags ? 'Теги шага' : 'Добавить теги'}
+                    <button onClick={() => setTagsOpen(o => !o)} title={hasTags ? t('plan:step.tagsTitleHas') : t('plan:step.tagsTitleAdd')}
                         className={`shrink-0 p-1.5 rounded-lg transition ${hasTags || tagsOpen ? 'text-purple-400 bg-purple-400/10' : 'text-[var(--text-muted)] hover:text-purple-400'}`}>
                         <Icon name="tag" size={14} />
                     </button>
-                    <button onClick={startEdit} title="Изменить шаг"
+                    <button onClick={startEdit} title={t('plan:step.editTitle')}
                         className="shrink-0 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-purple-400 transition">
                         <Icon name="edit" size={14} />
                     </button>
-                    <button onClick={() => onDelete(task.id)} title="Удалить шаг"
+                    <button onClick={() => onDelete(task.id)} title={t('plan:step.deleteTitle')}
                         className="shrink-0 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-400 transition">
                         <Icon name="trash" size={14} />
                     </button>
@@ -99,7 +101,7 @@ export function StepRow({ task, depth = 0, onPatch, onDelete, onAddChild, gripPr
                             value={task.note ?? ''}
                             onChange={e => { patch({ note: e.target.value }); autoGrow(e.target); }}
                             onFocus={e => autoGrow(e.target)}
-                            placeholder="Что выяснилось по этому шагу… (поддерживает Markdown)"
+                            placeholder={t('plan:step.notePlaceholder')}
                             rows={3}
                             className="w-full bg-black/20 border border-[var(--border)] rounded-lg p-2.5 text-sm outline-none focus:border-cyan-400 resize-none overflow-hidden"
                         />
@@ -107,7 +109,7 @@ export function StepRow({ task, depth = 0, onPatch, onDelete, onAddChild, gripPr
                 ) : hasNote && (
                     <button
                         type="button"
-                        aria-label="Редактировать заметку"
+                        aria-label={t('plan:step.editNoteLabel')}
                         className="px-3 pb-3 -mt-1 cursor-pointer text-left w-full"
                         onClick={() => setNoteOpen(true)}
                     >
@@ -125,7 +127,7 @@ export function StepRow({ task, depth = 0, onPatch, onDelete, onAddChild, gripPr
                     <div className="px-3 pb-3">
                         <TaskInput
                             autoFocus
-                            placeholder="Шаг внутри шага..."
+                            placeholder={t('plan:step.childPlaceholder')}
                             addTask={text => { onAddChild(task.id, text); setAddingChild(false); }}
                             onCancel={() => setAddingChild(false)}
                         />

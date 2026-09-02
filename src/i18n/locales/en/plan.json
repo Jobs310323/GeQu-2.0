@@ -1,0 +1,54 @@
+{
+    "goals": {
+        "pageTitle": "Goals and steps",
+        "newPlaceholder": "A new big goal...",
+        "addGoal": "Add goal",
+        "copyAllTitle": "Copy every goal and step for a prompt",
+        "copied": "Copied",
+        "copyAll": "Copy all",
+        "downloadAllTitle": "Download every goal and step as .txt",
+        "downloadAll": "Download all as .txt",
+        "empty": "No goals yet — add the first one above.",
+        "dragHint": "Drag the handle to reorder · done goals sink to the bottom, the rest group by tag",
+        "dragGoalTitle": "Drag goal",
+        "copyGoalTitle": "Copy this goal and its steps for a prompt",
+        "copyGoal": "Copy",
+        "downloadGoalTitle": "Download this goal and its steps as .txt",
+        "downloadGoal": "Download .txt",
+        "deleteGoal": "Delete goal"
+    },
+    "step": {
+        "dragTitle": "Drag step",
+        "editHint": "Double-click to edit",
+        "addChildTitle": "Add a step inside this one",
+        "noteTitleHas": "Note on this step",
+        "noteTitleAdd": "Add a note",
+        "tagsTitleHas": "Step tags",
+        "tagsTitleAdd": "Add tags",
+        "editTitle": "Edit step",
+        "deleteTitle": "Delete step",
+        "notePlaceholder": "What you found out about this step… (Markdown supported)",
+        "editNoteLabel": "Edit note",
+        "childPlaceholder": "A step inside this step..."
+    },
+    "description": {
+        "addLabel": "Add a description",
+        "editTitle": "Edit description",
+        "placeholder": "Goal description… (Markdown supported)"
+    },
+    "taskInput": {
+        "defaultPlaceholder": "Add a step..."
+    },
+    "circles": {
+        "title": "Circles of influence",
+        "subtitle": "Focus on the red, let go of the blue. Less anxiety.",
+        "config": {
+            "inner": "My control",
+            "middle": "My influence",
+            "outer": "Outside my control"
+        },
+        "placeholder": "For example: the weather, my sleep, a colleague's reaction...",
+        "add": "Add",
+        "empty": "Empty..."
+    }
+}
