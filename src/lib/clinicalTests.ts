@@ -4,8 +4,21 @@
 // Part A uses per-item thresholds, PSS-10 reverses four items, and WHO-5
 // multiplies the raw score by 4. Getting these wrong would quietly produce
 // meaningless numbers, so each one is spelled out.
+//
+// The wording IS the instrument (see ADR-006), so it is kept separate from
+// the scoring here and entered per locale as real content in
+// `instruments/{ru,en}.ts` — never machine-translated. This file defines the
+// scoring, which is locale-independent, and merges it with whichever
+// locale's wording is available. An instrument without validated wording for
+// a locale is left out of `clinicalTests(locale)` rather than shown with
+// another language's text silently substituted; `unavailableInstruments`
+// exists so the screen can say so visibly instead of just being shorter.
 
 import { lastOf, type NonEmptyArray } from './nonEmpty';
+import type { Locale } from '../i18n/locale';
+import { ru } from './instruments/ru';
+import { en } from './instruments/en';
+import type { InstrumentText, InstrumentTextBundle } from './instruments/types';
 
 export type Option = { text: string; val: number };
 export type Band = { min: number; max: number; label: string; tone: 'good' | 'mild' | 'moderate' | 'high' };
@@ -27,453 +40,163 @@ export type ClinicalTest = {
     maxScore: number;
     bands: NonEmptyArray<Band>;
     note?: string;
+    /** Locales that currently have validated wording for this instrument. */
+    locales: Locale[];
 };
 
-const FREQ_4: Option[] = [
-    { text: 'Никогда', val: 0 },
-    { text: 'Редко', val: 1 },
-    { text: 'Иногда', val: 2 },
-    { text: 'Часто', val: 3 },
-    { text: 'Очень часто', val: 4 },
-];
+/**
+ * The scoring half of an instrument: everything that does not change with
+ * language. `optionValues` and `bandRanges` are positional — they line up
+ * with `InstrumentText.optionText` / `bandLabels` by array index, which is
+ * the contract documented in `instruments/types.ts`.
+ */
+export type ScoringDef = {
+    id: string;
+    optionValues: number[];
+    bandRanges: NonEmptyArray<{ min: number; max: number; tone: Band['tone'] }>;
+    reversed?: number[];
+    thresholds?: number[];
+    multiplier?: number;
+    maxScore: number;
+};
 
-const PHQ_OPTS: Option[] = [
-    { text: 'Совсем нет', val: 0 },
-    { text: 'Несколько дней', val: 1 },
-    { text: 'Больше половины дней', val: 2 },
-    { text: 'Почти каждый день', val: 3 },
-];
+const seq = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
 
-const PSS_OPTS: Option[] = [
-    { text: 'Никогда', val: 0 },
-    { text: 'Почти никогда', val: 1 },
-    { text: 'Иногда', val: 2 },
-    { text: 'Довольно часто', val: 3 },
-    { text: 'Очень часто', val: 4 },
-];
-
-export const CLINICAL_TESTS: ClinicalTest[] = [
+const SCORING: ScoringDef[] = [
     {
-        id: 'asrs',
-        name: 'ASRS-v1.1 · скрининг СДВГ',
-        short: 'СДВГ',
-        intro: 'Часть A шкалы самооценки ВОЗ — шесть вопросов, лучше всего предсказывающих СДВГ у взрослых.',
-        period: 'За последние 6 месяцев',
-        questions: [
-            'Как часто вам трудно доводить до конца детали проекта, когда самые сложные части уже позади?',
-            'Как часто вам трудно организовать выполнение задачи, требующей порядка?',
-            'Как часто вы забываете о назначенных встречах или обязательствах?',
-            'Как часто вы откладываете начало задач, требующих длительных умственных усилий?',
-            'Как часто вы ёрзаете руками или ногами, когда приходится долго сидеть?',
-            'Как часто вы чувствуете себя чрезмерно активным, будто вас «заводит мотор»?',
-        ],
-        options: FREQ_4,
-        // Items 1–3 count from «Иногда», items 4–6 only from «Часто».
-        thresholds: [2, 2, 2, 3, 3, 3],
-        maxScore: 6,
-        bands: [
-            { min: 0, max: 3, label: 'Признаков немного', tone: 'good' },
-            { min: 4, max: 6, label: 'Симптомы, характерные для СДВГ', tone: 'high' },
-        ],
-        note: 'Считается число ответов, перешагнувших порог. 4 и больше — результат, при котором обычно рекомендуют очную диагностику.',
+        id: 'asrs', optionValues: seq(5), thresholds: [2, 2, 2, 3, 3, 3], maxScore: 6,
+        bandRanges: [{ min: 0, max: 3, tone: 'good' }, { min: 4, max: 6, tone: 'high' }],
     },
     {
-        id: 'phq9',
-        name: 'PHQ-9 · настроение',
-        short: 'Настроение',
-        intro: 'Девять пунктов о признаках сниженного настроения. Один из самых распространённых скринингов в мире.',
-        period: 'За последние 2 недели',
-        questions: [
-            'Мало интереса или удовольствия от привычных занятий',
-            'Подавленность, угнетённость или чувство безнадёжности',
-            'Трудности с засыпанием, прерывистый сон или, наоборот, слишком долгий сон',
-            'Усталость или ощущение, что сил совсем мало',
-            'Плохой аппетит или переедание',
-            'Недовольство собой, ощущение, что вы неудачник или подвели близких',
-            'Трудно сосредоточиться — например, на чтении или просмотре фильма',
-            'Двигаетесь или говорите заметно медленнее обычного — либо, наоборот, суетливее',
-            'Мысли о том, что лучше бы вам не жить, или о причинении себе вреда',
-        ],
-        options: PHQ_OPTS,
-        maxScore: 27,
-        bands: [
-            { min: 0, max: 4, label: 'Минимальные проявления', tone: 'good' },
-            { min: 5, max: 9, label: 'Лёгкие проявления', tone: 'mild' },
-            { min: 10, max: 14, label: 'Умеренные проявления', tone: 'moderate' },
-            { min: 15, max: 19, label: 'Умеренно выраженные', tone: 'high' },
-            { min: 20, max: 27, label: 'Выраженные проявления', tone: 'high' },
-        ],
-        note: 'Начиная с 10 баллов результат принято обсуждать со специалистом.',
-    },
-    {
-        id: 'gad7',
-        name: 'GAD-7 · тревога',
-        short: 'Тревога',
-        intro: 'Семь пунктов о признаках генерализованной тревоги.',
-        period: 'За последние 2 недели',
-        questions: [
-            'Чувство нервозности, тревоги или взвинченности',
-            'Не получается остановить или контролировать беспокойство',
-            'Слишком сильное беспокойство по разным поводам',
-            'Трудно расслабиться',
-            'Такое беспокойство, что трудно усидеть на месте',
-            'Лёгкое раздражение или вспыльчивость',
-            'Страх, будто вот-вот случится что-то плохое',
-        ],
-        options: PHQ_OPTS,
-        maxScore: 21,
-        bands: [
-            { min: 0, max: 4, label: 'Минимальная тревога', tone: 'good' },
-            { min: 5, max: 9, label: 'Лёгкая тревога', tone: 'mild' },
-            { min: 10, max: 14, label: 'Умеренная тревога', tone: 'moderate' },
-            { min: 15, max: 21, label: 'Выраженная тревога', tone: 'high' },
-        ],
-        note: 'Начиная с 10 баллов результат принято обсуждать со специалистом.',
-    },
-    {
-        id: 'isi',
-        name: 'ISI · качество сна',
-        short: 'Сон',
-        intro: 'Индекс тяжести бессонницы: насколько сон нарушен и как это сказывается на дне.',
-        period: 'За последние 2 недели',
-        questions: [
-            'Трудности с засыпанием',
-            'Трудности с поддержанием сна (просыпаетесь ночью)',
-            'Слишком раннее пробуждение',
-            'Насколько вы довольны своим сном сейчас?',
-            'Насколько нарушения сна мешают вашей повседневной жизни?',
-            'Насколько окружающим заметно, что проблемы со сном ухудшают ваше состояние?',
-            'Насколько вы обеспокоены своим сном?',
-        ],
-        options: [
-            { text: 'Совсем нет', val: 0 },
-            { text: 'Слегка', val: 1 },
-            { text: 'Умеренно', val: 2 },
-            { text: 'Сильно', val: 3 },
-            { text: 'Очень сильно', val: 4 },
-        ],
-        maxScore: 28,
-        bands: [
-            { min: 0, max: 7, label: 'Клинически значимой бессонницы нет', tone: 'good' },
-            { min: 8, max: 14, label: 'Подпороговая бессонница', tone: 'mild' },
-            { min: 15, max: 21, label: 'Умеренная бессонница', tone: 'moderate' },
-            { min: 22, max: 28, label: 'Выраженная бессонница', tone: 'high' },
+        id: 'phq9', optionValues: seq(4), maxScore: 27,
+        bandRanges: [
+            { min: 0, max: 4, tone: 'good' }, { min: 5, max: 9, tone: 'mild' },
+            { min: 10, max: 14, tone: 'moderate' }, { min: 15, max: 19, tone: 'high' }, { min: 20, max: 27, tone: 'high' },
         ],
     },
     {
-        id: 'pss10',
-        name: 'PSS-10 · воспринимаемый стресс',
-        short: 'Стресс',
-        intro: 'Десять вопросов о том, насколько непредсказуемой и неуправляемой ощущается жизнь.',
-        period: 'За последний месяц',
-        questions: [
-            'Как часто вы расстраивались из-за чего-то неожиданного?',
-            'Как часто вы чувствовали, что не можете контролировать важные вещи в жизни?',
-            'Как часто вы чувствовали себя нервным и напряжённым?',
-            'Как часто вы были уверены в своей способности справляться с личными проблемами?',
-            'Как часто вы чувствовали, что всё складывается так, как вам нужно?',
-            'Как часто вы обнаруживали, что не справляетесь со всеми делами?',
-            'Как часто вам удавалось контролировать раздражение?',
-            'Как часто вы чувствовали, что держите всё под контролем?',
-            'Как часто вы злились из-за того, что было вне вашего контроля?',
-            'Как часто трудности накапливались так, что вы не могли их преодолеть?',
-        ],
-        options: PSS_OPTS,
-        // Positively worded items are scored in reverse.
-        reversed: [3, 4, 6, 7],
-        maxScore: 40,
-        bands: [
-            { min: 0, max: 13, label: 'Низкий уровень стресса', tone: 'good' },
-            { min: 14, max: 26, label: 'Умеренный уровень стресса', tone: 'moderate' },
-            { min: 27, max: 40, label: 'Высокий уровень стресса', tone: 'high' },
+        id: 'gad7', optionValues: seq(4), maxScore: 21,
+        bandRanges: [
+            { min: 0, max: 4, tone: 'good' }, { min: 5, max: 9, tone: 'mild' },
+            { min: 10, max: 14, tone: 'moderate' }, { min: 15, max: 21, tone: 'high' },
         ],
     },
     {
-        id: 'who5',
-        name: 'WHO-5 · благополучие',
-        short: 'Благополучие',
-        intro: 'Пять коротких утверждений о самочувствии. Здесь чем больше баллов, тем лучше.',
-        period: 'За последние 2 недели',
-        questions: [
-            'Я чувствовал себя бодрым и в хорошем настроении',
-            'Я чувствовал себя спокойным и расслабленным',
-            'Я чувствовал себя активным и энергичным',
-            'Я просыпался отдохнувшим',
-            'Моя повседневная жизнь была наполнена тем, что мне интересно',
+        id: 'isi', optionValues: seq(5), maxScore: 28,
+        bandRanges: [
+            { min: 0, max: 7, tone: 'good' }, { min: 8, max: 14, tone: 'mild' },
+            { min: 15, max: 21, tone: 'moderate' }, { min: 22, max: 28, tone: 'high' },
         ],
-        options: [
-            { text: 'Никогда', val: 0 },
-            { text: 'Иногда', val: 1 },
-            { text: 'Менее половины времени', val: 2 },
-            { text: 'Более половины времени', val: 3 },
-            { text: 'Большую часть времени', val: 4 },
-            { text: 'Всё время', val: 5 },
+    },
+    {
+        id: 'pss10', optionValues: seq(5), reversed: [3, 4, 6, 7], maxScore: 40,
+        bandRanges: [{ min: 0, max: 13, tone: 'good' }, { min: 14, max: 26, tone: 'moderate' }, { min: 27, max: 40, tone: 'high' }],
+    },
+    {
+        id: 'who5', optionValues: seq(6), multiplier: 4, maxScore: 100,
+        bandRanges: [
+            { min: 0, max: 28, tone: 'high' }, { min: 29, max: 50, tone: 'moderate' },
+            { min: 51, max: 75, tone: 'mild' }, { min: 76, max: 100, tone: 'good' },
         ],
-        multiplier: 4, // raw 0–25 is reported as 0–100
-        maxScore: 100,
-        bands: [
-            { min: 0, max: 28, label: 'Низкое благополучие', tone: 'high' },
-            { min: 29, max: 50, label: 'Сниженное благополучие', tone: 'moderate' },
-            { min: 51, max: 75, label: 'Нормальное благополучие', tone: 'mild' },
-            { min: 76, max: 100, label: 'Высокое благополучие', tone: 'good' },
+    },
+    {
+        id: 'asrs18', optionValues: seq(5), maxScore: 72,
+        bandRanges: [{ min: 0, max: 16, tone: 'good' }, { min: 17, max: 23, tone: 'moderate' }, { min: 24, max: 72, tone: 'high' }],
+    },
+    {
+        id: 'cesd', optionValues: seq(4), reversed: [3, 7, 11, 15], maxScore: 60,
+        bandRanges: [
+            { min: 0, max: 15, tone: 'good' }, { min: 16, max: 20, tone: 'mild' },
+            { min: 21, max: 30, tone: 'moderate' }, { min: 31, max: 60, tone: 'high' },
         ],
-        note: 'Здесь высокий балл — хороший знак. Ниже 50 обычно считают поводом присмотреться к себе.',
+    },
+    {
+        id: 'cfq', optionValues: seq(5), maxScore: 100,
+        bandRanges: [
+            { min: 0, max: 30, tone: 'good' }, { min: 31, max: 50, tone: 'mild' },
+            { min: 51, max: 70, tone: 'moderate' }, { min: 71, max: 100, tone: 'high' },
+        ],
+    },
+    {
+        id: 'phq15', optionValues: seq(3), maxScore: 30,
+        bandRanges: [
+            { min: 0, max: 4, tone: 'good' }, { min: 5, max: 9, tone: 'mild' },
+            { min: 10, max: 14, tone: 'moderate' }, { min: 15, max: 30, tone: 'high' },
+        ],
+    },
+    {
+        id: 'rses', optionValues: seq(4), reversed: [1, 4, 5, 7, 8], maxScore: 30,
+        bandRanges: [{ min: 0, max: 14, tone: 'high' }, { min: 15, max: 22, tone: 'moderate' }, { min: 23, max: 30, tone: 'good' }],
+    },
+    {
+        id: 'mdq', optionValues: seq(2), maxScore: 13,
+        bandRanges: [{ min: 0, max: 6, tone: 'good' }, { min: 7, max: 13, tone: 'high' }],
     },
 ];
 
+const TEXT_BY_LOCALE: Record<Locale, InstrumentTextBundle> = { ru, en };
 
-// ---------------------------------------------------------------------------
-// Longer instruments. Everything below uses a uniform response scale per test,
-// which is what `scoreTest` supports; instruments with per-item scales (AUDIT,
-// MEQ) are deliberately left out rather than approximated.
-// ---------------------------------------------------------------------------
+function mergeOne(scoring: ScoringDef, text: InstrumentText, locales: Locale[]): ClinicalTest {
+    return {
+        id: scoring.id,
+        name: text.name, short: text.short, intro: text.intro, period: text.period,
+        questions: text.questions,
+        options: scoring.optionValues.map((val, i) => ({ val, text: text.optionText[i] ?? '' })),
+        ...(scoring.reversed !== undefined ? { reversed: scoring.reversed } : {}),
+        ...(scoring.thresholds !== undefined ? { thresholds: scoring.thresholds } : {}),
+        ...(scoring.multiplier !== undefined ? { multiplier: scoring.multiplier } : {}),
+        maxScore: scoring.maxScore,
+        bands: scoring.bandRanges.map((b, i) => ({ ...b, label: text.bandLabels[i] ?? '' })) as NonEmptyArray<Band>,
+        ...(text.note !== undefined ? { note: text.note } : {}),
+        locales,
+    };
+}
 
-const CESD_OPTS: Option[] = [
-    { text: 'Редко (менее 1 дня)', val: 0 },
-    { text: 'Иногда (1–2 дня)', val: 1 },
-    { text: 'Часто (3–4 дня)', val: 2 },
-    { text: 'Почти всё время (5–7 дней)', val: 3 },
-];
+/**
+ * The merge behind both `clinicalTests` and `unavailableInstruments`, as a
+ * free function of its inputs rather than the module-level scoring table and
+ * text bundles — so a test can exercise "an instrument missing from a
+ * locale" without needing an actual gap in the real, fully-translated
+ * content.
+ */
+export function mergeInstruments(scoringList: ScoringDef[], byLocale: Record<Locale, InstrumentTextBundle>, locale: Locale) {
+    const locales = Object.keys(byLocale) as Locale[];
+    const bundle = byLocale[locale];
+    const available: ClinicalTest[] = [];
+    const unavailable: { id: string; name: string }[] = [];
+    for (const scoring of scoringList) {
+        const text = bundle[scoring.id];
+        if (text) {
+            available.push(mergeOne(scoring, text, locales.filter(l => byLocale[l][scoring.id])));
+        } else {
+            // Best-effort display name from whichever locale does have this
+            // instrument, preferring Russian since every instrument here
+            // originated there before Phase 11's English translations landed.
+            const known = byLocale.ru?.[scoring.id] ?? byLocale.en?.[scoring.id];
+            unavailable.push({ id: scoring.id, name: known?.name ?? scoring.id });
+        }
+    }
+    return { available, unavailable };
+}
 
-const CFQ_OPTS: Option[] = [
-    { text: 'Никогда', val: 0 },
-    { text: 'Очень редко', val: 1 },
-    { text: 'Иногда', val: 2 },
-    { text: 'Часто', val: 3 },
-    { text: 'Очень часто', val: 4 },
-];
+/**
+ * Every instrument with validated wording in `locale`, merged with its
+ * scoring. An instrument whose wording has not been validated for this
+ * locale is simply absent — see `unavailableInstruments` for what to show
+ * instead of nothing.
+ */
+export function clinicalTests(locale: Locale): ClinicalTest[] {
+    return mergeInstruments(SCORING, TEXT_BY_LOCALE, locale).available;
+}
 
-const AGREE_OPTS: Option[] = [
-    { text: 'Совершенно не согласен', val: 0 },
-    { text: 'Не согласен', val: 1 },
-    { text: 'Согласен', val: 2 },
-    { text: 'Полностью согласен', val: 3 },
-];
-
-const SOMATIC_OPTS: Option[] = [
-    { text: 'Не беспокоило', val: 0 },
-    { text: 'Беспокоило немного', val: 1 },
-    { text: 'Беспокоило сильно', val: 2 },
-];
-
-const YESNO_OPTS: Option[] = [
-    { text: 'Нет', val: 0 },
-    { text: 'Да', val: 1 },
-];
-
-export const LONG_TESTS: ClinicalTest[] = [
-    {
-        id: 'asrs18',
-        name: 'ASRS-v1.1 · полная шкала (18 вопросов)',
-        short: 'СДВГ полный',
-        intro: 'Полная шкала самооценки ВОЗ: невнимательность и гиперактивность-импульсивность. Первые шесть вопросов — тот самый короткий скринер.',
-        period: 'За последние 6 месяцев',
-        questions: [
-            'Как часто вам трудно доводить до конца детали проекта, когда самые сложные части уже позади?',
-            'Как часто вам трудно организовать выполнение задачи, требующей порядка?',
-            'Как часто вы забываете о назначенных встречах или обязательствах?',
-            'Как часто вы откладываете начало задач, требующих длительных умственных усилий?',
-            'Как часто вы ёрзаете руками или ногами, когда приходится долго сидеть?',
-            'Как часто вы чувствуете себя чрезмерно активным, будто вас «заводит мотор»?',
-            'Как часто вы допускаете ошибки по невнимательности в скучной или однообразной работе?',
-            'Как часто вам трудно удерживать внимание на скучной или однообразной работе?',
-            'Как часто вам трудно сосредоточиться на том, что вам говорят, даже когда обращаются прямо к вам?',
-            'Как часто вы теряете вещи или не можете вспомнить, куда их положили?',
-            'Как часто вас отвлекает происходящее вокруг или посторонний шум?',
-            'Как часто вы встаёте с места там, где принято сидеть?',
-            'Как часто вы чувствуете беспокойство или суетливость?',
-            'Как часто вам трудно расслабиться, когда есть свободное время?',
-            'Как часто вы ловите себя на том, что говорите слишком много в компании?',
-            'Как часто вы заканчиваете фразу за собеседника, не дав ему договорить?',
-            'Как часто вам трудно дождаться своей очереди?',
-            'Как часто вы перебиваете людей, когда они заняты?',
-        ],
-        options: FREQ_4,
-        maxScore: 72,
-        bands: [
-            { min: 0, max: 16, label: 'Проявления слабо выражены', tone: 'good' },
-            { min: 17, max: 23, label: 'Умеренные проявления', tone: 'moderate' },
-            { min: 24, max: 72, label: 'Выраженные проявления', tone: 'high' },
-        ],
-        note: 'Здесь считается сумма всех 18 ответов. Отдельно есть короткая версия из 6 вопросов — она и является валидированным скринером с порогом 4.',
-    },
-    {
-        id: 'cesd',
-        name: 'CES-D · шкала депрессии (20 вопросов)',
-        short: 'Депрессия',
-        intro: 'Развёрнутая шкала Центра эпидемиологических исследований: настроение, телесные проявления, отношения с людьми.',
-        period: 'За последнюю неделю',
-        questions: [
-            'Меня расстраивали вещи, которые обычно не беспокоят',
-            'Мне не хотелось есть, аппетит был плохим',
-            'Я чувствовал, что не могу избавиться от подавленности даже с помощью близких',
-            'Я чувствовал, что ничем не хуже других людей',
-            'Мне было трудно сосредоточиться на том, что я делаю',
-            'Я чувствовал подавленность',
-            'Мне казалось, что всё, что я делаю, требует огромных усилий',
-            'Я с надеждой думал о будущем',
-            'Я думал, что моя жизнь была неудачной',
-            'Я испытывал страх',
-            'Мой сон был беспокойным',
-            'Я был счастлив',
-            'Я говорил меньше обычного',
-            'Я чувствовал одиночество',
-            'Люди были недружелюбны ко мне',
-            'Я радовался жизни',
-            'У меня случались приступы плача',
-            'Мне было грустно',
-            'Мне казалось, что люди меня недолюбливают',
-            'Мне было трудно начать что-либо делать',
-        ],
-        options: CESD_OPTS,
-        // Items 4, 8, 12 and 16 are positively worded and scored in reverse.
-        reversed: [3, 7, 11, 15],
-        maxScore: 60,
-        bands: [
-            { min: 0, max: 15, label: 'Без значимых проявлений', tone: 'good' },
-            { min: 16, max: 20, label: 'Лёгкие проявления', tone: 'mild' },
-            { min: 21, max: 30, label: 'Умеренные проявления', tone: 'moderate' },
-            { min: 31, max: 60, label: 'Выраженные проявления', tone: 'high' },
-        ],
-        note: 'Классический порог — 16 баллов: выше него результат принято обсуждать со специалистом.',
-    },
-    {
-        id: 'cfq',
-        name: 'CFQ · когнитивные промахи (25 вопросов)',
-        short: 'Промахи',
-        intro: 'Опросник о повседневных сбоях внимания и памяти — забытые имена, потерянные вещи, «зашёл и забыл зачем». Особенно нагляден при СДВГ.',
-        period: 'За последние 6 месяцев',
-        questions: [
-            'Читаете что-то и понимаете, что не думали о прочитанном и надо перечитать',
-            'Забываете, зачем пошли в другую комнату',
-            'Не замечаете указателей на дороге или в помещении',
-            'Путаете лево и право, объясняя дорогу',
-            'Случайно задеваете людей плечом в толпе',
-            'Забываете, выключили ли свет, закрыли ли дверь',
-            'Не слышите, что вам говорят, потому что задумались',
-            'Начинаете говорить и понимаете, что можете кого-то задеть',
-            'Не замечаете того, что вам сказали, из-за посторонних мыслей',
-            'Теряете нить в разговоре из-за того, что отвлеклись',
-            'Не можете вспомнить, куда убрали вещь',
-            'Случайно выбрасываете нужное и оставляете ненужное',
-            'Погружаетесь в мечты, когда должны слушать',
-            'Забываете имена людей',
-            'Начинаете делать одно, а незаметно переключаетесь на другое',
-            'Не можете вспомнить слово, которое вертится на языке',
-            'Забываете, зачем пришли в магазин',
-            'Роняете вещи из рук',
-            'Не можете придумать, что сказать, в разговоре',
-            'Забываете, что собирались сделать через минуту',
-            'Не можете вспомнить, что делали вчера',
-            'Забываете, куда положили что-то только что',
-            'Ошибаетесь при выполнении привычных действий',
-            'Начинаете читать и засыпаете или отвлекаетесь',
-            'Забываете о запланированной встрече или деле',
-        ],
-        options: CFQ_OPTS,
-        maxScore: 100,
-        bands: [
-            { min: 0, max: 30, label: 'Промахи редки', tone: 'good' },
-            { min: 31, max: 50, label: 'Обычный уровень', tone: 'mild' },
-            { min: 51, max: 70, label: 'Промахи заметны', tone: 'moderate' },
-            { min: 71, max: 100, label: 'Промахи мешают повседневно', tone: 'high' },
-        ],
-        note: 'Жёсткого клинического порога у шкалы нет — она полезнее как точка отсчёта: пройди её снова через пару месяцев и сравни.',
-    },
-    {
-        id: 'phq15',
-        name: 'PHQ-15 · телесные симптомы (15 вопросов)',
-        short: 'Тело',
-        intro: 'Насколько сильно за последний месяц беспокоили телесные симптомы. Помогает увидеть, во что упирается стресс.',
-        period: 'За последний месяц',
-        questions: [
-            'Боли в желудке',
-            'Боли в спине',
-            'Боли в руках, ногах или суставах',
-            'Головные боли',
-            'Боль или дискомфорт в груди',
-            'Головокружение',
-            'Обмороки или предобморочные состояния',
-            'Ощущение учащённого или сильного сердцебиения',
-            'Одышка',
-            'Запоры, послабление стула или диарея',
-            'Тошнота, вздутие или нарушение пищеварения',
-            'Быстрая утомляемость или нехватка энергии',
-            'Проблемы со сном',
-            'Боль или проблемы во время близости',
-            'Менструальные боли или другие проблемы этого цикла (если применимо)',
-        ],
-        options: SOMATIC_OPTS,
-        maxScore: 30,
-        bands: [
-            { min: 0, max: 4, label: 'Минимальная выраженность', tone: 'good' },
-            { min: 5, max: 9, label: 'Низкая выраженность', tone: 'mild' },
-            { min: 10, max: 14, label: 'Средняя выраженность', tone: 'moderate' },
-            { min: 15, max: 30, label: 'Высокая выраженность', tone: 'high' },
-        ],
-    },
-    {
-        id: 'rses',
-        name: 'RSES · самооценка (10 вопросов)',
-        short: 'Самооценка',
-        intro: 'Шкала Розенберга — одна из самых используемых мер общего самоуважения.',
-        period: 'В целом о себе',
-        questions: [
-            'В целом я доволен собой',
-            'Иногда я думаю, что я никуда не гожусь',
-            'Я считаю, что у меня есть ряд хороших качеств',
-            'Я способен делать многое не хуже других',
-            'Мне кажется, мне особо нечем гордиться',
-            'Временами я чувствую себя бесполезным',
-            'Я чувствую, что я достойный человек, по крайней мере не хуже других',
-            'Мне хотелось бы больше уважать себя',
-            'В целом я склонен считать себя неудачником',
-            'Я отношусь к себе положительно',
-        ],
-        options: AGREE_OPTS,
-        // The negatively worded items are reversed so a high score always means
-        // higher self-esteem.
-        reversed: [1, 4, 5, 7, 8],
-        maxScore: 30,
-        bands: [
-            { min: 0, max: 14, label: 'Низкая самооценка', tone: 'high' },
-            { min: 15, max: 22, label: 'Средняя самооценка', tone: 'moderate' },
-            { min: 23, max: 30, label: 'Высокая самооценка', tone: 'good' },
-        ],
-        note: 'Здесь высокий балл — хороший знак. Ниже 15 обычно считают признаком низкой самооценки.',
-    },
-    {
-        id: 'mdq',
-        name: 'MDQ · перепады настроения (13 вопросов)',
-        short: 'Перепады',
-        intro: 'Опросник о периодах необычного подъёма — когда энергии, разговорчивости и уверенности заметно больше обычного.',
-        period: 'Когда-либо в жизни',
-        questions: [
-            'Бывали периоды, когда вы чувствовали себя настолько хорошо или на подъёме, что окружающие считали это необычным для вас?',
-            'Бывали периоды, когда вы были настолько раздражительны, что кричали на людей или затевали ссоры?',
-            'Бывали периоды, когда вы чувствовали себя гораздо увереннее обычного?',
-            'Бывали периоды, когда вы спали заметно меньше обычного и почти не скучали по сну?',
-            'Бывали периоды, когда вы были намного разговорчивее обычного или говорили быстрее?',
-            'Бывали периоды, когда мысли неслись в голове и вы не могли их замедлить?',
-            'Бывали периоды, когда вас так легко отвлекало происходящее вокруг, что трудно было сосредоточиться?',
-            'Бывали периоды, когда энергии было намного больше обычного?',
-            'Бывали периоды, когда вы были намного активнее обычного или делали намного больше?',
-            'Бывали периоды, когда вы были заметно общительнее обычного — например, звонили друзьям среди ночи?',
-            'Бывали периоды, когда интерес к близости был заметно сильнее обычного?',
-            'Бывали периоды, когда вы делали то, что другие сочли бы чрезмерным или рискованным?',
-            'Бывали периоды, когда траты денег создавали проблемы вам или вашей семье?',
-        ],
-        options: YESNO_OPTS,
-        maxScore: 13,
-        bands: [
-            { min: 0, max: 6, label: 'Признаков немного', tone: 'good' },
-            { min: 7, max: 13, label: 'Много совпадений', tone: 'high' },
-        ],
-        note: 'Полный скрининг учитывает ещё два условия: совпадали ли эти состояния во времени и мешали ли они жить. Само по себе число ответов «да» — только повод присмотреться.',
-    },
-];
-
-CLINICAL_TESTS.push(...LONG_TESTS);
+/**
+ * Instruments that exist (have scoring defined) but have no validated
+ * wording in `locale` — for a visible "not available in this language yet"
+ * notice, rather than a list that is silently shorter with no explanation.
+ */
+export function unavailableInstruments(locale: Locale): { id: string; name: string }[] {
+    return mergeInstruments(SCORING, TEXT_BY_LOCALE, locale).unavailable;
+}
 
 export function scoreTest(test: ClinicalTest, answers: (number | null)[]): number {
     const vals = answers.map(a => (a === null ? 0 : a));

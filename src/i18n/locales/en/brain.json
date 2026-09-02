@@ -1,4 +1,34 @@
 {
+    "clinical": {
+        "tab": {
+            "clinical": "Clinical tests",
+            "cbt": "CBT practice"
+        },
+        "pageTitle": "Tests and CBT",
+        "pageSubtitle": "Screening questionnaires and cognitive behavioural therapy tools, in one place.",
+        "intro": "Screening questionnaires professionals use. Take them periodically to see how you're trending over time.",
+        "exit": "Exit",
+        "viewResult": "View result",
+        "answeredOf": "Answered {{answered}} of {{total}}",
+        "sameAsLastTime": "Same as last time",
+        "deltaFromLast": "{{delta}} from last time — {{direction}}",
+        "better": "for the better",
+        "worse": "for the worse",
+        "backToList": "Back to the test list",
+        "retake": "Take again",
+        "questionsCount": "{{count}} q.",
+        "lastResultPrefix": "Last:",
+        "notTakenYet": "Not taken yet",
+        "takeAgain": "Take again",
+        "takeTest": "Take the test",
+        "historyHeading": "History",
+        "attempts_one": "{{count}} attempt",
+        "attempts_other": "{{count}} attempts",
+        "clearHistoryConfirm": "Clear the clinical test history?",
+        "clearHistory": "Clear history",
+        "unavailable_one": "{{count}} test isn't available in this language yet: {{names}}",
+        "unavailable_other": "{{count}} tests aren't available in this language yet: {{names}}"
+    },
     "knowledge": {
         "title": "Knowledge base",
         "subtitle_one": "{{count}} article on how ADHD works and what to do about it. Each one takes a few minutes.",

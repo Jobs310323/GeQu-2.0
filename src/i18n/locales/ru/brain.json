@@ -1,4 +1,38 @@
 {
+    "clinical": {
+        "tab": {
+            "clinical": "Клинические тесты",
+            "cbt": "КПТ-практика"
+        },
+        "pageTitle": "Тесты и КПТ",
+        "pageSubtitle": "Скрининговые опросники и инструменты когнитивно-поведенческой терапии в одном месте.",
+        "intro": "Скрининговые опросники, которыми пользуются специалисты. Проходи их периодически, чтобы видеть динамику своего состояния.",
+        "exit": "Выйти",
+        "viewResult": "Посмотреть результат",
+        "answeredOf": "Отвечено {{answered}} из {{total}}",
+        "sameAsLastTime": "Столько же, сколько в прошлый раз",
+        "deltaFromLast": "{{delta}} к прошлому разу — {{direction}}",
+        "better": "в лучшую сторону",
+        "worse": "в худшую сторону",
+        "backToList": "К списку тестов",
+        "retake": "Пройти заново",
+        "questionsCount": "{{count}} вопр.",
+        "lastResultPrefix": "Последний:",
+        "notTakenYet": "Ещё не проходил",
+        "takeAgain": "Пройти снова",
+        "takeTest": "Пройти тест",
+        "historyHeading": "История",
+        "attempts_one": "{{count}} прохождение",
+        "attempts_few": "{{count}} прохождения",
+        "attempts_many": "{{count}} прохождений",
+        "attempts_other": "{{count}} прохождения",
+        "clearHistoryConfirm": "Очистить историю клинических тестов?",
+        "clearHistory": "Очистить историю",
+        "unavailable_one": "{{count}} тест пока недоступен на этом языке: {{names}}",
+        "unavailable_few": "{{count}} теста пока недоступны на этом языке: {{names}}",
+        "unavailable_many": "{{count}} тестов пока недоступны на этом языке: {{names}}",
+        "unavailable_other": "{{count}} теста пока недоступны на этом языке: {{names}}"
+    },
     "knowledge": {
         "title": "База знаний",
         "subtitle_one": "{{count}} статья о том, как устроен СДВГ и что с этим делать. Каждая — на несколько минут.",
