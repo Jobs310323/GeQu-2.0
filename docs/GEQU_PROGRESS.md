@@ -1239,3 +1239,191 @@ replaced rather than the gate weakened.
 **Next phase** — 11b: the remaining pages, largest first.
 
 ---
+
+## Phase 11b — Internationalization: the rest of the app
+
+**Completed**
+
+Every UI-facing Cyrillic literal outside legitimate per-locale content is now
+a translation key. `src/i18n/migrated.json` went from 58 files to **97**;
+`npm run check:i18n` runs **4966 checks** across 2 locales and 10 namespaces
+(up from 5 namespaces at the end of 11a) and passes. The only Cyrillic left
+in `src/` outside `migrated.json`, `src/content/` and `src/lib/instruments/`
+is `features/insights/aiClaims.ts` — data, not a UI string, exactly like the
+content files.
+
+Worked largest-hazard-last, in nine commits:
+
+**The mechanical bulk.** Snowman, goals + Circles of Influence, MindMap,
+Kanban + UnifiedStats, the cognitive engine's registry and all twelve
+exercises, plus ~30 small files (routes, stores, `charts.tsx`,
+`exportGoals.ts`, `Habits.tsx`, `CollapsibleMarkdown.tsx`, `lib/mindTree.ts`,
+`lib/profile.ts`, `lib/ai.ts`). New namespace: **`plan`** (goals, kanban,
+mindmap, stats), reusing `track`/`brain`/`common`/`insights` elsewhere rather
+than inventing overlapping ones.
+
+**Two more stored-value hazards found and fixed**, on top of the four already
+known: `stores/derived.ts` compared `todayLog.hindered` against bare
+`'Телефон'`/`'Усталость'` literals — now references `HINDERED_TAG_IDS` from
+`checkin/vocabulary.ts` by index instead of duplicating the literal, so the
+two can't drift. `stores/app-ui.store.ts`'s `DEFAULT_DOPAMINE_MENU` is
+deliberately left Russian (`i18n-allow`, documented in place): it seeds a
+free-text, user-editable list rather than a fixed vocabulary, and it is read
+at module-evaluation time — before `./i18n`'s locale-resolution side effects
+have necessarily run, since `main.tsx` imports `App.tsx` (which pulls in the
+shell, which pulls in this store) ahead of `import './i18n'`. Making the
+seed locale-aware safely needs a lazy default; a five-item starter list
+users can freely edit isn't worth that risk today. `lib/profile.ts`'s
+`TEST_LABELS` (a hardcoded Russian `Record`) became `testLabel(type, t)`,
+resolved by `Dynamics.tsx` / `UserCard.tsx` rather than baked into the
+otherwise-pure `buildProfile` — the same pattern the achievement-key
+resolution already used.
+
+**`aiClaims.ts`'s causal/medical-language guard was Russian-only** —
+`stripCausalLanguage` and the claim system prompt only ever recognised
+Russian causal verbs, so an English-locale reply from Groq sailed through
+completely unfiltered. This was a real safety gap the i18n pass exposed, not
+just a translation gap. `CAUSAL_PATTERNS` / `MEDICAL_PATTERNS` are now
+`Record<Locale, ...>`; the Russian list was also reconciled against
+`engine.test.ts`'s own causal-verb regex, which had drifted ahead of it
+(`повышает`/`снижает`/`потому что`/`помогает тебе` were detected there but
+never actually rewritten here). English matches conjugated verb forms only
+(`causes`/`caused`/`causing`), never the bare noun `cause` — the
+association insight's own disclaimer ends in "...not a proven cause," and a
+filter that flagged its own disclaimer would teach the next author to
+delete it to get back to green. Not yet wired into `lib/ai.ts`'s call
+sites — that's Phase 12, alongside the AI consent gate.
+
+**The CBT module's content moves out of `lib/cbt.ts`** into
+`src/content/cbt/{en,ru}.ts` — distortions, coping practices and
+thought-record field labels as real per-locale content, matching the
+ADR-006 treatment of long-form material rather than translation-key JSON.
+The AI system prompt and its template move to `brain:cbt.*`, following the
+precedent journal/gym's AI prompts already set (JSON, not content — a
+prompt is closer to a UI string than an article).
+
+**The knowledge base's 22 articles move out of `lib/knowledge.ts`** into
+`src/content/knowledge/{en,ru}/*.md` — frontmatter (category / title /
+summary / minutes / action) plus a Markdown body, loaded via
+`import.meta.glob`'s raw query (the mechanism `rehydrate.test.ts` already
+used for reading source files). Every article now has a real, independently
+authored English version — not machine-translated. The loader
+(`knowledgeArticles`) still merges per-locale content against the Russian
+set as fallback and marks anything missing a translation
+`translated: false`, so a future article added in one locale only renders
+with a visible "available in Russian only" badge instead of going blank or
+being silently machine-translated — `Knowledge.tsx` shows that badge on
+both the article view and the card grid. `knowledge.test.ts` (new, 19
+tests) covers frontmatter parsing, the fallback-merge logic (against
+synthetic maps, since the real content has full parity and can't exercise
+the fallback path itself), and structural invariants over the real content.
+
+**Clinical instruments were extracted, not translated.** Per ADR-006, the
+wording is the instrument. `lib/clinicalTests.ts` now holds only the
+scoring — option values, reversed/threshold indices, multiplier, band
+ranges: everything that determines the *number*. Wording — item text,
+option labels, band labels: everything that determines the *words* — moves
+to the new `lib/instruments/{ru,en}.ts`, merged by array position per
+instrument id. Russian is copied verbatim, byte-identical. English is the
+actual published wording of each instrument (PHQ-9, GAD-7, ASRS-v1.1 Part A
+and the full 18-item scale, PSS-10, WHO-5, ISI, CES-D, PHQ-15, RSES, CFQ,
+MDQ — all public-domain, widely reproduced instruments), checked against
+authoritative sources via web search rather than translated from the
+Russian — WebFetch was blocked by this environment's egress proxy for
+every domain tried (APA, AHRQ, ADAA, Dartmouth, NIH/PMC, WHO, even
+Wikipedia), so verification relied on WebSearch's synthesized snippets,
+cross-checked against multiple independent sources per item where
+possible. Two instruments (CFQ's 25 items, MDQ's 13) could not be fully
+verified item-by-item this way; their English text was reconstructed from
+well-established knowledge of the instruments and partially confirmed
+against search results, but has **not** been checked against the original
+Broadbent et al. (1982) / Hirschfeld et al. papers directly. This is called
+out explicitly in **Known limitations** below and should not be treated as
+equivalent in confidence to the other nine.
+
+`ClinicalTest` gains `locales: string[]`. `clinicalTests(locale)` returns
+only instruments with validated wording for that locale;
+`unavailableInstruments(locale)` reports the rest by id and name so the
+screen can say so visibly. Nothing is actually hidden today — all 12
+instruments have both locales — so the mechanism is proven with synthetic
+scoring+text data in `mergeInstruments`'s own tests, the same way
+`knowledge.ts`'s fallback is tested. `clinicalTests.test.ts` adds the two
+things this move could have silently broken and the brief specifically
+asked to be pinned: **scoring is byte-identical between `ru` and `en`** for
+every instrument (same `maxScore`, `reversed`, `thresholds`, `multiplier`,
+option values, band ranges, and actual `scoreTest`/`bandFor` output across
+the full value range) and **an instrument missing from a locale is filtered
+out rather than rendered** with a substituted language.
+
+**Files changed** — new: `src/content/cbt/{types,en,ru,index}.ts`,
+`src/content/knowledge/categories/{types,en,ru}.ts`,
+`src/content/knowledge/{en,ru}/*.md` (23 articles × 2 locales),
+`src/lib/instruments/{types,ru,en}.ts`, `src/lib/knowledge.test.ts`, new
+`plan` namespace (`src/i18n/locales/{en,ru}/plan.json`). Rewritten:
+`src/lib/{cbt→deleted,knowledge,clinicalTests}.ts`,
+`src/features/insights/aiClaims.ts` (+ its test),
+`src/pages/{Cbt,Knowledge,ClinicalTests,Kanban,UnifiedStats,MindMap,Dynamics,Habits,CirclesOfInfluence,Goals,AiPlan,UserCard}.tsx`,
+`src/pages/goals/*.tsx`, `src/pages/mindmap/*.ts(x)`,
+`src/features/{snowman/*,charts.tsx,gym/ProgramImport.tsx}`,
+`src/components/{WeekSummary,CollapsibleMarkdown}.tsx`,
+`src/routes/{RouteError,NotFound,RouteFallback}.tsx`,
+`src/stores/{derived,app-ui.store}.ts`, `src/lib/{ai,exportGoals,profile,mindTree}.ts`,
+`src/types/domain.ts` (comment only — its one Cyrillic line was already
+inside a stripped JSDoc block). 39 files' worth of locale JSON expanded
+across `common`, `track`, `insights`, `brain`, and the new `plan`.
+
+**Dependencies added** — none.
+
+**Tests added** — 44 (462 total): `knowledge.test.ts` 19,
+`aiClaims.test.ts` grew from ~10 to 35 (every case doubled across both
+locales, plus a dedicated regression test that the association disclaimer
+sentence is never touched), `clinicalTests.test.ts` grew from ~87 to 113
+(the byte-identical-scoring and locale-filtering assertions above).
+
+**Risks**
+
+- The English clinical-instrument wording has not had a clinical or native
+  professional review pass — see Known limitations. CFQ and MDQ specifically
+  are lower-confidence than the other nine instruments.
+- English translations throughout (UI strings, knowledge base, CBT content)
+  are mine, done in one long session. They're faithful to the Russian's
+  meaning and register, but no native English reviewer has read them, same
+  caveat as 11a.
+- Nothing above Today has been seen rendering in a browser in English —
+  still no authenticated E2E harness (Phase 7's known limitation, still
+  open). Coverage is unit tests, the gate suite, and the unauthenticated
+  shell only.
+- The Knowledge chunk grew from ~47 kB to ~75 kB gzipped-source (all 46
+  Markdown files load eagerly within that one lazy route chunk); acceptable
+  today, worth revisiting if the knowledge base grows substantially.
+
+**Known limitations**
+
+- **CFQ (25 items) and MDQ (13 items) English wording is reconstructed, not
+  independently verified item-by-item.** WebFetch was blocked for every
+  source tried in this environment (including the original instruments'
+  usual reproductions), so these two relied more heavily on prior knowledge
+  of the instruments than the other nine, which were cross-checked against
+  multiple independent search results per item. Both instruments already
+  have no hard clinical cut-off in this app's own framing ("more useful as
+  a baseline" / "only a reason to look closer") and neither triggers the
+  "discuss with a specialist" language the higher-stakes instruments do —
+  but the wording itself should get a real review against Broadbent et al.
+  (1982) and Hirschfeld et al. before being treated as equivalent in
+  confidence to PHQ-9/GAD-7/ASRS/PSS-10/WHO-5/ISI/CES-D/PHQ-15/RSES.
+- `DEFAULT_DOPAMINE_MENU` ships Russian to a brand-new English-locale user
+  once, as documented in place. Low-stakes (freely editable), but a genuine,
+  known gap rather than a fixed one.
+- No RTL support, unchanged from 11a.
+- The unused-key check's approximation, unchanged from 11a: it matches a key
+  path anywhere in the sources rather than resolving each component's active
+  namespace.
+- Currency formatting (`formatCurrency`, `prefs.currency`) has existed since
+  11a; whether every `₽`-adjacent call site in `Finance.tsx` actually uses it
+  was not re-verified in this phase.
+
+**Next phase** — Phase 12: privacy/security (AI consent gate, Finance PIN
+hashing, account deletion, wiring `aiClaims` into the four AI call sites,
+Sentry with an allowlist `beforeSend`). Then Phase 13: analytics taxonomy.
+
+---
