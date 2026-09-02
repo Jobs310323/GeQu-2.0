@@ -68,6 +68,7 @@
         "src/pages/goals/GoalsList.tsx",
         "src/pages/goals/StepRow.tsx",
         "src/pages/goals/TaskInput.tsx",
+        "src/pages/Kanban.tsx",
         "src/pages/MindMap.tsx",
         "src/pages/mindmap/analytics.ts",
         "src/pages/mindmap/colors.ts",
@@ -77,6 +78,7 @@
         "src/pages/Progress.tsx",
         "src/pages/Settings.tsx",
         "src/pages/Training.tsx",
+        "src/pages/UnifiedStats.tsx",
         "src/pages/UserCard.tsx",
         "src/routes/AppLayout.tsx"
     ]

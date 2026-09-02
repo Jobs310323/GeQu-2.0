@@ -133,5 +133,46 @@
             "colHours": "Hours",
             "colPriority": "Priority"
         }
+    },
+    "kanban": {
+        "title": "Kanban board",
+        "stage": {
+            "todo": "To do",
+            "doing": "In progress",
+            "done": "Done"
+        },
+        "newPlaceholder": "A new task...",
+        "add": "Add",
+        "priorityOption": {
+            "low": "Low priority",
+            "medium": "Medium priority",
+            "high": "Urgent priority"
+        },
+        "priorityLabel": {
+            "low": "Low",
+            "medium": "Medium",
+            "high": "Urgent"
+        },
+        "moveBack": "Move \"{{text}}\" back",
+        "moveForward": "Move \"{{text}}\" forward",
+        "delete": "Delete \"{{text}}\"",
+        "moved": "\"{{text}}\" moved to \"{{stage}}\""
+    },
+    "stats": {
+        "title": "Unified stats hub",
+        "subtitle": "The whole picture from the last 7 days",
+        "gauge": {
+            "sleep": "Average sleep",
+            "focus": "Average focus",
+            "mood": "Mood"
+        },
+        "noData": "No data",
+        "tonnageLabel": "Gym tonnage (kg)",
+        "cognitiveTitle": "Cognitive tests",
+        "times_one": "{{count}} time",
+        "times_other": "{{count}} times",
+        "gymTitle": "Gym",
+        "totalWorkouts": "Total workouts",
+        "uniqueExercises": "Exercises in the library"
     }
 }

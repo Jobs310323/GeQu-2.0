@@ -135,5 +135,48 @@
             "colHours": "Часы",
             "colPriority": "Приоритет"
         }
+    },
+    "kanban": {
+        "title": "Канбан-доска",
+        "stage": {
+            "todo": "Сделать",
+            "doing": "В процессе",
+            "done": "Готово"
+        },
+        "newPlaceholder": "Новая задача...",
+        "add": "Добавить",
+        "priorityOption": {
+            "low": "Низкий приоритет",
+            "medium": "Средний приоритет",
+            "high": "Срочный приоритет"
+        },
+        "priorityLabel": {
+            "low": "Низкий",
+            "medium": "Средне",
+            "high": "Срочно"
+        },
+        "moveBack": "Переместить «{{text}}» назад",
+        "moveForward": "Переместить «{{text}}» вперёд",
+        "delete": "Удалить «{{text}}»",
+        "moved": "«{{text}}» перемещено в «{{stage}}»"
+    },
+    "stats": {
+        "title": "Единый хаб статистики",
+        "subtitle": "Общая картина за последние 7 дней",
+        "gauge": {
+            "sleep": "Средний сон",
+            "focus": "Средний фокус",
+            "mood": "Настроение"
+        },
+        "noData": "Нет данных",
+        "tonnageLabel": "Тоннаж в зале (кг)",
+        "cognitiveTitle": "Когнитивные тесты",
+        "times_one": "{{count}} раз",
+        "times_few": "{{count}} раза",
+        "times_many": "{{count}} раз",
+        "times_other": "{{count}} раза",
+        "gymTitle": "Спортзал",
+        "totalWorkouts": "Всего тренировок",
+        "uniqueExercises": "Упражнений в базе"
     }
 }
