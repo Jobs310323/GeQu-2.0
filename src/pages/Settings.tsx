@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import { formatDateTime } from '../lib/format';
 import { changeLocale } from '../i18n';
 import { SUPPORTED_LOCALES, LOCALE_NAMES, getLocale, type Locale } from '../i18n/locale';
 import { getGroqKey, setGroqKey } from '../lib/ai';
@@ -12,7 +13,7 @@ import type { SettingsProps } from '../types/props';
 import type { ChangeEvent } from 'react';
 
 export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
-    const { t } = useTranslation(['common', 'nav']);
+    const { t } = useTranslation(['common', 'nav', 'profile']);
     const hiddenTabs: string[] = prefs?.hiddenTabs ?? [];
     const hiddenWidgets: string[] = prefs?.hiddenWidgets ?? [];
 
@@ -26,22 +27,22 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
     const [savedMsg, setSavedMsg] = useState('');
     const saveGroqKey = () => {
         setGroqKey(groqKey);
-        setSavedMsg('Ключ сохранён ✓');
+        setSavedMsg(t('profile:settings.keySaved'));
         setTimeout(() => setSavedMsg(''), 2500);
     };
 
     const exportTxt = () => { 
-        let text = "=== Дневник GeQu ===\n\n"; 
-        diary.forEach(d => { text += `${new Date(d.date).toLocaleString('ru-RU')}\n${d.content}\n--------------------\n\n`; }); 
+        let text = `${t('profile:settings.diaryHeader')}\n\n`;
+        diary.forEach(d => { text += `${formatDateTime(d.date)}\n${d.content}\n--------------------\n\n`; });
         downloadFile(text, "gequ_diary.txt", "text/plain"); 
     };
     
     const exportCsv = () => { 
-        let csv = "Дата,Сон,Фокус,Настроение,Помогло,Мешало,Событие\n"; 
+        let csv = `${t('profile:settings.csvHeader')}\n`;
         logs.forEach(l => { 
             const helped = l.helped ? l.helped.join('; ') : '';
             const hindered = l.hindered ? l.hindered.join('; ') : '';
-            csv += `${new Date(l.date).toLocaleString('ru-RU')},${l.sleep},${l.focus},${l.mood},"${helped}","${hindered}","${l.mainEvent || ''}"\n`; 
+            csv += `${formatDateTime(l.date)},${l.sleep},${l.focus},${l.mood},"${helped}","${hindered}","${l.mainEvent || ''}"\n`; 
         }); 
         downloadFile(csv, "gequ_logs.csv", "text/csv;charset=utf-8;"); 
     };
@@ -89,10 +90,10 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
                         localStorage.setItem(key, data[key]);
                     }
                 });
-                alert("Данные успешно загружены! Страница будет перезагружена.");
+                alert(t('profile:settings.imported'));
                 window.location.reload();
             } catch {
-                alert("Ошибка чтения файла. Убедитесь, что это резервная копия GeQu.");
+                alert(t('profile:settings.importFailed'));
             }
         };
         reader.readAsText(file);
@@ -100,7 +101,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
 
     return (
         <div>
-            <PageHeader page="settings" title="Настройки и данные" />
+            <PageHeader page="settings" title={t('profile:settings.title')} />
 
             <LanguageSettings currency={prefs?.currency ?? 'RUB'}
                 onCurrency={code => setPrefs(p => ({ ...p, currency: code }))} />
@@ -109,17 +110,17 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
             <div className="glass-card p-6 rounded-2xl mb-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
                     <h2 className="text-xl flex items-center gap-2">
-                        <Icon name="columns" size={17} className="text-[var(--text-muted)]" /> Разделы меню
+                        <Icon name="columns" size={17} className="text-[var(--text-muted)]" /> {t('profile:settings.menuSections')}
                     </h2>
                     {hiddenTabs.length > 0 && (
                         <button onClick={() => setPrefs((p) => ({ ...p, hiddenTabs: [] }))}
                             className="text-xs text-cyan-400 hover:underline">
-                            Показать все ({hiddenTabs.length} скрыто)
+                            {t('profile:settings.showAll', { count: hiddenTabs.length })}
                         </button>
                     )}
                 </div>
                 <p className="text-gray-400 text-sm mb-4">
-                    Убери ненужные разделы из меню — данные останутся на месте, раздел можно вернуть в любой момент.
+                    {t('profile:settings.menuBlurb')}
                 </p>
                 <div className="space-y-4">
                     {SECTIONS.map(section => (
@@ -134,7 +135,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
                                             key={item.id}
                                             onClick={() => toggleTab(item.id)}
                                             disabled={locked}
-                                            title={locked ? 'Этот раздел нельзя скрыть' : visible ? 'Скрыть из меню' : 'Вернуть в меню'}
+                                            title={locked ? t('profile:settings.cannotHide') : visible ? t('profile:settings.hide') : t('profile:settings.restore')}
                                             className={`px-3 py-1.5 rounded-lg text-sm border transition flex items-center gap-2 ${
                                                 locked ? 'border-[var(--border)] text-gray-500 cursor-not-allowed opacity-60'
                                                     : visible ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/30'
@@ -156,17 +157,17 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
             <div className="glass-card p-6 rounded-2xl mb-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
                     <h2 className="text-xl flex items-center gap-2">
-                        <Icon name="grid" size={17} className="text-[var(--text-muted)]" /> Виджеты дашборда
+                        <Icon name="grid" size={17} className="text-[var(--text-muted)]" /> {t('profile:settings.widgets')}
                     </h2>
                     {hiddenWidgets.length > 0 && (
                         <button onClick={() => setPrefs((p) => ({ ...p, hiddenWidgets: [] }))}
                             className="text-xs text-cyan-400 hover:underline">
-                            Показать все ({hiddenWidgets.length} скрыто)
+                            {t('profile:settings.showAll', { count: hiddenWidgets.length })}
                         </button>
                     )}
                 </div>
                 <p className="text-gray-400 text-sm mb-4">
-                    Оставь на «Закрытии дня» только то, что действительно заполняешь.
+                    {t('profile:settings.widgetsBlurb')}
                 </p>
                 <div className="flex flex-wrap gap-2">
                     {DASHBOARD_WIDGETS.map(w => {
@@ -180,7 +181,7 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
                                         : 'border-[var(--border)] text-gray-500 hover:text-white line-through'
                                 }`}
                             >
-                                <span>{w.icon}</span>{w.label}
+                                <span>{w.icon}</span>{t(w.labelKey)}
                             </button>
                         );
                     })}
@@ -189,10 +190,10 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
 
             <div className="glass-card p-6 rounded-2xl mb-6 border border-purple-400/30 bg-purple-400/5">
                 <h2 className="text-xl mb-2 text-purple-400 flex items-center gap-2">
-                    <Icon name="sparkle" size={18} /> ИИ (Groq)
+                    <Icon name="sparkle" size={18} /> {t('profile:settings.aiHeading')}
                 </h2>
                 <p className="text-gray-400 mb-4 text-sm">
-                    Бесплатный ключ берётся на <span className="text-purple-300">console.groq.com → API Keys</span>. Хранится только в этом браузере и используется для ИИ-функций (например, ИИ-тренер в Зале).
+                    <Trans i18nKey="profile:settings.aiBlurb" components={[<span key="0" />, <span key="1" className="text-purple-300" />]} />
                 </p>
                 <div className="flex gap-3 flex-wrap items-center">
                     <input
@@ -203,31 +204,31 @@ export function Settings({ diary, logs, prefs, setPrefs }: SettingsProps) {
                         autoComplete="off"
                         className="flex-1 min-w-[240px] bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-3 outline-none focus:border-purple-400 text-white font-mono text-sm"
                     />
-                    <button onClick={saveGroqKey} className="bg-gradient-to-r from-purple-400 to-pink-400 text-black font-bold px-6 py-3 rounded-lg">Сохранить</button>
+                    <button onClick={saveGroqKey} className="bg-gradient-to-r from-purple-400 to-pink-400 text-black font-bold px-6 py-3 rounded-lg">{t('profile:settings.aiSave')}</button>
                     {savedMsg && <span className="text-green-400 text-sm">{savedMsg}</span>}
                 </div>
-                <p className="text-gray-500 text-xs mt-3">Ключ виден в этом браузере (devtools), поэтому используй отдельный ключ и при желании удаляй его после использования.</p>
+                <p className="text-gray-500 text-xs mt-3">{t('profile:settings.aiWarning')}</p>
             </div>
 
             <div className="glass-card p-6 rounded-2xl mb-6 border border-cyan-400/30 bg-cyan-400/5">
                 <h2 className="text-xl mb-2 text-cyan-400 flex items-center gap-2">
-                    <Icon name="download" size={18} /> Резервное копирование (Всё приложение)
+                    <Icon name="download" size={18} /> {t('profile:settings.backupHeading')}
                 </h2>
-                <p className="text-gray-400 mb-4 text-sm">Сохраните все данные (Дневник, Тесты, Спортзал, Привычки) в один файл или загрузите из файла для переноса на другое устройство.</p>
+                <p className="text-gray-400 mb-4 text-sm">{t('profile:settings.backupBlurb')}</p>
                 <div className="flex gap-4 flex-wrap">
-                    <button onClick={exportAllData} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg">Выгрузить всё (JSON)</button>
+                    <button onClick={exportAllData} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg">{t('profile:settings.exportAll')}</button>
                     <label className="bg-gradient-to-r from-purple-400 to-pink-400 text-black font-bold px-6 py-3 rounded-lg cursor-pointer">
-                        Загрузить из файла
+                        {t('profile:settings.importFile')}
                         <input type="file" accept=".json" onChange={importAllData} className="hidden" />
                     </label>
                 </div>
             </div>
 
             <div className="glass-card p-6 rounded-2xl">
-                <h2 className="text-xl mb-4">Экспорт отдельных данных</h2>
+                <h2 className="text-xl mb-4">{t('profile:settings.exportSome')}</h2>
                 <div className="flex gap-4 flex-wrap">
-                    <button onClick={exportTxt} className="bg-white/5 text-white font-bold px-6 py-3 rounded-lg border border-[var(--border)]">Дневник (.txt)</button>
-                    <button onClick={exportCsv} className="bg-white/5 text-white font-bold px-6 py-3 rounded-lg border border-[var(--border)]">Логи дней (.csv)</button>
+                    <button onClick={exportTxt} className="bg-white/5 text-white font-bold px-6 py-3 rounded-lg border border-[var(--border)]">{t('profile:settings.exportDiary')}</button>
+                    <button onClick={exportCsv} className="bg-white/5 text-white font-bold px-6 py-3 rounded-lg border border-[var(--border)]">{t('profile:settings.exportLogs')}</button>
                 </div>
             </div>
         </div>

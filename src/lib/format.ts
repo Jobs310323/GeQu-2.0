@@ -152,3 +152,60 @@ export function compareText(a: string, b: string, locale?: Locale): number {
 export function pluralCategory(count: number, locale: Locale = getLocale()): Intl.LDMLPluralRule {
     return new Intl.PluralRules(locale).select(count);
 }
+
+/**
+ * Which day the week starts on, 1 = Monday … 7 = Sunday.
+ *
+ * Not a detail: a calendar grid that starts on the wrong day puts every date in
+ * the wrong column. Russian weeks start on Monday, American ones on Sunday, and
+ * the app had Monday hardcoded.
+ *
+ * `getWeekInfo()` is the standard answer and is not everywhere yet, so a locale
+ * the runtime cannot describe falls back to Monday — the ISO-8601 default and
+ * what this app has always done.
+ */
+export function firstDayOfWeek(locale: Locale = getLocale()): number {
+    try {
+        const info = (new Intl.Locale(locale) as Intl.Locale & {
+            getWeekInfo?: () => { firstDay: number };
+            weekInfo?: { firstDay: number };
+        });
+        return info.getWeekInfo?.().firstDay ?? info.weekInfo?.firstDay ?? 1;
+    } catch {
+        return 1;
+    }
+}
+
+const weekdayFormatter = memo((locale, width) =>
+    new Intl.DateTimeFormat(locale, { weekday: width as 'short' | 'narrow' | 'long' }));
+
+/**
+ * Weekday headers in the order this locale's calendar shows them.
+ *
+ * Built from real dates rather than a name table: 2024-01-01 was a Monday, so
+ * offsetting from it gives every weekday in one pass, correctly capitalised and
+ * abbreviated by the platform for whichever language is active.
+ */
+export function weekdayNames(width: 'short' | 'narrow' | 'long' = 'short', locale?: Locale): string[] {
+    const first = firstDayOfWeek(locale);
+    const monday = new Date(2024, 0, 1);
+    return Array.from({ length: 7 }, (_, i) => {
+        const day = new Date(monday);
+        day.setDate(monday.getDate() + ((first - 1 + i) % 7));
+        return weekdayFormatter(width, locale).format(day);
+    });
+}
+
+/** How many blank cells precede the 1st of `date`'s month in a week grid. */
+export function monthStartOffset(date: Date, locale?: Locale): number {
+    // `getDay()` is 0 = Sunday; the week-info convention is 1 = Monday … 7 = Sunday.
+    const weekday = new Date(date.getFullYear(), date.getMonth(), 1).getDay() || 7;
+    return (weekday - firstDayOfWeek(locale) + 7) % 7;
+}
+
+const monthFormatter = memo(locale => new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }));
+
+/** "March 2026" / "март 2026", in whatever order and case the locale wants. */
+export function monthAndYear(date: Date, locale?: Locale): string {
+    return monthFormatter('long', locale).format(date);
+}

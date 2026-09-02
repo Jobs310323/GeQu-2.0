@@ -6,18 +6,20 @@
 
 import { DB } from './db';
 
+// The widget's `id` is a stored value — `prefs.hiddenWidgets` holds it — so it
+// stays an identifier and the label is a key beside it.
 export const DASHBOARD_WIDGETS = [
-    { id: 'overview', label: 'Обзор дня (метрики и шкалы)', icon: '⬢' },
-    { id: 'today', label: 'Сегодня: привычки и задачи', icon: '✅' },
-    { id: 'hyperfocus', label: 'Кнопка гиперфокуса', icon: '🚀' },
-    { id: 'streak', label: 'Серия и ачивки', icon: '🔥' },
-    { id: 'ratings', label: 'Оценка дня (сон/фокус/настроение)', icon: '📊' },
-    { id: 'bodyscan', label: 'Сканирование тела', icon: '🔎' },
-    { id: 'tags', label: 'Что помогло / что мешало', icon: '🏷️' },
-    { id: 'mainEvent', label: 'Главное событие дня', icon: '📝' },
-    { id: 'testTomorrow', label: 'Что проверить завтра', icon: '🔬' },
-    { id: 'gratitude', label: 'Благодарность', icon: '💖' },
-    { id: 'customQuestion', label: 'Свой вопрос', icon: '❓' },
+    { id: 'overview', labelKey: 'profile:settings.widget.overview', icon: '⬢' },
+    { id: 'today', labelKey: 'profile:settings.widget.today', icon: '✅' },
+    { id: 'hyperfocus', labelKey: 'profile:settings.widget.hyperfocus', icon: '🚀' },
+    { id: 'streak', labelKey: 'profile:settings.widget.streak', icon: '🔥' },
+    { id: 'ratings', labelKey: 'profile:settings.widget.ratings', icon: '📊' },
+    { id: 'bodyscan', labelKey: 'profile:settings.widget.bodyscan', icon: '🔎' },
+    { id: 'tags', labelKey: 'profile:settings.widget.tags', icon: '🏷️' },
+    { id: 'mainEvent', labelKey: 'profile:settings.widget.mainEvent', icon: '📝' },
+    { id: 'testTomorrow', labelKey: 'profile:settings.widget.testTomorrow', icon: '🔬' },
+    { id: 'gratitude', labelKey: 'profile:settings.widget.gratitude', icon: '💖' },
+    { id: 'customQuestion', labelKey: 'profile:settings.widget.customQuestion', icon: '❓' },
 ] as const;
 
 export type Prefs = {

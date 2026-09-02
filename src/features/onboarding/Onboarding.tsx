@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icons';
 import { Logo } from '../../components/Logo';
 import { useAppUi } from '../../stores/app-ui.store';
@@ -19,20 +20,17 @@ type Depth = 'minimal' | 'balanced' | 'detailed';
 
 export type OnboardingAnswers = { focus: Focus; depth: Depth; completedAt: string };
 
-const FOCUS_OPTIONS: { id: Focus; label: string; hint: string; icon: string }[] = [
-    { id: 'focus', label: 'Фокус', hint: 'Меньше отвлекаться, дольше держаться задачи', icon: 'target' },
-    { id: 'productivity', label: 'Продуктивность', hint: 'Задачи, цели, планирование дня', icon: 'columns' },
-    { id: 'adhd', label: 'СДВГ', hint: 'Структура, напоминания, опросники', icon: 'flask' },
-    { id: 'health', label: 'Здоровье', hint: 'Сон, тело, тренировки, настроение', icon: 'heart' },
-    { id: 'self', label: 'Понять себя', hint: 'Дневник, закономерности, выводы', icon: 'book' },
-    { id: 'all', label: 'Всё сразу', hint: 'Показать полный набор', icon: 'grid' },
+// The ids are stored in the answers record; the label and hint are keys.
+const FOCUS_OPTIONS: { id: Focus; icon: string }[] = [
+    { id: 'focus', icon: 'target' },
+    { id: 'productivity', icon: 'columns' },
+    { id: 'adhd', icon: 'flask' },
+    { id: 'health', icon: 'heart' },
+    { id: 'self', icon: 'book' },
+    { id: 'all', icon: 'grid' },
 ];
 
-const DEPTH_OPTIONS: { id: Depth; label: string; hint: string }[] = [
-    { id: 'minimal', label: 'Минимум', hint: 'Только самое нужное, ничего лишнего' },
-    { id: 'balanced', label: 'Средне', hint: 'Основные разделы, остальное — по желанию' },
-    { id: 'detailed', label: 'Подробно', hint: 'Все инструменты сразу' },
-];
+const DEPTH_OPTIONS: Depth[] = ['minimal', 'balanced', 'detailed'];
 
 /**
  * Screens each focus keeps beyond the always-on core. Everything not listed
@@ -54,6 +52,7 @@ const CORE = ['checkin', 'aiplan', 'kanban', 'habits', 'progress', 'card', 'sett
 const BALANCED_EXTRAS = ['diary', 'calendar', 'goals'];
 
 export function Onboarding({ onDone }: { onDone: () => void }) {
+    const { t } = useTranslation('common');
     const [step, setStep] = useState(0);
     const [focus, setFocus] = useState<Focus | null>(null);
     const setPrefs = useAppUi(s => s.setPrefs);
@@ -86,10 +85,10 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
                 {step === 0 ? (
                     <section aria-labelledby="ob-1">
                         <h1 id="ob-1" className="text-xl font-semibold mb-1.5 text-center">
-                            С чем GeQu должен помочь?
+                            {t('common:onboarding.goalsHeading')}
                         </h1>
                         <p className="text-sm text-[var(--text-muted)] text-center mb-6">
-                            Ответ можно поменять в любой момент — ничего не удаляется.
+                            {t('common:onboarding.goalsBlurb')}
                         </p>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -101,9 +100,9 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
                                 >
                                     <Icon name={opt.icon} size={18} className="text-cyan-400 shrink-0 mt-0.5" />
                                     <span className="min-w-0">
-                                        <span className="block font-medium text-sm">{opt.label}</span>
+                                        <span className="block font-medium text-sm">{t(`common:onboarding.goal.${opt.id}.label`)}</span>
                                         <span className="block text-xs text-[var(--text-muted)] mt-0.5 leading-snug">
-                                            {opt.hint}
+                                            {t(`common:onboarding.goal.${opt.id}.hint`)}
                                         </span>
                                     </span>
                                 </button>
@@ -113,22 +112,22 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
                 ) : (
                     <section aria-labelledby="ob-2">
                         <h1 id="ob-2" className="text-xl font-semibold mb-1.5 text-center">
-                            Сколько хочешь отслеживать?
+                            {t('common:onboarding.depthHeading')}
                         </h1>
                         <p className="text-sm text-[var(--text-muted)] text-center mb-6">
-                            Лишние разделы просто скроются из меню.
+                            {t('common:onboarding.depthBlurb')}
                         </p>
 
                         <div className="space-y-2.5">
-                            {DEPTH_OPTIONS.map(opt => (
+                            {DEPTH_OPTIONS.map(depth => (
                                 <button
-                                    key={opt.id}
-                                    onClick={() => finish(opt.id)}
+                                    key={depth}
+                                    onClick={() => finish(depth)}
                                     className="glass-card rounded-2xl p-4 w-full text-left flex items-center gap-3 hover:bg-white/5 transition"
                                 >
                                     <span className="flex-1">
-                                        <span className="block font-medium text-sm">{opt.label}</span>
-                                        <span className="block text-xs text-[var(--text-muted)] mt-0.5">{opt.hint}</span>
+                                        <span className="block font-medium text-sm">{t(`common:onboarding.depth.${depth}.label`)}</span>
+                                        <span className="block text-xs text-[var(--text-muted)] mt-0.5">{t(`common:onboarding.depth.${depth}.hint`)}</span>
                                     </span>
                                     <Icon name="chevronRight" size={16} className="text-[var(--text-muted)] shrink-0" />
                                 </button>
@@ -139,7 +138,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
                             onClick={() => setStep(0)}
                             className="mt-4 text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] transition mx-auto block"
                         >
-                            ← Назад
+                            {t('common:onboarding.back')}
                         </button>
                     </section>
                 )}
@@ -148,7 +147,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
                     onClick={() => finish('detailed')}
                     className="mt-6 text-xs text-[var(--text-muted)] hover:text-[var(--text-main)] transition mx-auto block"
                 >
-                    Пропустить и показать всё
+                    {t('common:onboarding.skip')}
                 </button>
             </div>
         </div>

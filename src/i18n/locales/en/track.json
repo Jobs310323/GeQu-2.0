@@ -113,5 +113,51 @@
             "save": "Save",
             "cancel": "Cancel"
         }
+    },
+    "calendar": {
+        "title": "Calendar",
+        "subtitle": "Workouts, closed days, journal entries and reminders — all on one grid.",
+        "today": "Today",
+        "kind": {
+            "workout": "Workout",
+            "log": "Day closed",
+            "diary": "Journal",
+            "reminder": "Reminder"
+        },
+        "logLine": "Day closed · sleep {{sleep}}, focus {{focus}}, mood {{mood}}",
+        "workoutFallback": "Workout",
+        "exerciseCount": " · {{count}} exercises",
+        "nothing": "Nothing marked on this day.",
+        "reminders": "Reminders",
+        "noReminders": "No reminders for this day.",
+        "addReminder": "Add a reminder…",
+        "upcoming": "Upcoming reminders",
+        "allClear": "All clear — no active reminders."
+    },
+    "journal": {
+        "title": "Thought journal",
+        "subtitle": "Markdown is supported for formatting entries.",
+        "newEntry": "New entry",
+        "placeholder": "What is on your mind?",
+        "add": "Add",
+        "aiHeading": "AI read of the journal",
+        "aiBlurb": "I will read your recent entries gently: recurring themes, mood, strengths.",
+        "aiNoEntries": "No entries to read yet.",
+        "aiFailed": "Could not get a read.",
+        "reading": "Reading…",
+        "refresh": "Refresh the read",
+        "analyse": "Read the entries",
+        "readingEntries": "Reading your entries…",
+        "history": "History",
+        "search": "Search the journal…",
+        "countOf": "{{shown}} of {{total}}",
+        "noEntries": "No entries yet.",
+        "noMatches": "Nothing matches that search.",
+        "save": "Save",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "delete": "Delete",
+        "aiSystem": "You are a warm, careful listener inside the GeQu app (the user has ADHD; clarity and support matter to them).\\nYou are given their most recent personal journal entries with dates. Reflect them back gently: notice recurring themes and moods, what brings joy and what worries, name strengths and small wins. Offer one or two kind, doable things to think about — no pressure and no moralising.\\nWrite in English, warmly, in the second person, briefly and to the point, without clichés and without medical diagnoses. Format as Markdown with short sections, for example: **What I noticed**, **Recurring themes**, **A gentle suggestion**. Rely only on what is in the entries.",
+        "aiPrompt": "My most recent journal entries:\\n\\n{{entries}}\\n\\nRead them back to me gently."
     }
 }

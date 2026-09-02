@@ -30,7 +30,22 @@ const TAG_KEYS: Record<string, string> = {
     'Скука': 'today:checkin.tag.bored',                 // i18n-allow: stored id
     'Голод': 'today:checkin.tag.hungry',                // i18n-allow: stored id
     'Откладывание': 'today:checkin.tag.delay',          // i18n-allow: stored id
+    // Written by the hyperfocus overlay when a cycle is interrupted. Not in
+    // HINDERED_TAG_IDS on purpose: they are recognised for display but not
+    // offered as suggestions on the check-in screen.
+    'Мысли': 'today:checkin.tag.thoughts',              // i18n-allow: stored id
+    'Люди': 'today:checkin.tag.people',                 // i18n-allow: stored id
 };
+
+/**
+ * The reasons the hyperfocus overlay offers when a cycle is broken.
+ *
+ * They go straight into the day's `hindered` array, so they have to be from the
+ * same vocabulary as the check-in tags — otherwise "Телефон" logged from
+ * hyperfocus and "Телефон" ticked at day-close would count as two different
+ * blockers in the insights engine.
+ */
+export const DISTRACTION_IDS = ['Телефон', 'Шум', 'Голод', 'Мысли', 'Люди'] as const; // i18n-allow: stored ids
 
 /**
  * The body-scan checklist.

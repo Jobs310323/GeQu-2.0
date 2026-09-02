@@ -152,7 +152,9 @@
             "noise": "Noise",
             "bored": "Boredom",
             "hungry": "Hunger",
-            "delay": "Putting things off"
+            "delay": "Putting things off",
+            "thoughts": "Thoughts",
+            "people": "People"
         },
         "gaugeAverage": "7-day average",
         "gaugeNone": "Nothing recorded yet"

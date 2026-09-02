@@ -1,20 +1,23 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
 import { toLocalDateKey } from '../lib/datetime';
+import { weekdayNames, monthStartOffset, monthAndYear } from '../lib/format';
 import type { CalendarProps } from '../types/props';
 
-const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+// Weekday and month names come from `Intl` rather than a table here. That is
+// not only about language: `en-US` starts its week on Sunday and `ru` on
+// Monday, and this grid used to hardcode Monday, which would have put every
+// date in the wrong column for an English user.
 
 type EventKind = 'workout' | 'log' | 'diary' | 'reminder';
 
-const KINDS: Record<EventKind, { color: string; label: string; icon: string }> = {
-    workout:  { color: '#EA580C', label: 'Тренировка', icon: 'dumbbell' },
-    log:      { color: '#0284C7', label: 'День закрыт', icon: 'moon' },
-    diary:    { color: '#7C3AED', label: 'Дневник', icon: 'book' },
-    reminder: { color: '#DB2777', label: 'Напоминание', icon: 'bell' },
+const KINDS: Record<EventKind, { color: string; labelKey: string; icon: string }> = {
+    workout:  { color: '#EA580C', labelKey: 'track:calendar.kind.workout', icon: 'dumbbell' },
+    log:      { color: '#0284C7', labelKey: 'track:calendar.kind.log', icon: 'moon' },
+    diary:    { color: '#7C3AED', labelKey: 'track:calendar.kind.diary', icon: 'book' },
+    reminder: { color: '#DB2777', labelKey: 'track:calendar.kind.reminder', icon: 'bell' },
 };
 
 // This page worked the timezone problem out first; `toLocalDateKey` is that
@@ -22,6 +25,7 @@ const KINDS: Record<EventKind, { color: string; label: string; icon: string }> =
 const dayKey = toLocalDateKey;
 
 export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: CalendarProps) {
+    const { t } = useTranslation(['track', 'common']);
     const [cursor, setCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
     const [selected, setSelected] = useState<string>(() => dayKey(new Date()));
     const [draft, setDraft] = useState('');
@@ -41,7 +45,7 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
 
     const grid = useMemo(() => {
         const y = cursor.getFullYear(), mo = cursor.getMonth();
-        const startOffset = (new Date(y, mo, 1).getDay() + 6) % 7; // Monday first
+        const startOffset = monthStartOffset(cursor);
         const total = new Date(y, mo + 1, 0).getDate();
         const cells: (Date | null)[] = Array(startOffset).fill(null);
         for (let d = 1; d <= total; d++) cells.push(new Date(y, mo, d));
@@ -92,8 +96,8 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
 
     return (
         <div className="max-w-6xl">
-            <PageHeader page="calendar" title="Календарь"
-                subtitle="Тренировки, закрытые дни, записи дневника и напоминания — всё на одной сетке." />
+            <PageHeader page="calendar" title={t('track:calendar.title')}
+                subtitle={t('track:calendar.subtitle')} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Month grid */}
@@ -109,17 +113,17 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                                 <Icon name="chevronRight" size={16} />
                             </button>
                             <h2 className="text-xl font-bold ml-2">
-                                {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
+                                {monthAndYear(cursor)}
                             </h2>
                         </div>
                         <button onClick={goToday}
                             className="text-sm px-3 py-1.5 rounded-lg border border-[var(--border)] text-gray-400 hover:text-white transition">
-                            Сегодня
+                            {t('track:calendar.today')}
                         </button>
                     </div>
 
                     <div className="grid grid-cols-7 gap-1.5 mb-1.5">
-                        {WEEKDAYS.map(w => (
+                        {weekdayNames().map(w => (
                             <div key={w} className="text-[11px] text-gray-500 text-center py-1">{w}</div>
                         ))}
                     </div>
@@ -152,7 +156,7 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                                         <span className="flex gap-1 mb-1">
                                             {[...kinds].map(k => (
                                                 <span key={k} className="w-1.5 h-1.5 rounded-full"
-                                                    style={{ background: KINDS[k].color }} title={KINDS[k].label} />
+                                                    style={{ background: KINDS[k].color }} title={t(KINDS[k].labelKey)} />
                                             ))}
                                         </span>
                                     )}
@@ -174,7 +178,7 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                         {Object.entries(KINDS).map(([k, v]) => (
                             <span key={k} className="flex items-center gap-1.5 text-xs text-gray-400">
                                 <span className="w-2 h-2 rounded-full" style={{ background: v.color }} />
-                                {v.label}
+                                {t(v.labelKey)}
                                 <span className="text-gray-600">· {monthStats[k as keyof typeof monthStats]}</span>
                             </span>
                         ))}
@@ -192,14 +196,14 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                             {dayItems.log && (
                                 <div className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)] flex items-center gap-2">
                                     <Icon name={KINDS.log.icon} size={14} className="text-[var(--text-muted)] shrink-0" />
-                                    День закрыт · сон {dayItems.log.sleep}, фокус {dayItems.log.focus}, настроение {dayItems.log.mood}
+                                    {t('track:calendar.logLine', { sleep: dayItems.log.sleep, focus: dayItems.log.focus, mood: dayItems.log.mood })}
                                 </div>
                             )}
                             {dayItems.workouts.map((w) => (
                                 <div key={w.id ?? w.date} className="text-sm text-gray-300 bg-[var(--bg-input)] p-2.5 rounded-lg border border-[var(--border)] flex items-center gap-2">
                                     <Icon name={KINDS.workout.icon} size={14} className="text-[var(--text-muted)] shrink-0" />
-                                    {w.dayName || 'Тренировка'}
-                                    <span className="text-gray-500"> · {(w.exercises ?? []).length} упр.</span>
+                                    {w.dayName || t('track:calendar.workoutFallback')}
+                                    <span className="text-gray-500">{t('track:calendar.exerciseCount', { count: (w.exercises ?? []).length })}</span>
                                 </div>
                             ))}
                             {dayItems.diary.map((e) => (
@@ -209,14 +213,14 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                                 </div>
                             ))}
                             {!dayItems.log && !dayItems.workouts.length && !dayItems.diary.length && (
-                                <p className="text-sm text-gray-500">В этот день ничего не отмечено.</p>
+                                <p className="text-sm text-gray-500">{t('track:calendar.nothing')}</p>
                             )}
                         </div>
 
                         <div className="pt-3 border-t border-[var(--border)]">
                             <div className="text-xs text-gray-400 mb-2 flex items-center gap-1.5">
                                 <Icon name="bell" size={13} />
-                                Напоминания
+                                {t('track:calendar.reminders')}
                             </div>
                             <div className="space-y-1.5 mb-3">
                                 {dayItems.reminders.map((r) => (
@@ -233,7 +237,7 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                                     </div>
                                 ))}
                                 {dayItems.reminders.length === 0 && (
-                                    <p className="text-xs text-gray-600">Нет напоминаний на этот день.</p>
+                                    <p className="text-xs text-gray-600">{t('track:calendar.noReminders')}</p>
                                 )}
                             </div>
                             <div className="flex gap-2">
@@ -241,7 +245,7 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                                     value={draft}
                                     onChange={e => setDraft(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && addReminder()}
-                                    placeholder="Добавить напоминание…"
+                                    placeholder={t('track:calendar.addReminder')}
                                     className="flex-1 min-w-0 bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-400"
                                 />
                                 <button onClick={addReminder}
@@ -251,9 +255,9 @@ export function CalendarPage({ logs, diary, gymData, reminders, setReminders }: 
                     </div>
 
                     <div className="glass-card p-5 rounded-2xl">
-                        <h3 className="font-bold mb-3">Ближайшие напоминания</h3>
+                        <h3 className="font-bold mb-3">{t('track:calendar.upcoming')}</h3>
                         {upcoming.length === 0 ? (
-                            <p className="text-sm text-gray-500">Всё чисто — активных напоминаний нет.</p>
+                            <p className="text-sm text-gray-500">{t('track:calendar.allClear')}</p>
                         ) : (
                             <div className="space-y-2">
                                 {upcoming.map((r) => (
