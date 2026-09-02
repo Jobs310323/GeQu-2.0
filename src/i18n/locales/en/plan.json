@@ -50,5 +50,88 @@
         "placeholder": "For example: the weather, my sleep, a colleague's reaction...",
         "add": "Add",
         "empty": "Empty..."
+    },
+    "mindmap": {
+        "subtitle": "A free-form mind map — yours, dependent on nothing",
+        "emptyLine1": "Empty — tap \"+\" or double-click the canvas,",
+        "emptyLine2": "to create your first thought.",
+        "inboxPlaceholder": "A quick thought for the Inbox…",
+        "inboxTitle": "Quick capture (Inbox)",
+        "analyticsTitle": "This week's summary",
+        "summaryButton": "Summary",
+        "exportButton": "Export the week",
+        "newNodeText": "New thought",
+        "viewMode": {
+            "normal": { "label": "Normal", "hint": "All nodes" },
+            "strategist": { "label": "Strategist", "hint": "Only the first 2 levels" },
+            "tactician": { "label": "Tactician", "hint": "Only open leaves, with checkboxes" },
+            "blindspot": { "label": "Blind spot", "hint": "Only what's stuck (<70%)" }
+        },
+        "color": {
+            "cyan": "cyan",
+            "purple": "purple",
+            "pink": "pink",
+            "green": "green",
+            "yellow": "yellow",
+            "red": "red"
+        },
+        "priority": {
+            "urgent_important": "Urgent / important",
+            "not_urgent_important": "Not urgent / important",
+            "urgent_not_important": "Urgent / not important",
+            "not_urgent_not_important": "Not urgent / not important"
+        },
+        "effort": {
+            "deep_work": "Deep work",
+            "routine": "Routine",
+            "social": "Social",
+            "learning": "Learning"
+        },
+        "status": {
+            "backlog": "Backlog",
+            "in_progress": "In progress",
+            "review": "In review",
+            "done": "Done",
+            "archived": "Archived"
+        },
+        "node": {
+            "colorLabel": "Colour: {{color}}",
+            "deleteLabel": "Delete node",
+            "openLabel": "Open node: {{text}}",
+            "editHint": "Double-click to edit",
+            "milestoneLabel": "Milestone",
+            "markDoneTitle": "Mark as done",
+            "snooze": "Snooze",
+            "subtreeHours": " ({{hours}}h)"
+        },
+        "inspector": {
+            "progressLabelAuto": "Progress (automatic, average of children)",
+            "progressLabelManual": "Progress — {{value}}%",
+            "computedNote": "{{value}}% — computed from child nodes",
+            "priorityLabel": "Priority (Eisenhower matrix)",
+            "dueLabel": "Due date",
+            "hoursLabel": "Estimated hours",
+            "hoursSubtreeSuffix": " (in this branch: {{hours}}h)",
+            "effortLabel": "Effort type",
+            "energyLabel": "Energy cost",
+            "energyAriaLabel": "Energy cost {{n}} of 5",
+            "statusLabel": "Status",
+            "tagsLabel": "Tags (comma-separated)",
+            "milestoneCheckboxLabel": "This is a milestone 🏆",
+            "timeSpentLabel": "Time in this branch: {{minutes}} min"
+        },
+        "report": {
+            "openedNone": "You haven't opened any branch this week yet.",
+            "openedWithMost_one": "You opened {{count}} branch this week. Most often: \"{{node}}\".",
+            "openedWithMost_other": "You opened {{count}} branches this week. Most often: \"{{node}}\".",
+            "closed": "Tasks closed: {{count}}.",
+            "balance": "Balance: {{deepWork}}h of deep work against {{routine}}h of routine."
+        },
+        "export": {
+            "colTask": "Task",
+            "colDue": "Due date",
+            "colHours": "Hours",
+            "colPriority": "Priority"
+        }
     }
 }

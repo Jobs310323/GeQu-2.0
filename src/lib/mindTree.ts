@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import type { EffortType, MindEdge, MindNode, Priority } from '../types/mindmap';
 import { nowInstant } from './datetime';
 
@@ -137,16 +138,19 @@ export function isLeaf(nodeId: string, edges: MindEdge[]): boolean {
     return !edges.some(e => e.source === nodeId);
 }
 
-export const PRIORITY_LABEL: Record<Priority, string> = {
-    urgent_important: 'Срочно / важно',
-    not_urgent_important: 'Не срочно / важно',
-    urgent_not_important: 'Срочно / не важно',
-    not_urgent_not_important: 'Не срочно / не важно',
+const PRIORITY_KEY: Record<Priority, string> = {
+    urgent_important: 'plan:mindmap.priority.urgent_important',
+    not_urgent_important: 'plan:mindmap.priority.not_urgent_important',
+    urgent_not_important: 'plan:mindmap.priority.urgent_not_important',
+    not_urgent_not_important: 'plan:mindmap.priority.not_urgent_not_important',
 };
 
-export const EFFORT_LABEL: Record<EffortType, string> = {
-    deep_work: 'Глубокая работа',
-    routine: 'Рутина',
-    social: 'Социальное',
-    learning: 'Обучение',
+const EFFORT_KEY: Record<EffortType, string> = {
+    deep_work: 'plan:mindmap.effort.deep_work',
+    routine: 'plan:mindmap.effort.routine',
+    social: 'plan:mindmap.effort.social',
+    learning: 'plan:mindmap.effort.learning',
 };
+
+export const priorityLabel = (priority: Priority, t: TFunction): string => t(PRIORITY_KEY[priority]);
+export const effortLabel = (effort: EffortType, t: TFunction): string => t(EFFORT_KEY[effort]);

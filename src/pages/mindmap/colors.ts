@@ -1,18 +1,21 @@
+import type { TFunction } from 'i18next';
 import type { MindColor, Priority } from '../../types/mindmap';
 
 export const MIND_COLORS: MindColor[] = ['cyan', 'purple', 'pink', 'green', 'yellow', 'red'];
 
-/** Names for the colour swatches. A swatch has no text, so without these its
- *  only label is the colour itself — nothing a screen reader can announce, and
- *  nothing distinguishable to a user who cannot separate these hues. */
-export const MIND_COLOR_LABEL: Record<MindColor, string> = {
-    cyan: 'голубой',
-    purple: 'фиолетовый',
-    pink: 'розовый',
-    green: 'зелёный',
-    yellow: 'жёлтый',
-    red: 'красный',
+const COLOR_KEY: Record<MindColor, string> = {
+    cyan: 'plan:mindmap.color.cyan',
+    purple: 'plan:mindmap.color.purple',
+    pink: 'plan:mindmap.color.pink',
+    green: 'plan:mindmap.color.green',
+    yellow: 'plan:mindmap.color.yellow',
+    red: 'plan:mindmap.color.red',
 };
+
+/** Name for a colour swatch. A swatch has no text, so without this its only
+ *  label is the colour itself — nothing a screen reader can announce, and
+ *  nothing distinguishable to a user who cannot separate these hues. */
+export const mindColorLabel = (color: MindColor, t: TFunction): string => t(COLOR_KEY[color]);
 
 // Matches the desaturated accent palette in tailwind.config.js.
 export const COLOR_HEX: Record<MindColor, string> = {

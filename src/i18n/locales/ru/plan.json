@@ -50,5 +50,90 @@
         "placeholder": "Например: Погода, Мой сон, Реакция коллеги...",
         "add": "Добавить",
         "empty": "Пусто..."
+    },
+    "mindmap": {
+        "subtitle": "Свободная карта мыслей — своя, ни от чего не зависит",
+        "emptyLine1": "Пусто — нажми «+» или дважды кликни по холсту,",
+        "emptyLine2": "чтобы создать первую мысль.",
+        "inboxPlaceholder": "Быстрая мысль в Inbox…",
+        "inboxTitle": "Быстрый захват (Inbox)",
+        "analyticsTitle": "Итог за неделю",
+        "summaryButton": "Итог",
+        "exportButton": "Экспорт недели",
+        "newNodeText": "Новая мысль",
+        "viewMode": {
+            "normal": { "label": "Обычный", "hint": "Все узлы" },
+            "strategist": { "label": "Стратег", "hint": "Только первые 2 уровня" },
+            "tactician": { "label": "Тактик", "hint": "Только незакрытые листья, чекбоксами" },
+            "blindspot": { "label": "Слепое пятно", "hint": "Только застрявшее (<70%)" }
+        },
+        "color": {
+            "cyan": "голубой",
+            "purple": "фиолетовый",
+            "pink": "розовый",
+            "green": "зелёный",
+            "yellow": "жёлтый",
+            "red": "красный"
+        },
+        "priority": {
+            "urgent_important": "Срочно / важно",
+            "not_urgent_important": "Не срочно / важно",
+            "urgent_not_important": "Срочно / не важно",
+            "not_urgent_not_important": "Не срочно / не важно"
+        },
+        "effort": {
+            "deep_work": "Глубокая работа",
+            "routine": "Рутина",
+            "social": "Социальное",
+            "learning": "Обучение"
+        },
+        "status": {
+            "backlog": "Бэклог",
+            "in_progress": "В работе",
+            "review": "На проверке",
+            "done": "Готово",
+            "archived": "Архив"
+        },
+        "node": {
+            "colorLabel": "Цвет: {{color}}",
+            "deleteLabel": "Удалить узел",
+            "openLabel": "Открыть узел: {{text}}",
+            "editHint": "Двойной клик — изменить",
+            "milestoneLabel": "Веха",
+            "markDoneTitle": "Отметить выполненным",
+            "snooze": "Отложить",
+            "subtreeHours": " ({{hours}}ч)"
+        },
+        "inspector": {
+            "progressLabelAuto": "Прогресс (авто, среднее по дочерним)",
+            "progressLabelManual": "Прогресс — {{value}}%",
+            "computedNote": "{{value}}% — вычислено из дочерних узлов",
+            "priorityLabel": "Приоритет (матрица Эйзенхауэра)",
+            "dueLabel": "Срок",
+            "hoursLabel": "Оценка часов",
+            "hoursSubtreeSuffix": " (в ветке: {{hours}}ч)",
+            "effortLabel": "Тип усилия",
+            "energyLabel": "Энергозатратность",
+            "energyAriaLabel": "Энергозатратность {{n}} из 5",
+            "statusLabel": "Статус",
+            "tagsLabel": "Теги (через запятую)",
+            "milestoneCheckboxLabel": "Это веха 🏆",
+            "timeSpentLabel": "Времени в этой ветке: {{minutes}} мин"
+        },
+        "report": {
+            "openedNone": "На этой неделе вы ещё не открывали ни одной ветки.",
+            "openedWithMost_one": "Вы открыли {{count}} ветку за неделю. Чаще всего: «{{node}}».",
+            "openedWithMost_few": "Вы открыли {{count}} ветки за неделю. Чаще всего: «{{node}}».",
+            "openedWithMost_many": "Вы открыли {{count}} веток за неделю. Чаще всего: «{{node}}».",
+            "openedWithMost_other": "Вы открыли {{count}} ветки за неделю. Чаще всего: «{{node}}».",
+            "closed": "Закрыто задач: {{count}}.",
+            "balance": "Баланс: {{deepWork}}ч глубокой работы против {{routine}}ч рутины."
+        },
+        "export": {
+            "colTask": "Задача",
+            "colDue": "Срок",
+            "colHours": "Часы",
+            "colPriority": "Приоритет"
+        }
     }
 }
