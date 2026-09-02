@@ -1,4 +1,25 @@
 {
+    "cbt": {
+        "tab": {
+            "record": "Thought record",
+            "distortions": "Distortions",
+            "practices": "Practices"
+        },
+        "intro": "Cognitive behavioural therapy tools: work through thoughts, learn your own distortions, and act without waiting for the mood to be right.",
+        "newRecordHeading": "New record",
+        "fieldsFilled": "{{filled}} of {{total}} fields",
+        "save": "Save record",
+        "analyse": "Get an AI read",
+        "analysing": "Reading…",
+        "needKeyTitle": "A Groq key is needed in Settings",
+        "needBothFields": "Fill in at least the situation and the thought",
+        "analyseFailed": "Could not get a read.",
+        "historyHeading": "Past reads",
+        "historyEmpty": "Nothing here yet. The first record is the most useful one.",
+        "delete": "Delete",
+        "aiSystem": "You are a careful cognitive behavioural therapy assistant inside the GeQu app. The user has ADHD.\n\nYou are given a completed thought-record entry: situation, automatic thought, emotion, evidence for and against, alternative thought.\n\nDo three things, briefly:\n1. Name the cognitive distortions visible in the automatic thought (from this list: all-or-nothing thinking, catastrophizing, should statements, mind reading, mental filter, labeling, overgeneralization, emotional reasoning, personalization, discounting the positive). Only the ones that are actually there.\n2. Ask 1–2 questions that would help look at the situation more accurately.\n3. Suggest one more balanced version of the thought — not \"everything's fine\", but more honest and precise.\n\nWrite in English, warmly, in the second person, and without moralising. Format as short Markdown with subheadings. Rely only on what is written in the entry.",
+        "aiUserPrefix": "Here is my record:\n\n{{body}}\n\nHelp me work through it."
+    },
     "unit": {
         "sec": "s",
         "ms": "ms",

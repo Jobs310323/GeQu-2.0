@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { marked } from 'marked';
 import { callAIJson, streamAI } from '../lib/ai';
 import { DB } from '../lib/db';
-import { buildProfile, hasEnoughData } from '../lib/profile';
+import { buildProfile, hasEnoughData, testLabel } from '../lib/profile';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
 import type { UserCardProps } from '../types/props';
@@ -72,14 +72,16 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
     const rawProfile = buildProfile({ logs, diary, habits, kanban, goals, gymData, testResults,
         clinicalResults, cbtRecords, finance, circles });
     // `buildProfile` is pure and emits translation keys for the achievement
-    // names. Resolve them here, so the AI reads "Marathoner" rather than
-    // `insights:xp.achievement.marathon.title`.
+    // names and bare type ids for cognitive tests. Resolve both here, so the
+    // AI reads "Marathoner" / "Schulte table (s)" rather than
+    // `insights:xp.achievement.marathon.title` / `schulte`.
     const profile = {
         ...rawProfile,
         gamification: {
             ...rawProfile.gamification,
             achievementsUnlocked: rawProfile.gamification.achievementsUnlocked.map(key => t(key)),
         },
+        cognitive: rawProfile.cognitive.map(test => ({ ...test, label: testLabel(test.type, t) })),
     };
     const enough = hasEnoughData(profile);
 
@@ -107,6 +109,7 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                     content: t('profile:card.reportPrompt', { json: JSON.stringify(profile) }),
                 }],
                 onToken: chunk => { text += chunk; setReport(text); },
+                t,
             });
             const stamp = stampNow();
             setReportAt(stamp);
@@ -125,6 +128,7 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
                 system: t('profile:card.cardSystem'),
                 prompt: t('profile:card.cardPrompt', { json: JSON.stringify(profile) }),
                 maxTokens: 2000,
+                t,
             });
             const stamp = stampNow();
             setCard(result); setMadeAt(stamp);

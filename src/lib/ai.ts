@@ -6,6 +6,8 @@
 // bundle, it only ever lives in this browser's localStorage. Note that anyone
 // with access to this browser's devtools could read it, so use a dedicated key.
 
+import type { TFunction } from 'i18next';
+
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
 const KEY_STORAGE = 'gequ_groq_key';
@@ -18,6 +20,7 @@ export interface StreamOptions {
     maxTokens?: number;
     onToken: (chunk: string) => void;
     signal?: AbortSignal;
+    t: TFunction;
 }
 
 export function isOnline(): boolean {
@@ -44,18 +47,20 @@ export function hasGroqKey(): boolean {
     return getGroqKey().length > 0;
 }
 
-/** Shared error mapping so every call site reports the same Russian messages. */
-async function toError(res: Response): Promise<Error> {
+/** Shared error mapping so every call site reports the same localized messages. */
+async function toError(res: Response, t: TFunction): Promise<Error> {
     const detail = await res.text().catch(() => '');
-    if (res.status === 401) return new Error('Неверный ключ Groq — проверь его в Настройках.');
-    if (res.status === 429) return new Error('Слишком много запросов к Groq. Подожди минуту и попробуй снова.');
-    return new Error(detail ? `Ошибка Groq (${res.status}): ${detail.slice(0, 200)}` : `Ошибка Groq (${res.status}).`);
+    if (res.status === 401) return new Error(t('common:ai.invalidKey'));
+    if (res.status === 429) return new Error(t('common:ai.rateLimited'));
+    return new Error(detail
+        ? t('common:ai.errorWithDetail', { status: res.status, detail: detail.slice(0, 200) })
+        : t('common:ai.errorGeneric', { status: res.status }));
 }
 
-function requireKey(): string {
-    if (!isOnline()) throw new Error('Нет подключения к сети — ИИ недоступен офлайн.');
+function requireKey(t: TFunction): string {
+    if (!isOnline()) throw new Error(t('common:ai.offline'));
     const key = getGroqKey();
-    if (!key) throw new Error('Не задан ключ Groq. Добавь его в Настройках → раздел «ИИ (Groq)».');
+    if (!key) throw new Error(t('common:ai.noKey'));
     return key;
 }
 
@@ -63,8 +68,8 @@ function requireKey(): string {
  * Non-streaming call that asks the model for a single JSON object and parses it.
  * Used where the UI needs structured data (e.g. the day planner) rather than prose.
  */
-export async function callAIJson<T = unknown>(opts: { system?: string; prompt: string; maxTokens?: number; signal?: AbortSignal }): Promise<T> {
-    const key = requireKey();
+export async function callAIJson<T = unknown>(opts: { system?: string; prompt: string; maxTokens?: number; signal?: AbortSignal; t: TFunction }): Promise<T> {
+    const key = requireKey(opts.t);
 
     const res = await fetch(GROQ_URL, {
         method: 'POST',
@@ -82,25 +87,25 @@ export async function callAIJson<T = unknown>(opts: { system?: string; prompt: s
         ...(opts.signal ? { signal: opts.signal } : {}),
     });
 
-    if (!res.ok) throw await toError(res);
+    if (!res.ok) throw await toError(res, opts.t);
 
     const body = await res.json();
     const content = body?.choices?.[0]?.message?.content;
-    if (!content) throw new Error('Пустой ответ от ИИ.');
+    if (!content) throw new Error(opts.t('common:ai.emptyResponse'));
     try {
         return JSON.parse(content) as T;
     } catch {
-        throw new Error('ИИ вернул ответ в неожиданном формате. Попробуй ещё раз.');
+        throw new Error(opts.t('common:ai.unexpectedFormat'));
     }
 }
 
 /**
  * Streams a Groq chat completion straight from the browser. Calls `onToken` for
  * each text chunk and resolves with the full accumulated text. Throws with a
- * human-readable (Russian) message on failure.
+ * human-readable, localized message on failure.
  */
 export async function streamAI(opts: StreamOptions): Promise<string> {
-    const key = requireKey();
+    const key = requireKey(opts.t);
 
     const messages: ChatMessage[] = [
         ...(opts.system ? [{ role: 'system' as const, content: opts.system }] : []),
@@ -122,7 +127,7 @@ export async function streamAI(opts: StreamOptions): Promise<string> {
         ...(opts.signal ? { signal: opts.signal } : {}),
     });
 
-    if (!res.ok || !res.body) throw await toError(res);
+    if (!res.ok || !res.body) throw await toError(res, opts.t);
 
     // Groq streams OpenAI-style SSE: lines of `data: {json}` ending with `[DONE]`.
     const reader = res.body.getReader();

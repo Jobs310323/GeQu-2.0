@@ -98,6 +98,7 @@ export function WeekSummary(props: WeekSummaryProps) {
                 system: t('insights:week.system'),
                 prompt: t('insights:week.prompt', { json: JSON.stringify(payload, null, 2) }),
                 maxTokens: 900,
+                t,
             });
             const stamp = new Date().toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
             setSummary(res); setMadeAt(stamp);

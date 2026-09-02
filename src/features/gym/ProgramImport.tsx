@@ -84,6 +84,7 @@ export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportPro
                 system: t('gym:import.system'),
                 prompt: t('gym:import.userPrompt', { text: raw.slice(0, 6000) }),
                 maxTokens: 2500,
+                t,
             });
             const normalized = normalize(parsed, t);
             if (!normalized.days.length) {

@@ -40,12 +40,12 @@ export function GoalsList({ goals, setGoals }: GoalsListProps) {
     const drag = useDragReorder(sortedGoals, setGoals);
 
     const copyAll = async () => {
-        if (await copyText(formatAllGoalsText(sortedGoals))) {
+        if (await copyText(formatAllGoalsText(sortedGoals, t))) {
             setCopiedAll(true);
             setTimeout(() => setCopiedAll(false), 1500);
         }
     };
-    const downloadAll = () => downloadTextFile(`goals-${todayKey()}.txt`, formatAllGoalsText(sortedGoals));
+    const downloadAll = () => downloadTextFile(`goals-${todayKey()}.txt`, formatAllGoalsText(sortedGoals, t));
 
     return (
         <div>
@@ -130,12 +130,12 @@ function GoalCard({ goal, isOpen, onToggle, onDelete, setTasks, setDescription, 
     const drag = useDragReorder(tasks, setTasks);
 
     const copyGoal = async () => {
-        if (await copyText(formatGoalText(goal))) {
+        if (await copyText(formatGoalText(goal, t))) {
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
         }
     };
-    const downloadGoal = () => downloadTextFile(`${goal.title.slice(0, 40).replace(/[^\p{L}\p{N}]+/gu, '-')}.txt`, formatGoalText(goal));
+    const downloadGoal = () => downloadTextFile(`${goal.title.slice(0, 40).replace(/[^\p{L}\p{N}]+/gu, '-')}.txt`, formatGoalText(goal, t));
 
     return (
         <div {...itemProps} className={`glass-card rounded-2xl overflow-hidden transition-all duration-300 ${itemClass}`}>

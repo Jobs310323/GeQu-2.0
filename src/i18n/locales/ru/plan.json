@@ -15,7 +15,12 @@
         "copyGoal": "Скопировать",
         "downloadGoalTitle": "Скачать цель и шаги .txt",
         "downloadGoal": "Скачать .txt",
-        "deleteGoal": "Удалить цель"
+        "deleteGoal": "Удалить цель",
+        "exportTags": "Теги: {{tags}}",
+        "exportTaskTags": " (теги: {{tags}})",
+        "exportStepsHeading": "## Шаги",
+        "exportNoSteps": "(шагов пока нет)",
+        "exportNoGoals": "Целей пока нет."
     },
     "step": {
         "dragTitle": "Перетащить шаг",

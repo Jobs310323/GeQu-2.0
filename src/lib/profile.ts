@@ -3,6 +3,7 @@
 // The numbers are computed here in JS rather than asked of the model: it is
 // exact, costs no tokens, and keeps the AI's job to interpretation only.
 
+import type { TFunction } from 'i18next';
 import { computeXp, levelFromXp, evaluateAchievements, type GameData } from './xp';
 import { streakLength, startOfLocalDay } from './datetime';
 import type {
@@ -15,22 +16,27 @@ import type { FinanceData, FinanceEntry } from '../features/finance/types';
 /** Cognitive tests where a LOWER value is better (times/latency). */
 export const LOWER_IS_BETTER = new Set(['schulte', 'reaction', 'tmt']);
 
-export const TEST_LABELS: Record<string, string> = {
-    schulte: 'Таблица Шульте (сек)',
-    stroop: 'Тест Струпа (очки)',
-    reaction: 'Реакция (мс)',
-    tmt: 'Соединения (сек)',
-    digitspan: 'Память на числа (уровень)',
-    gonogo: 'Go/No-Go (очки)',
-    nback: 'N-Back (% точности)',
-    corsi: 'Тест Корси (длина)',
-    arithmetic: 'Устный счёт (очки)',
-    switching: 'Переключение (очки)',
+/** The unit each exercise's raw `value` is expressed in — matches `brain:unit.*`. */
+const TEST_UNIT: Record<string, string> = {
+    schulte: 'sec', stroop: 'points', reaction: 'ms', tmt: 'sec', digitspan: 'level',
+    gonogo: 'points', nback: 'accuracy', corsi: 'span', arithmetic: 'points', switching: 'points',
 };
+
+/**
+ * Display name for a cognitive exercise type, e.g. "Schulte table (s)". Reuses
+ * the exercise registry's own `brain:engine.*.label` and unit vocabulary rather
+ * than duplicating them, and falls back to the bare type id for anything the
+ * registry doesn't know (an exercise added later, or already-stored data from
+ * a removed one).
+ */
+export function testLabel(type: string, t: TFunction): string {
+    const unit = TEST_UNIT[type];
+    const label = t(`brain:engine.${type}.label`, { defaultValue: type });
+    return unit ? `${label} (${t(`brain:unit.${unit}`)})` : label;
+}
 
 export type TestSummary = {
     type: string;
-    label: string;
     count: number;
     first: number;
     last: number;
@@ -93,7 +99,7 @@ export function buildProfile(d: ProfileInput) {
             improvedPct = round(delta * 100, 0);
         }
         return {
-            type, label: TEST_LABELS[type] ?? type, count: vals.length,
+            type, count: vals.length,
             first: round(first), last: round(last),
             best: vals.length ? round(lower ? Math.min(...vals) : Math.max(...vals)) : 0,
             average: round(avg(vals)), lowerIsBetter: lower, improvedPct,

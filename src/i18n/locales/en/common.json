@@ -2,8 +2,10 @@
     "action": {
         "close": "Close",
         "retry": "Try again",
-        "home": "Go home"
+        "home": "Go home",
+        "reload": "Reload"
     },
+    "loading": "Loading…",
     "nav": {
         "main": "Main navigation",
         "expand": "Expand menu",
@@ -50,7 +52,27 @@
         "featureFailed": "\"{{feature}}\" didn't open",
         "generic": "Something went wrong",
         "body": "The rest of the app still works — come back to this later, or go somewhere else. Your data is saved on this device and is untouched.",
-        "details": "Error details"
+        "details": "Error details",
+        "routeChunkTitle": "Couldn't load this section",
+        "routeChunkDetail": "Looks like there's no connection — or the app updated while this tab was open. Reloading usually fixes it.",
+        "routeGenericTitle": "This section didn't open",
+        "routeGenericDetail": "The rest of the app still works. You can go home and try again.",
+        "notFoundTitle": "Page not found",
+        "notFoundBody": "There's no such section. The link may be out of date."
+    },
+    "ai": {
+        "invalidKey": "Invalid Groq key — check it in Settings.",
+        "rateLimited": "Too many requests to Groq. Wait a minute and try again.",
+        "errorWithDetail": "Groq error ({{status}}): {{detail}}",
+        "errorGeneric": "Groq error ({{status}}).",
+        "offline": "No network connection — AI is unavailable offline.",
+        "noKey": "No Groq key set. Add one in Settings → the \"AI (Groq)\" section.",
+        "emptyResponse": "Empty response from the AI.",
+        "unexpectedFormat": "The AI returned an unexpected format. Try again."
+    },
+    "markdown": {
+        "collapse": "Collapse",
+        "expand": "Show all"
     },
     "tag": {
         "remove": "Remove tag",

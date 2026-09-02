@@ -1,4 +1,8 @@
 {
+    "chart": {
+        "resultLabel": "Result",
+        "lowerIsBetterSuffix": " (lower is better)"
+    },
     "claim": {
         "observed": "observation",
         "associated": "association",

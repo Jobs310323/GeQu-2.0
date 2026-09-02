@@ -1,4 +1,8 @@
 {
+    "chart": {
+        "resultLabel": "Результат",
+        "lowerIsBetterSuffix": " (меньше — лучше)"
+    },
     "claim": {
         "observed": "наблюдение",
         "associated": "связь",

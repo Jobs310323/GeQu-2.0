@@ -1002,6 +1002,7 @@ export function GymAI({ gymData, logs }: { gymData: GymData; logs: DayLog[] }) {
                     content: t('gym:coach.userPrompt', { json: JSON.stringify(context, null, 2) }),
                 }],
                 onToken: (chunk) => setOutput((prev) => prev + chunk),
+                t,
             });
         } catch (e) {
             setError(errorMessage(e, t('gym:coach.failed')));

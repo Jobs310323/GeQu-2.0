@@ -15,7 +15,12 @@
         "copyGoal": "Copy",
         "downloadGoalTitle": "Download this goal and its steps as .txt",
         "downloadGoal": "Download .txt",
-        "deleteGoal": "Delete goal"
+        "deleteGoal": "Delete goal",
+        "exportTags": "Tags: {{tags}}",
+        "exportTaskTags": " (tags: {{tags}})",
+        "exportStepsHeading": "## Steps",
+        "exportNoSteps": "(no steps yet)",
+        "exportNoGoals": "No goals yet."
     },
     "step": {
         "dragTitle": "Drag step",

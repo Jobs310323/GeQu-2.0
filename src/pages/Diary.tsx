@@ -36,6 +36,7 @@ export function Diary({ diary, setDiary }: DiaryProps) {
                 maxTokens: 900,
                 messages: [{ role: 'user', content: t('track:journal.aiPrompt', { entries: context }) }],
                 onToken: (chunk) => setAiOutput(prev => prev + chunk),
+                t,
             });
         } catch (e) {
             setAiError(errorMessage(e, t('track:journal.aiFailed')));

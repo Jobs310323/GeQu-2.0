@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { formatNumber } from '../lib/format';
 import { tagLabel } from '../features/checkin/vocabulary';
 import { StateChart, TestChart, SERIES } from '../features/charts';
-import { LOWER_IS_BETTER, TEST_LABELS } from '../lib/profile';
+import { LOWER_IS_BETTER, testLabel } from '../lib/profile';
 import { Icon } from '../components/Icons';
 import type { DynamicsProps } from '../types/props';
 import type { TestResult } from '../types/domain';
@@ -124,12 +124,12 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
         return Object.entries(byType)
             .map(([type, list]) => ({
                 type,
-                label: TEST_LABELS[type] ?? type,
+                label: testLabel(type, t),
                 lowerIsBetter: LOWER_IS_BETTER.has(type),
                 list: [...list].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
             }))
             .sort((a, b) => b.list.length - a.list.length);
-    }, [testResults, days]);
+    }, [testResults, days, t]);
 
     const activeTest = testsInPeriod.find(t => t.type === testType) ?? testsInPeriod[0] ?? null;
 

@@ -1,4 +1,5 @@
 import { isRouteErrorResponse, useRouteError, useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 
 /**
  * The router's `errorElement`. Handles anything thrown while resolving or
@@ -6,6 +7,7 @@ import { isRouteErrorResponse, useRouteError, useNavigate } from 'react-router';
  * common case offline or straight after a deploy.
  */
 export function RouteError() {
+    const { t } = useTranslation('common');
     const error = useRouteError();
     const navigate = useNavigate();
 
@@ -15,12 +17,12 @@ export function RouteError() {
     const title = isRouteErrorResponse(error)
         ? `${error.status} — ${error.statusText}`
         : isChunkError
-            ? 'Не удалось загрузить раздел'
-            : 'Раздел не открылся';
+            ? t('common:error.routeChunkTitle')
+            : t('common:error.routeGenericTitle');
 
     const detail = isChunkError
-        ? 'Похоже, нет соединения — или приложение обновилось, пока эта вкладка была открыта. Перезагрузка обычно решает это.'
-        : 'Остальное приложение работает. Можно вернуться на главную и попробовать снова.';
+        ? t('common:error.routeChunkDetail')
+        : t('common:error.routeGenericDetail');
 
     return (
         <div role="alert" className="glass-card rounded-2xl p-6 max-w-lg">
@@ -32,14 +34,14 @@ export function RouteError() {
                         onClick={() => window.location.reload()}
                         className="px-4 py-2 rounded-lg bg-cyan-400/10 text-cyan-400 border border-cyan-400/25 text-sm hover:bg-cyan-400/15 transition"
                     >
-                        Перезагрузить
+                        {t('common:action.reload')}
                     </button>
                 )}
                 <button
                     onClick={() => navigate('/')}
                     className="px-4 py-2 rounded-lg border border-[var(--border)] text-sm hover:bg-white/5 transition"
                 >
-                    На главную
+                    {t('common:action.home')}
                 </button>
             </div>
         </div>

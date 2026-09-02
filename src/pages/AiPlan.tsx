@@ -95,6 +95,7 @@ export function AiPlan({ logs, kanban, setKanban, habits, gymData, testResults, 
                 system: t('today:plan.system'),
                 prompt: t('today:plan.prompt', { json: JSON.stringify(ctx, null, 2) }),
                 maxTokens: 1600,
+                t,
             });
             const stamp = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
             setPlan(result);

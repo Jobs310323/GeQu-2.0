@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 /**
  * Shown while a route's chunk is in flight.
  *
@@ -7,13 +9,14 @@
  * their keep — screens with slow data, not screens with a fast import.
  */
 export function RouteFallback() {
+    const { t } = useTranslation('common');
     return (
         <div className="flex items-center gap-3 text-sm text-[var(--text-muted)] p-2" aria-live="polite">
             <span
                 className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin motion-reduce:animate-none"
                 aria-hidden="true"
             />
-            Загрузка…
+            {t('common:loading')}
         </div>
     );
 }

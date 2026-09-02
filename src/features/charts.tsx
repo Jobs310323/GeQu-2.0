@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Chart from 'chart.js/auto';
 import type { ChartOptions, TooltipItem } from 'chart.js';
 import type { DayLog, TestResult } from '../types/domain';
+import { formatDate } from '../lib/format';
 
 /** The three self-rated numbers a day log carries. */
 type DayMetric = 'sleep' | 'focus' | 'mood';
@@ -94,6 +96,7 @@ const lineStyle = (hex: string, label: string, fill: boolean) => ({
 
 /** Sleep / focus / mood over time — three categorical series on one 0–10 axis. */
 export function StateChart({ logs }: { logs: DayLog[] }) {
+    const { t } = useTranslation('insights');
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const chartRef = useRef<Chart | null>(null);
     const isLight = useThemeTick();
@@ -104,15 +107,15 @@ export function StateChart({ logs }: { logs: DayLog[] }) {
         chartRef.current?.destroy();
 
         const series: { key: DayMetric; label: string; color: string }[] = [
-            { key: 'sleep', label: 'Сон', color: SERIES[0] },
-            { key: 'focus', label: 'Фокус', color: SERIES[1] },
-            { key: 'mood', label: 'Настроение', color: SERIES[2] },
+            { key: 'sleep', label: t('insights:dynamics.metric.sleep'), color: SERIES[0] },
+            { key: 'focus', label: t('insights:dynamics.metric.focus'), color: SERIES[1] },
+            { key: 'mood', label: t('insights:dynamics.metric.mood'), color: SERIES[2] },
         ];
 
         chartRef.current = new Chart(el, {
             type: 'line',
             data: {
-                labels: logs.map((l) => new Date(l.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })),
+                labels: logs.map((l) => formatDate(l.date, 'dayMonth')),
                 // Three overlapping translucent fills turn to mud, so this chart
                 // is lines only — the single-series TestChart keeps its fill.
                 datasets: series.map(s => ({
@@ -125,16 +128,18 @@ export function StateChart({ logs }: { logs: DayLog[] }) {
         });
 
         return () => { chartRef.current?.destroy(); chartRef.current = null; };
-    }, [logs, isLight]);
+    }, [logs, isLight, t]);
 
     return <canvas ref={canvasRef} />;
 }
 
 /** A single cognitive test over time. One series, so no legend box is needed. */
 export function TestChart({ results, label, lowerIsBetter }: { results: TestResult[]; label: string; lowerIsBetter: boolean }) {
+    const { t } = useTranslation('insights');
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const chartRef = useRef<Chart | null>(null);
     const isLight = useThemeTick();
+    const resolvedLabel = label ?? t('insights:chart.resultLabel');
 
     useEffect(() => {
         const el = canvasRef.current;
@@ -153,7 +158,7 @@ export function TestChart({ results, label, lowerIsBetter }: { results: TestResu
                     ...base.plugins?.tooltip,
                     callbacks: {
                         label: (item: TooltipItem<'line'>) =>
-                            `${label ?? 'Результат'}: ${item.parsed.y}${lowerIsBetter ? ' (меньше — лучше)' : ''}`,
+                            `${resolvedLabel}: ${item.parsed.y}${lowerIsBetter ? t('insights:chart.lowerIsBetterSuffix') : ''}`,
                     },
                 },
             },
@@ -162,10 +167,9 @@ export function TestChart({ results, label, lowerIsBetter }: { results: TestResu
         chartRef.current = new Chart(el, {
             type: 'line',
             data: {
-                labels: results.map((r) =>
-                    new Date(r.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })),
+                labels: results.map((r) => formatDate(r.date, 'dayMonth')),
                 datasets: [{
-                    ...lineStyle(color, label ?? 'Результат', true),
+                    ...lineStyle(color, resolvedLabel, true),
                     data: results.map((r) => Number(r.value)),
                     backgroundColor: (c) => fillGradient(c.chart.ctx, c.chart.chartArea, color),
                 }],
@@ -174,7 +178,7 @@ export function TestChart({ results, label, lowerIsBetter }: { results: TestResu
         });
 
         return () => { chartRef.current?.destroy(); chartRef.current = null; };
-    }, [results, isLight, label, lowerIsBetter]);
+    }, [results, isLight, resolvedLabel, lowerIsBetter, t]);
 
     return <canvas ref={canvasRef} />;
 }

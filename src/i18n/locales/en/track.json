@@ -114,6 +114,15 @@
             "cancel": "Cancel"
         }
     },
+    "habits": {
+        "title": "Habit tracker",
+        "subtitle": "Check off daily habits and keep an eye on your streak.",
+        "newPlaceholder": "A new habit (e.g. Drink water)...",
+        "add": "Add",
+        "empty": "No habits yet — add the first one above.",
+        "streak_one": "Streak: {{count}} day",
+        "streak_other": "Streak: {{count}} days"
+    },
     "calendar": {
         "title": "Calendar",
         "subtitle": "Workouts, closed days, journal entries and reminders — all on one grid.",
