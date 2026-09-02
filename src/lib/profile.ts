@@ -272,7 +272,11 @@ export function buildProfile(d: ProfileInput) {
         },
         gamification: {
             xp, level: level.level,
-            achievementsUnlocked: achievements.filter(a => a.unlocked).map(a => a.title),
+            // Translation keys, not titles. `buildProfile` is pure and knows
+            // nothing about the active language; `UserCard` resolves them just
+            // before the profile goes to the AI, so the model reads names in
+            // the language it is being asked to answer in.
+            achievementsUnlocked: achievements.filter(a => a.unlocked).map(a => a.titleKey),
             achievementsTotal: achievements.length,
         },
     };

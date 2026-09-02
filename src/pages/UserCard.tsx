@@ -69,8 +69,18 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
     const [reportError, setReportError] = useState('');
     const [reportAt, setReportAt] = useState('');
 
-    const profile = buildProfile({ logs, diary, habits, kanban, goals, gymData, testResults,
+    const rawProfile = buildProfile({ logs, diary, habits, kanban, goals, gymData, testResults,
         clinicalResults, cbtRecords, finance, circles });
+    // `buildProfile` is pure and emits translation keys for the achievement
+    // names. Resolve them here, so the AI reads "Marathoner" rather than
+    // `insights:xp.achievement.marathon.title`.
+    const profile = {
+        ...rawProfile,
+        gamification: {
+            ...rawProfile.gamification,
+            achievementsUnlocked: rawProfile.gamification.achievementsUnlocked.map(key => t(key)),
+        },
+    };
     const enough = hasEnoughData(profile);
 
     const deleteLog = (id: number) => setLogs((logs ?? []).filter((l) => l.id !== id));

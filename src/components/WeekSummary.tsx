@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { callAIJson, hasGroqKey } from '../lib/ai';
 import { DB } from '../lib/db';
 import type { WeekSummaryProps } from '../types/props';
@@ -20,22 +21,7 @@ type Summary = {
     next_week?: string[];
 };
 
-const SYSTEM = `Ты — внимательный собеседник в приложении GeQu. Пользователь — человек с СДВГ.
-
-Тебе дают точную статистику за последние 7 дней: сколько дней закрыто, средние сон/фокус/настроение и как они изменились к прошлой неделе, отмеченные теги «помогло/мешало», привычки, закрытые задачи, тренировки, когнитивные тесты, записи дневника.
-
-Важно про единицы: sleep, focus и mood — это САМООЦЕНКИ ПО ШКАЛЕ 0–10, а не часы, проценты или какие-либо другие величины. Пиши «сон 8 из 10» или «оценка сна выросла на 3 балла», но никогда не «3 часа». Не придумывай единиц измерения, которых нет.
-
-Подведи итог недели: что получилось, что мешало, за что стоит зацепиться на следующей неделе. Опирайся только на цифры, которые дали. Если данных мало — скажи прямо, не выдумывай.
-
-Не превращай отсутствие данных в упрёк: если тренировок или тестов не было, это факт для раздела «мешало» только если это действительно мешало, иначе просто не упоминай.
-
-Обращайся на «ты», тепло и без нравоучений. Не хвали авансом — отмечай конкретное.
-
-Отвечай СТРОГО одним JSON-объектом:
-{"headline": "одна строка — какой была неделя", "went_well": ["что получилось, с опорой на цифру"], "got_in_the_way": ["что мешало, с опорой на цифру"], "next_week": ["одно конкретное выполнимое действие"]}
-
-Массивы — по 2–3 пункта. Всё по-русски. Никакого текста вне JSON.`;
+// The week-summary system prompt lives in the locale files — see ADR-006.
 
 const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
 const r1 = (n: number) => Number(n.toFixed(1));
@@ -73,6 +59,7 @@ function windowStats(from: number, to: number, d: WeekSummaryProps) {
 }
 
 export function WeekSummary(props: WeekSummaryProps) {
+    const { t } = useTranslation('insights');
     const [summary, setSummary] = useState<Summary | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -108,15 +95,15 @@ export function WeekSummary(props: WeekSummaryProps) {
                 },
             };
             const res = await callAIJson<Summary>({
-                system: SYSTEM,
-                prompt: `Моя неделя в цифрах:\n\n${JSON.stringify(payload, null, 2)}\n\nПодведи итог.`,
+                system: t('insights:week.system'),
+                prompt: t('insights:week.prompt', { json: JSON.stringify(payload, null, 2) }),
                 maxTokens: 900,
             });
             const stamp = new Date().toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
             setSummary(res); setMadeAt(stamp);
             DB.save('weekSummary', { summary: res, madeAt: stamp, at: Date.now() });
         } catch (e) {
-            setError(errorMessage(e, 'Не удалось подвести итог.'));
+            setError(errorMessage(e, t('insights:week.failed')));
         } finally {
             setLoading(false);
         }
@@ -139,9 +126,9 @@ export function WeekSummary(props: WeekSummaryProps) {
             <div>
                 <div className={`text-sm font-bold mb-2 ${tone}`}>{icon} {title}</div>
                 <ul className="space-y-1.5">
-                    {items.map((t: string, i: number) => (
+                    {items.map((item: string, i: number) => (
                         <li key={i} className="text-sm text-gray-300 flex gap-2">
-                            <span className={tone}>•</span><span>{t}</span>
+                            <span className={tone}>•</span><span>{item}</span>
                         </li>
                     ))}
                 </ul>
@@ -151,29 +138,29 @@ export function WeekSummary(props: WeekSummaryProps) {
     return (
         <div className="glass-card p-6 rounded-2xl">
             <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-                <h2 className="text-xl font-bold">🗓️ Итог недели</h2>
-                {madeAt && <span className="text-xs text-gray-500">составлено {madeAt}</span>}
+                <h2 className="text-xl font-bold">{t('insights:week.heading')}</h2>
+                {madeAt && <span className="text-xs text-gray-500">{t('insights:week.madeAt', { when: madeAt })}</span>}
             </div>
-            <p className="text-sm text-gray-400 mb-4">Последние 7 дней в сравнении с предыдущими семью.</p>
+            <p className="text-sm text-gray-400 mb-4">{t('insights:week.blurb')}</p>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <Tile label="Дней закрыто" value={thisWeek.daysClosed} change={thisWeek.daysClosed - lastWeek.daysClosed} />
-                <Tile label="Сон" value={thisWeek.sleep} change={delta(thisWeek.sleep, lastWeek.sleep)} />
-                <Tile label="Фокус" value={thisWeek.focus} change={delta(thisWeek.focus, lastWeek.focus)} />
-                <Tile label="Настроение" value={thisWeek.mood} change={delta(thisWeek.mood, lastWeek.mood)} />
+                <Tile label={t('insights:week.daysClosed')} value={thisWeek.daysClosed} change={thisWeek.daysClosed - lastWeek.daysClosed} />
+                <Tile label={t('insights:week.sleep')} value={thisWeek.sleep} change={delta(thisWeek.sleep, lastWeek.sleep)} />
+                <Tile label={t('insights:week.focus')} value={thisWeek.focus} change={delta(thisWeek.focus, lastWeek.focus)} />
+                <Tile label={t('insights:week.mood')} value={thisWeek.mood} change={delta(thisWeek.mood, lastWeek.mood)} />
             </div>
 
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mb-4">
-                <span>🏋️ тренировок: <b className="text-gray-300">{thisWeek.workouts}</b></span>
-                <span>🎓 тестов: <b className="text-gray-300">{thisWeek.tests}</b></span>
-                <span>♻️ привычек: <b className="text-gray-300">{thisWeek.habitTicks}</b></span>
-                <span>📓 записей: <b className="text-gray-300">{thisWeek.diaryEntries}</b></span>
+                <span>🏋️ {t('insights:week.workouts')}<b className="text-gray-300">{thisWeek.workouts}</b></span>
+                <span>🎓 {t('insights:week.tests')}<b className="text-gray-300">{thisWeek.tests}</b></span>
+                <span>♻️ {t('insights:week.habits')}<b className="text-gray-300">{thisWeek.habitTicks}</b></span>
+                <span>📓 {t('insights:week.entries')}<b className="text-gray-300">{thisWeek.diaryEntries}</b></span>
             </div>
 
             <button onClick={generate} disabled={loading || !hasGroqKey()}
-                title={!hasGroqKey() ? 'Нужен ключ Groq в Настройках' : undefined}
+                title={!hasGroqKey() ? t('insights:week.needKey') : undefined}
                 className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-5 py-2.5 rounded-lg disabled:opacity-40">
-                {loading ? 'Свожу неделю…' : summary ? 'Пересобрать итог' : '✨ Подвести итог недели'}
+                {loading ? t('insights:week.building') : summary ? t('insights:week.rebuild') : t('insights:week.build')}
             </button>
 
             {error && <div className="mt-4 p-3 rounded-xl border border-red-400/30 text-red-400 text-sm">{error}</div>}
@@ -181,9 +168,9 @@ export function WeekSummary(props: WeekSummaryProps) {
             {summary && (
                 <div className="mt-5 pt-5 border-t border-[var(--border)] space-y-4 anim-fade-in">
                     {summary.headline && <p className="text-lg text-white">{summary.headline}</p>}
-                    <List title="Получилось" items={summary.went_well} tone="text-green-400" icon="✅" />
-                    <List title="Мешало" items={summary.got_in_the_way} tone="text-yellow-400" icon="⚠️" />
-                    <List title="На следующую неделю" items={summary.next_week} tone="text-cyan-400" icon="🎯" />
+                    <List title={t('insights:week.wentWell')} items={summary.went_well} tone="text-green-400" icon="✅" />
+                    <List title={t('insights:week.gotInTheWay')} items={summary.got_in_the_way} tone="text-yellow-400" icon="⚠️" />
+                    <List title={t('insights:week.nextWeek')} items={summary.next_week} tone="text-cyan-400" icon="🎯" />
                 </div>
             )}
         </div>

@@ -5,13 +5,181 @@
         "inferred": "reading",
         "uncertain": "guess"
     },
-    "metric": { "sleep": "sleep", "focus": "focus", "mood": "mood" },
-    "direction": { "above": "higher", "below": "lower" },
+    "metric": {
+        "sleep": "sleep",
+        "focus": "focus",
+        "mood": "mood"
+    },
+    "direction": {
+        "above": "higher",
+        "below": "lower"
+    },
     "baseline": {
         "steady": "Your usual {{metric}} over {{windowDays, number}} days is around {{typical, number}}. The last week is holding about there.",
         "trend": "Your usual {{metric}} is around {{typical, number}}. The last week is running {{direction}}: about {{recent, number}}."
     },
     "association": "On days when your {{driver}} was above your usual, your {{outcome}} was on average {{direction}} by {{delta, number}}. That is a co-occurrence across days, not a proven cause.",
     "blocker": "You marked \"{{tag}}\" as getting in the way on {{hits, number}} of {{days, number}} rated days — more often than anything else.",
-    "coverage": "Over the last {{windowDays, number}} days you rated {{ratedDays, number}}. Everything else here rests on those alone."
+    "coverage": "Over the last {{windowDays, number}} days you rated {{ratedDays, number}}. Everything else here rests on those alone.",
+    "xp": {
+        "rule": {
+            "day": "Closing the day",
+            "habit": "A habit ticked",
+            "task": "A task closed",
+            "workout": "A workout",
+            "test": "A cognitive test",
+            "gratitude": "A gratitude entry"
+        },
+        "chapter": {
+            "1": {
+                "title": "Chapter 1: The beginning",
+                "text": "You are just starting out. Every day is a small win."
+            },
+            "2": {
+                "title": "Chapter 2: First wins",
+                "text": "You are feeling the power of rituals. The habits are setting."
+            },
+            "3": {
+                "title": "Chapter 3: Mastery",
+                "text": "You know your patterns. Routine is your ally, not your enemy."
+            },
+            "4": {
+                "title": "Chapter 4: Wisdom",
+                "text": "You steer your own state deliberately. The system works for you."
+            }
+        },
+        "achievement": {
+            "phoenix": {
+                "title": "Phoenix",
+                "desc": "Closed the day 7 days running"
+            },
+            "marathon": {
+                "title": "Marathoner",
+                "desc": "Closed the day 30 days running"
+            },
+            "owl": {
+                "title": "Owlet",
+                "desc": "Sleep 8/10 or better, ten times"
+            },
+            "iron": {
+                "title": "Iron",
+                "desc": "100 workouts"
+            },
+            "first-sweat": {
+                "title": "First set",
+                "desc": "Your first workout at the gym"
+            },
+            "genius": {
+                "title": "Genius",
+                "desc": "50 cognitive tests"
+            },
+            "sunny": {
+                "title": "Sunny",
+                "desc": "30 gratitude entries"
+            },
+            "rocket": {
+                "title": "Rocket",
+                "desc": "10 tasks closed"
+            },
+            "centurion": {
+                "title": "Centurion",
+                "desc": "100 tasks closed"
+            },
+            "ritual": {
+                "title": "Ritual",
+                "desc": "100 habits ticked"
+            },
+            "explorer": {
+                "title": "Explorer",
+                "desc": "Tried 5 different tests"
+            },
+            "balanced": {
+                "title": "Balance",
+                "desc": "Mood 8/10 or better, ten times"
+            }
+        }
+    },
+    "progress": {
+        "title": "Progress",
+        "tab": {
+            "progress": "Progress",
+            "dynamics": "Dynamics",
+            "snowman": "Snowman"
+        },
+        "level": "Level",
+        "toNextLevel": "to level {{level}}: {{xp}} XP",
+        "intoLevel": "{{into}} / {{span}} XP in this level",
+        "xpSources": "Where the XP came from",
+        "countUnit": "×{{count}}",
+        "achievements": "Achievements",
+        "unlockedOf": "{{unlocked}} of {{total}}",
+        "unlocked": "Unlocked ✓"
+    },
+    "dynamics": {
+        "period": {
+            "7": "7 days",
+            "30": "30 days",
+            "90": "3 months",
+            "0": "All time"
+        },
+        "vsPrevious": "{{delta}} vs the previous period",
+        "metric": {
+            "sleep": "Sleep",
+            "focus": "Focus",
+            "mood": "Mood"
+        },
+        "empty": "No entries in this period. Close a day, or pick a wider window.",
+        "byDay": "State by day",
+        "entryCount": "{{count}} entries",
+        "patterns": "Patterns",
+        "cognitive": "Cognitive tests",
+        "noTests": "No tests in this period. Have a look at the exercises.",
+        "best": "Best",
+        "average": "Average",
+        "trend": "Trend",
+        "lowerIsBetter": " · lower is better",
+        "sleepFocus": {
+            "title": "Sleep and focus",
+            "text": "With sleep at 7 or above, focus averages {{high}}; at 4 or below, {{low}}.",
+            "highlight": "Difference: {{delta}} points",
+            "verdict": "The two move together across days. Which way the influence runs is not something this data can show.",
+            "verdictWeak": "No clear pattern — there is not much data yet."
+        },
+        "gymMood": {
+            "title": "Training and mood",
+            "text": "On days with a workout, mood averages {{withGym}}; without one, {{noGym}}.",
+            "highlight": "Difference: {{delta}} points",
+            "verdict": "Mood is higher on days with a workout. That is a co-occurrence across days, not a proven cause.",
+            "verdictWeak": "No gain visible yet — worth looking at recovery."
+        },
+        "worstTag": {
+            "title": "What coincides with the worst days",
+            "text": "On days tagged \"{{tag}}\" ({{count}}×), focus sits below the period average.",
+            "highlight": "−{{drop}} points of focus",
+            "verdict": "\"{{tag}}\" coincides with low focus more often than anything else you tag."
+        }
+    },
+    "week": {
+        "heading": "🗓️ The week",
+        "madeAt": "made {{when}}",
+        "blurb": "The last 7 days against the seven before them.",
+        "daysClosed": "Days closed",
+        "sleep": "Sleep",
+        "focus": "Focus",
+        "mood": "Mood",
+        "workouts": "workouts: ",
+        "tests": "tests: ",
+        "habits": "habits: ",
+        "entries": "entries: ",
+        "needKey": "Needs a Groq key in Settings",
+        "building": "Pulling the week together…",
+        "rebuild": "Rebuild the summary",
+        "build": "✨ Sum up the week",
+        "failed": "Could not sum up the week.",
+        "wentWell": "What went well",
+        "gotInTheWay": "What got in the way",
+        "nextWeek": "For next week",
+        "system": "You are an attentive listener inside the GeQu app. The user has ADHD.\n\nYou are given exact statistics for the last 7 days: how many days were closed, average sleep/focus/mood and how they moved against the previous week, the \"helped / got in the way\" tags they marked, habits, closed tasks, workouts, cognitive tests, journal entries.\n\nImportant about units: sleep, focus and mood are SELF-RATINGS ON A 0-10 SCALE, not hours, percentages or anything else. Write \"sleep 8 out of 10\" or \"the sleep rating rose by 3 points\", never \"3 hours\". Do not invent units that do not exist.\n\nSum up the week: what worked, what got in the way, what is worth holding onto next week. Rely only on the numbers given. If there is little data, say so plainly rather than inventing.\n\nDo not turn missing data into a reproach: if there were no workouts or tests, that belongs under \"got in the way\" only if it actually got in the way — otherwise do not mention it.\n\nAddress them directly, warmly and without moralising. Do not praise in advance — name specifics.\n\nAnswer with EXACTLY one JSON object:\n{\"headline\": \"one line — what kind of week it was\", \"went_well\": [\"what worked, anchored to a number\"], \"got_in_the_way\": [\"what got in the way, anchored to a number\"], \"next_week\": [\"one concrete, doable action\"]}\n\nArrays: 2-3 items each. All in English. No text outside the JSON.",
+        "prompt": "My week in numbers:\n\n{{json}}\n\nSum it up."
+    }
 }
