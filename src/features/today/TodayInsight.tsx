@@ -1,8 +1,10 @@
 import { Link } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icons';
 import { useCheckins } from '../../stores/checkins.store';
-import { allInsights, CLAIM_LABEL, MIN_SAMPLE } from '../insights/engine';
+import { allInsights, CLAIM_LABEL_KEY, MIN_SAMPLE, renderInsight } from '../insights/engine';
 import { toLocalDateKey } from '../../lib/datetime';
+import { formatNumber } from '../../lib/format';
 
 /**
  * "What did I learn about myself" — one observation, or an honest nothing.
@@ -11,6 +13,7 @@ import { toLocalDateKey } from '../../lib/datetime';
  * some, rather than manufacturing a finding out of three days.
  */
 export function TodayInsight() {
+    const { t } = useTranslation(['today', 'insights']);
     const logs = useCheckins(s => s.logs);
 
     /* One insight, rotated by day.
@@ -29,11 +32,11 @@ export function TodayInsight() {
         <section aria-labelledby="today-insight" className="mt-6">
             <div className="flex items-baseline justify-between mb-3">
                 <h2 id="today-insight" className="t-small font-medium text-[var(--gq-text-tertiary)]">
-                    О тебе
+                    {t('today:insight.heading')}
                 </h2>
                 {observation && (
                     <Link to="/insights/progress" className="t-caption text-cyan-400 hover:underline">
-                        Больше выводов
+                        {t('today:insight.more')}
                     </Link>
                 )}
             </div>
@@ -42,31 +45,30 @@ export function TodayInsight() {
                 <div className="glass-card rounded-2xl p-4">
                     <div className="flex gap-3">
                         <Icon name="sparkle" size={16} className="text-purple-400 shrink-0 mt-0.5" />
-                        <p className="t-small leading-relaxed flex-1">{observation.text}</p>
+                        <p className="t-small leading-relaxed flex-1">{renderInsight(observation, t)}</p>
                     </div>
                     <p className="t-caption text-[11px] mt-3 pt-3 border-t border-[var(--border)]">
                         {/* Everything needed to judge the sentence above it: what kind
                             of claim it is, and how much data stands behind it. An
                             insight that cannot say this does not render at all. */}
-                        {CLAIM_LABEL[observation.claim]} · {observation.sampleSize}{' '}
-                        {dayWord(observation.sampleSize)} в выборке
+                        {t(CLAIM_LABEL_KEY[observation.claim])} ·{' '}
+                        {t('today:insight.sample', { count: observation.sampleSize })}
                         {observation.effectSize !== undefined && (
-                            <> · разница примерно в {observation.effectSize.toFixed(1)}× твоего обычного разброса</>
+                            <> · {t('today:insight.effect', { value: formatNumber(observation.effectSize, 1) })}</>
                         )}
                     </p>
                 </div>
             ) : (
                 <div className="glass-card rounded-2xl p-4">
                     <p className="t-small text-[var(--gq-text-tertiary)] leading-relaxed">
-                        Пока мало данных для выводов — нужно хотя бы {MIN_SAMPLE} оценённых дней с каждой стороны
-                        сравнения.
+                        {t('today:insight.tooLittle', { count: MIN_SAMPLE })}
                     </p>
                     <Link
                         to="/today/checkin"
                         className="inline-flex items-center gap-1.5 t-caption text-cyan-400 hover:underline mt-2"
                     >
                         <Icon name="moon" size={12} />
-                        Оценить сегодняшний день
+                        {t('today:insight.rateToday')}
                     </Link>
                 </div>
             )}
@@ -74,7 +76,3 @@ export function TodayInsight() {
     );
 }
 
-const dayWord = (n: number) => {
-    const form = new Intl.PluralRules('ru-RU').select(n);
-    return form === 'one' ? 'день' : form === 'few' ? 'дня' : 'дней';
-};

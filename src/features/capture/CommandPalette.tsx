@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Icon } from '../../components/Icons';
 import { ALL_ACTIONS, SECTION_OF, type PaletteAction } from './actions';
 import { Modal } from '../../components/Modal';
+import { resources } from '../../i18n';
+import { DEFAULT_LOCALE, getLocale, type Locale } from '../../i18n/locale';
 
 /**
  * Quick capture: ⌘K / Ctrl+K from anywhere.
@@ -12,8 +16,8 @@ import { Modal } from '../../components/Modal';
  * — so the palette creates records as well as navigating.
  *
  * Typing `task buy milk` files the task and goes to the board; typing `buy
- * milk` matches nothing and still offers "Новая задача" with that text, because
- * the common case is a person who knows what they want to record and not which
+ * milk` matches nothing and still offers "New task" with that text, because the
+ * common case is a person who knows what they want to record and not which
  * command records it.
  */
 export function CommandPalette() {
@@ -23,6 +27,7 @@ export function CommandPalette() {
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
     const navigate = useNavigate();
+    const { t } = useTranslation(['capture', 'nav']);
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -44,7 +49,7 @@ export function CommandPalette() {
         requestAnimationFrame(() => inputRef.current?.focus());
     }, [open]);
 
-    const { matches, remainder } = useMemo(() => rank(query), [query]);
+    const { matches, remainder } = useMemo(() => rank(query, t), [query, t]);
 
     useEffect(() => { setActive(0); }, [query]);
 
@@ -75,7 +80,7 @@ export function CommandPalette() {
     };
 
     return (
-        <Modal title="Быстрый ввод" onClose={close} bare size="md" align="top">
+        <Modal title={t('capture:title')} onClose={close} bare size="md" align="top">
             {/* The key handler belongs on the wrapper, not the input: ArrowUp and
                 ArrowDown move the listbox selection, which is a property of the
                 combobox as a whole. Focus never leaves the input, so this cannot
@@ -88,8 +93,8 @@ export function CommandPalette() {
                         ref={inputRef}
                         value={query}
                         onChange={e => setQuery(e.target.value)}
-                        placeholder="Что записать или куда перейти?"
-                        aria-label="Команда или текст записи"
+                        placeholder={t('capture:placeholder')}
+                        aria-label={t('capture:inputLabel')}
                         role="combobox"
                         aria-expanded={matches.length > 0}
                         aria-controls="palette-results"
@@ -106,12 +111,12 @@ export function CommandPalette() {
                     id="palette-results"
                     ref={listRef}
                     role="listbox"
-                    aria-label="Результаты"
+                    aria-label={t('capture:resultsLabel')}
                     className="max-h-[50vh] overflow-y-auto py-1.5"
                 >
                     {matches.length === 0 && (
                         <li className="px-4 py-6 t-small text-[var(--gq-text-tertiary)] text-center">
-                            Ничего не найдено
+                            {t('capture:empty')}
                         </li>
                     )}
                     {matches.map((action, i) => (
@@ -146,18 +151,18 @@ export function CommandPalette() {
                             />
                             <span className="flex-1 min-w-0">
                                 <span className="block t-small truncate">
-                                    {action.label}
-                                    {action.group === 'Создать' && remainder && (
+                                    {t(action.labelKey)}
+                                    {action.group === 'create' && remainder && (
                                         <span className="text-cyan-400"> · {remainder}</span>
                                     )}
                                 </span>
-                                {(action.hint || SECTION_OF[action.id]) && (
+                                {subtitleOf(action, t) && (
                                     <span className="block text-[11px] text-[var(--gq-text-tertiary)] truncate">
-                                        {SECTION_OF[action.id] ?? action.hint}
+                                        {subtitleOf(action, t)}
                                     </span>
                                 )}
                             </span>
-                            <span className="t-label shrink-0">{action.group}</span>
+                            <span className="t-label shrink-0">{t(`capture:group.${action.group === 'create' ? 'create' : 'goto'}`)}</span>
                         </li>
                     ))}
                 </ul>
@@ -166,15 +171,35 @@ export function CommandPalette() {
     );
 }
 
-/** Alias words so the palette answers to what people actually type. */
-const ALIASES: Record<string, string[]> = {
-    task: ['task', 'задача', 'дело', 'todo'],
-    habit: ['habit', 'привычка'],
-    journal: ['journal', 'дневник', 'запись', 'note', 'мысль'],
-    expense: ['expense', 'расход', 'трата', 'потратил'],
-    checkin: ['checkin', 'день', 'закрыть'],
-    workout: ['workout', 'тренировка', 'зал'],
-};
+/**
+ * Alias words so the palette answers to what people actually type.
+ *
+ * The current locale's words are unioned with English rather than replacing it.
+ * People type commands in whichever language reaches their fingers first — a
+ * Russian speaker types `task` as readily as `задача` — and an alias that
+ * matches nothing costs nothing, whereas one that has disappeared costs a
+ * captured thought.
+ *
+ * Read from the bundled resources rather than through `t(..., {
+ * returnObjects: true })`: these are lookup data, not display strings, and the
+ * union has to include a locale that is not currently active.
+ */
+function aliasesFor(locale: Locale): Record<string, string[]> {
+    const base = resources[DEFAULT_LOCALE].capture.aliases as Record<string, string[]>;
+    const local = resources[locale].capture.aliases as Record<string, string[]>;
+    const out: Record<string, string[]> = {};
+    for (const id of Object.keys(base)) {
+        out[id] = [...new Set([...(base[id] ?? []), ...(local[id] ?? [])])];
+    }
+    return out;
+}
+
+/** The row's subtitle: its section for a navigation action, its hint otherwise. */
+function subtitleOf(action: PaletteAction, t: TFunction): string {
+    const sectionKey = SECTION_OF[action.id];
+    if (sectionKey) return t(sectionKey);
+    return action.hintKey ? t(action.hintKey) : '';
+}
 
 /**
  * Splits the query into a matched command and the text that follows it, and
@@ -184,7 +209,7 @@ const ALIASES: Record<string, string[]> = {
  * somewhere to go — typing a thought and pressing Enter should file it, not
  * report failure.
  */
-function rank(query: string): { matches: PaletteAction[]; remainder: string } {
+function rank(query: string, t: TFunction): { matches: PaletteAction[]; remainder: string } {
     const q = query.trim();
     if (!q) return { matches: ALL_ACTIONS, remainder: '' };
 
@@ -192,24 +217,24 @@ function rank(query: string): { matches: PaletteAction[]; remainder: string } {
     const firstWord = lower.split(/\s+/)[0] ?? '';
 
     // A leading command word claims the rest of the line as its payload.
-    for (const [id, words] of Object.entries(ALIASES)) {
+    for (const [id, words] of Object.entries(aliasesFor(getLocale()))) {
         if (words.includes(firstWord)) {
             const action = ALL_ACTIONS.find(a => a.id === id);
             if (action) {
-                const rest = ALL_ACTIONS.filter(a => a.id !== id && matchesText(a, lower));
+                const rest = ALL_ACTIONS.filter(a => a.id !== id && matchesText(a, lower, t));
                 return { matches: [action, ...rest], remainder: q.slice(firstWord.length).trim() };
             }
         }
     }
 
-    const matched = ALL_ACTIONS.filter(a => matchesText(a, lower));
-    const captures = ALL_ACTIONS.filter(a => a.group === 'Создать' && !matched.includes(a));
+    const matched = ALL_ACTIONS.filter(a => matchesText(a, lower, t));
+    const captures = ALL_ACTIONS.filter(a => a.group === 'create' && !matched.includes(a));
 
     // Whatever was typed is the payload for a capture action.
     return { matches: [...matched, ...captures], remainder: q };
 }
 
-function matchesText(action: PaletteAction, lower: string): boolean {
-    const haystack = `${action.label} ${action.hint ?? ''} ${SECTION_OF[action.id] ?? ''}`.toLowerCase();
-    return haystack.includes(lower);
+function matchesText(action: PaletteAction, lower: string, t: TFunction): boolean {
+    const haystack = `${t(action.labelKey)} ${action.hintKey ? t(action.hintKey) : ''} ${subtitleOf(action, t)}`;
+    return haystack.toLowerCase().includes(lower);
 }

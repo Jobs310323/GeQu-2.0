@@ -1,0 +1,343 @@
+{
+    "clinical": {
+        "tab": {
+            "clinical": "Clinical tests",
+            "cbt": "CBT practice"
+        },
+        "pageTitle": "Tests and CBT",
+        "pageSubtitle": "Screening questionnaires and cognitive behavioural therapy tools, in one place.",
+        "intro": "Screening questionnaires professionals use. Take them periodically to see how you're trending over time.",
+        "exit": "Exit",
+        "viewResult": "View result",
+        "answeredOf": "Answered {{answered}} of {{total}}",
+        "sameAsLastTime": "Same as last time",
+        "deltaFromLast": "{{delta}} from last time — {{direction}}",
+        "better": "for the better",
+        "worse": "for the worse",
+        "backToList": "Back to the test list",
+        "retake": "Take again",
+        "questionsCount": "{{count}} q.",
+        "lastResultPrefix": "Last:",
+        "notTakenYet": "Not taken yet",
+        "takeAgain": "Take again",
+        "takeTest": "Take the test",
+        "historyHeading": "History",
+        "attempts_one": "{{count}} attempt",
+        "attempts_other": "{{count}} attempts",
+        "clearHistoryConfirm": "Clear the clinical test history?",
+        "clearHistory": "Clear history",
+        "unavailable_one": "{{count}} test isn't available in this language yet: {{names}}",
+        "unavailable_other": "{{count}} tests aren't available in this language yet: {{names}}"
+    },
+    "knowledge": {
+        "title": "Knowledge base",
+        "subtitle_one": "{{count}} article on how ADHD works and what to do about it. Each one takes a few minutes.",
+        "subtitle_other": "{{count}} articles on how ADHD works and what to do about it. Each one takes a few minutes.",
+        "searchPlaceholder": "Search every article…",
+        "noResults": "Nothing found",
+        "foundCount": "Found: {{count}}",
+        "backToKnowledge": "Back to the knowledge base",
+        "allSections": "All sections",
+        "minutesRead": "{{count}} min read",
+        "minutes": "{{count}} min",
+        "readDone": "read",
+        "saved": "Bookmarked",
+        "save": "Bookmark",
+        "readMore": "Keep reading",
+        "introHeading": "ADHD — where to start",
+        "introBlurb": "What it is, how it shows up, and what it affects. If you haven't read anything yet, start here.",
+        "bookmarks": "Bookmarks",
+        "sections": "Sections",
+        "ruOnly": "Available in Russian only"
+    },
+    "cbt": {
+        "tab": {
+            "record": "Thought record",
+            "distortions": "Distortions",
+            "practices": "Practices"
+        },
+        "intro": "Cognitive behavioural therapy tools: work through thoughts, learn your own distortions, and act without waiting for the mood to be right.",
+        "newRecordHeading": "New record",
+        "fieldsFilled": "{{filled}} of {{total}} fields",
+        "save": "Save record",
+        "analyse": "Get an AI read",
+        "analysing": "Reading…",
+        "needKeyTitle": "A Groq key is needed in Settings",
+        "needBothFields": "Fill in at least the situation and the thought",
+        "analyseFailed": "Could not get a read.",
+        "historyHeading": "Past reads",
+        "historyEmpty": "Nothing here yet. The first record is the most useful one.",
+        "delete": "Delete",
+        "aiSystem": "You are a careful cognitive behavioural therapy assistant inside the GeQu app. The user has ADHD.\n\nYou are given a completed thought-record entry: situation, automatic thought, emotion, evidence for and against, alternative thought.\n\nDo three things, briefly:\n1. Name the cognitive distortions visible in the automatic thought (from this list: all-or-nothing thinking, catastrophizing, should statements, mind reading, mental filter, labeling, overgeneralization, emotional reasoning, personalization, discounting the positive). Only the ones that are actually there.\n2. Ask 1–2 questions that would help look at the situation more accurately.\n3. Suggest one more balanced version of the thought — not \"everything's fine\", but more honest and precise.\n\nWrite in English, warmly, in the second person, and without moralising. Format as short Markdown with subheadings. Rely only on what is written in the entry.",
+        "aiUserPrefix": "Here is my record:\n\n{{body}}\n\nHelp me work through it."
+    },
+    "unit": {
+        "sec": "s",
+        "ms": "ms",
+        "points": "points",
+        "level": "level",
+        "span": "span",
+        "accuracy": "% accuracy"
+    },
+    "engine": {
+        "schulte": {
+            "label": "Schulte table",
+            "limitations": [
+                "Speed depends on screen size and on whether you tap or click.",
+                "Repeat attempts back to back are usually faster from familiarity with the grid, not from attention."
+            ]
+        },
+        "reaction": {
+            "label": "Reaction speed",
+            "limitations": [
+                "Screen and input latency are part of the result — numbers are not comparable across devices.",
+                "This measures simple reaction, not attention in general."
+            ]
+        },
+        "tmt": {
+            "label": "Number connection",
+            "limitations": [
+                "This is not the clinical Trail Making Test: the protocol and the norms are different.",
+                "A small screen slows hitting the targets noticeably."
+            ]
+        },
+        "stroop": {
+            "label": "Stroop test",
+            "limitations": [
+                "This counts correct answers against the clock, not the classic interference score.",
+                "The result depends heavily on how much you rush."
+            ]
+        },
+        "digitspan": {
+            "label": "Digit span",
+            "limitations": [
+                "Saying the digits aloud or writing them down changes the result sharply.",
+                "One attempt is a rough estimate: the spread between attempts is usually about one level."
+            ]
+        },
+        "corsi": {
+            "label": "Corsi blocks",
+            "limitations": [
+                "Visuo-spatial memory, not memory in general.",
+                "The size and layout of the grid affect the result."
+            ]
+        },
+        "nback": {
+            "label": "N-Back",
+            "limitations": [
+                "Accuracy depends on the N you chose — only compare the same level.",
+                "Training N-back improves N-back; transfer to other tasks is not established."
+            ]
+        },
+        "gonogo": {
+            "label": "Go / No-Go",
+            "limitations": [
+                "One number mixes speed and restraint — they are worth looking at separately.",
+                "A short run gives a wide spread."
+            ]
+        },
+        "arithmetic": {
+            "label": "Mental arithmetic",
+            "limitations": [
+                "Depends on how practised you are at mental arithmetic as much as on your current state."
+            ]
+        },
+        "switching": {
+            "label": "Task switching",
+            "limitations": [
+                "The switch cost is not measured separately here — only the total score."
+            ]
+        }
+    },
+    "attempt": {
+        "heading": "How to read this",
+        "noAttempts": "No attempts yet. The first result becomes your reference point — there is nothing to compare it with, and that is fine.",
+        "lastResult": "Last result: ",
+        "betterThan": " — better than ",
+        "ofYourOwn": " of your own previous attempts",
+        "tooFew": "You have {{count}} of the {{needed}} attempts needed for a comparison. Below that, a single result says almost nothing — the spread between attempts is usually larger than the difference between a good day and a bad one.",
+        "selfOnly": "The comparison is always only against your own attempts. This is not a normed test — the result is not compared with anyone else."
+    },
+    "training": {
+        "title": "Exercises",
+        "subtitle": "Measure, train, and settle",
+        "recentAttempts": "Recent attempts",
+        "best": "Best: ",
+        "group": {
+            "assess": {
+                "title": "Measurement",
+                "hint": "Results go into your profile"
+            },
+            "train": {
+                "title": "Training",
+                "hint": "Practice, not measurement"
+            },
+            "regulate": {
+                "title": "Regulation",
+                "hint": "No score — this is not a test"
+            }
+        },
+        "tab": {
+            "trail": "Connections"
+        },
+        "breathing": "Breathing"
+    },
+    "ex": {
+        "common": {
+            "start": "Start",
+            "restart": "Start again",
+            "playAgain": "Play again",
+            "again": "Once more",
+            "score": "Score: ",
+            "time": "Time: ",
+            "yourResult": "Your result",
+            "tryAgain": "Try again"
+        },
+        "arithmetic": {
+            "blurb": "Count in your head as fast as you can. A mistake costs 1 point.",
+            "start": "Start (60 s)",
+            "enterHint": "Enter — answer",
+            "resultBlurb": "Correct answers in a minute"
+        },
+        "breathing": {
+            "heading": "Box breathing (4-4-4-4)",
+            "blurb": "Follow your breath around the sides of the square: in, hold, out, hold. Cycle: {{done}}/{{total}}",
+            "phase": {
+                "idle": "Ready?",
+                "inhale": "In",
+                "hold": "Hold",
+                "exhale": "Out",
+                "finished": "Done."
+            },
+            "sessionDone": "Session complete. Well done. 🌿",
+            "startBreathing": "Start breathing",
+            "stop": "Stop the session"
+        },
+        "corsi": {
+            "blurb": "Remember the order of the flashes and repeat it by tapping the squares.",
+            "span": "Span: ",
+            "best": "Best: ",
+            "cell": "Cell {{n}} of 9",
+            "watch": "Watch closely…",
+            "repeat": "Repeat: {{done}} / {{total}}",
+            "resultBlurb": "Longest sequence"
+        },
+        "digitSpan": {
+            "pressStart": "Press \"Start\"",
+            "memorise": "Memorise…",
+            "enterSequence": "Enter the sequence",
+            "correct": "Correct. Moving up to level {{level}}.",
+            "wrong": "Not quite. It was: {{correct}}. Back to 3.",
+            "blurb": "Remember the sequence of digits and enter it in the right order.",
+            "level": "Level: {{level}}",
+            "check": "Check",
+            "continue": "Continue"
+        },
+        "goNoGo": {
+            "blurb": "Click only on the <1>green</1> circle. On <3>red</3> — do not press anything.",
+            "field": "Playing field",
+            "pressStart": "Press \"Start\"",
+            "oops": "OOPS!"
+        },
+        "nBack": {
+            "done": "Test complete.",
+            "blurb": "Working-memory accuracy. The result is saved.",
+            "runAgain": "Run it again",
+            "level": "Level: ",
+            "progress": "Progress: ",
+            "marked": "Marked",
+            "match": "Match! (or Space)",
+            "heading": "N-Back training",
+            "intro": "Squares will appear on the screen. Press the button if a square appears in the same position as <1>N steps ago</1>.",
+            "startTest": "Start the test"
+        },
+        "pomodoro": {
+            "minutes": "{{count}} min",
+            "focusTime": "Time to focus",
+            "break": "Break",
+            "pause": "Pause",
+            "start": "Start",
+            "reset": "Reset",
+            "taskPlaceholder": "Type ONE task here…"
+        },
+        "reaction": {
+            "achievementToast": "Achievement: \"{{name}}\"",
+            "blurb": "Wait for green, then click as fast as you can.",
+            "bestThisSession": "Best this session: ",
+            "ms": "ms",
+            "area": "Reaction area — press when it turns green",
+            "waitGreen": "Wait for green…",
+            "click": "CLICK!",
+            "pressToStart": "Press to start",
+            "tooSoon": "Too soon. Wait for green 🙂",
+            "rating": {
+                "incredible": "Incredible ⚡",
+                "lightning": "Lightning fast",
+                "great": "Great",
+                "good": "Good",
+                "room": "Room to grow"
+            },
+            "achievement": {
+                "superhuman": "Superhuman reaction (<200 ms)",
+                "lightning": "Lightning (<250 ms)",
+                "quickHand": "Quick hand (<300 ms)"
+            }
+        },
+        "schulte": {
+            "achievementToast": " Achievement unlocked: \"{{name}}\"",
+            "doneToast": "Done. Time: {{time}} s.",
+            "blurb": "Look at the centre. Find the numbers in order.",
+            "pressStart": "Press \"Start\"",
+            "stop": "Stop",
+            "achievement": {
+                "lightning": "Lightning (<30s)",
+                "sniper": "Sniper (<45s)",
+                "steady": "Steady (<60s)"
+            }
+        },
+        "stroop": {
+            "blurb": "Press the COLOUR of the word, not what it says.",
+            "start": "Start the test (30 s)",
+            "colour": {
+                "red": "RED",
+                "green": "GREEN",
+                "blue": "BLUE",
+                "yellow": "YELLOW"
+            }
+        },
+        "switching": {
+            "blurb": "The rule changes as you go — watch the prompt at the top.",
+            "start": "Start (45 s)",
+            "ruleParity": "Rule: is the number EVEN?",
+            "ruleColour": "Rule: is the colour WARM?",
+            "yes": "Yes",
+            "no": "No",
+            "resultBlurb": "points in 45 seconds"
+        },
+        "trail": {
+            "blurb": "Click in order: 1 → A → 2 → B → 3 and so on.",
+            "start": "Start the test",
+            "done": "Done.",
+            "yourTime": "Your time: {{seconds}} s",
+            "restart": "Again",
+            "targets": [
+                "1",
+                "A",
+                "2",
+                "B",
+                "3",
+                "C",
+                "4",
+                "D",
+                "5",
+                "E",
+                "6",
+                "F",
+                "7",
+                "G",
+                "8",
+                "H"
+            ]
+        }
+    }
+}

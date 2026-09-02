@@ -2,16 +2,18 @@
 // Behaviour is unchanged; only the file boundary moved.
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { recordAttempt } from '../record';
 import type { ExerciseProps } from '../../../types/props';
 
 export function DigitSpanTest({ setTestResults }: ExerciseProps) {
+    const { t } = useTranslation('brain');
     const [level, setLevel] = useState(3);
     const [phase, setPhase] = useState('idle');
     const [sequence, setSequence] = useState<number[]>([]);
     const [input, setInput] = useState('');
     const [currentIdx, setCurrentIdx] = useState(-1);
-    const [message, setMessage] = useState('Нажмите "Начать"');
+    const [message, setMessage] = useState(() => t('brain:ex.digitSpan.pressStart'));
     const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
     const startLevel = (lvl: number) => {
@@ -19,7 +21,7 @@ export function DigitSpanTest({ setTestResults }: ExerciseProps) {
         setSequence(seq);
         setInput('');
         setPhase('showing');
-        setMessage('Запоминайте...');
+        setMessage(t('brain:ex.digitSpan.memorise'));
         
         let idx = 0;
         const showNext = () => {
@@ -30,7 +32,7 @@ export function DigitSpanTest({ setTestResults }: ExerciseProps) {
             } else {
                 timerRef.current = setTimeout(() => {
                     setPhase('input');
-                    setMessage('Введите последовательность');
+                    setMessage(t('brain:ex.digitSpan.enterSequence'));
                     setCurrentIdx(-1);
                 }, 800);
             }
@@ -41,12 +43,12 @@ export function DigitSpanTest({ setTestResults }: ExerciseProps) {
     const checkAnswer = () => {
         const correct = sequence.join('');
         if (input === correct) {
-            setMessage(`Верно! Переходим на уровень ${level + 1}.`);
+            setMessage(t('brain:ex.digitSpan.correct', { level: level + 1 }));
             setPhase('result');
             recordAttempt(setTestResults, 'digitspan', level);
             setLevel(l => l + 1);
         } else {
-            setMessage(`Неверно. Было: ${correct}. Начинаем заново с 3.`);
+            setMessage(t('brain:ex.digitSpan.wrong', { correct }));
             setPhase('result');
             if(level > 3) recordAttempt(setTestResults, 'digitspan', level - 1);
             setLevel(3);
@@ -57,8 +59,8 @@ export function DigitSpanTest({ setTestResults }: ExerciseProps) {
 
     return (
         <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
-            <p className="text-gray-400 mb-6 text-center">Запомните последовательность чисел и введите её в правильном порядке.</p>
-            <div className="text-xl text-cyan-400 mb-6">Уровень: {level}</div>
+            <p className="text-gray-400 mb-6 text-center">{t('brain:ex.digitSpan.blurb')}</p>
+            <div className="text-xl text-cyan-400 mb-6">{t('brain:ex.digitSpan.level', { level })}</div>
             
             <div className="w-full max-w-md h-32 flex items-center justify-center rounded-2xl border-2 border-[var(--border)] bg-[var(--bg-card)] mb-8">
                 {phase === 'showing' && currentIdx >= 0 ? (
@@ -77,13 +79,13 @@ export function DigitSpanTest({ setTestResults }: ExerciseProps) {
                         className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-4 py-3 text-center text-2xl outline-none focus:border-cyan-400 text-white tracking-widest"
                         autoFocus
                     />
-                    <button onClick={checkAnswer} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg w-full">Проверить</button>
+                    <button onClick={checkAnswer} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg w-full">{t('brain:ex.digitSpan.check')}</button>
                 </div>
             )}
 
             {(phase === 'idle' || phase === 'result') && (
                 <button onClick={() => startLevel(level)} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">
-                    {phase === 'idle' ? 'Начать' : 'Продолжить'}
+                    {phase === 'idle' ? t('brain:ex.common.start') : t('brain:ex.digitSpan.continue')}
                 </button>
             )}
         </div>

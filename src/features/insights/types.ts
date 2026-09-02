@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import type { Baseline } from './baseline';
 
 // What an insight is allowed to claim.
@@ -19,13 +20,19 @@ export type ClaimType =
     /** Something the data hints at but cannot support. Shown as a question. */
     | 'uncertain';
 
-/** Human labels, shown next to the claim so the distinction is visible. */
-export const CLAIM_LABEL: Record<ClaimType, string> = {
-    observed: 'наблюдение',
-    associated: 'связь',
-    inferred: 'предположение',
-    uncertain: 'догадка',
+/**
+ * Translation keys for the label shown next to a claim, so the distinction is
+ * visible in whatever language the user reads.
+ */
+export const CLAIM_LABEL_KEY: Record<ClaimType, string> = {
+    observed: 'insights:claim.observed',
+    associated: 'insights:claim.associated',
+    inferred: 'insights:claim.inferred',
+    uncertain: 'insights:claim.uncertain',
 };
+
+/** Values interpolated into an insight's sentence. */
+export type InsightParams = Record<string, string | number>;
 
 /**
  * One thing the app is prepared to say, with everything needed to judge it.
@@ -37,8 +44,32 @@ export const CLAIM_LABEL: Record<ClaimType, string> = {
 export interface Insight {
     id: string;
     claim: ClaimType;
-    /** The sentence, phrased to match `claim`. */
-    text: string;
+    /**
+     * Translation key for the sentence, phrased to match `claim`, plus the
+     * values it interpolates.
+     *
+     * A key and its parameters rather than a finished string: a detector that
+     * returned prose could only be tested by matching the prose, and could only
+     * ever speak one language. This way the assertion is on what was measured.
+     */
+    messageKey: string;
+    /**
+     * Literal values: numbers, and the user's own words. Never translated and
+     * never re-interpolated.
+     */
+    params: InsightParams;
+    /**
+     * Values that are themselves translation keys — a metric name, a direction
+     * — resolved by `renderInsight` before interpolation.
+     *
+     * Kept apart from `params` rather than written inline as i18next's `$t()`
+     * nesting, because nesting inside an interpolated value only expands with
+     * `interpolation.skipOnVariables: false`, and that switch would apply to
+     * `params` too. `params` carries the user's own tag text, so a tag named
+     * `$t(...)` or `{{...}}` would then be evaluated against the translation
+     * table. Two fields cost a line; the alternative is an injection point.
+     */
+    paramKeys?: Record<string, string>;
     /** How many data points stand behind it. Always shown to the user. */
     sampleSize: number;
     /** How far back it looked. */
@@ -74,7 +105,7 @@ export const MIN_EFFECT = 1;
 export function renderable(insight: Insight): boolean {
     if (insight.sampleSize < MIN_SAMPLE) return false;
     if (insight.windowDays <= 0) return false;
-    if (!insight.text.trim()) return false;
+    if (!insight.messageKey.trim()) return false;
     // A comparison that knows its effect must clear the floor. One that does
     // not report an effect is not a comparison — an `observed` count, say.
     if (insight.effectSize !== undefined && insight.effectSize < MIN_EFFECT) return false;
@@ -88,4 +119,19 @@ export function confidenceFrom(sampleSize: number): Insight['confidence'] {
     // `moderate` is the ceiling. This is self-reported data from an
     // uncontrolled setting; nothing here earns more.
     return 'moderate';
+}
+
+/**
+ * The sentence a user reads, in their language.
+ *
+ * The single place `messageKey`, `params` and `paramKeys` are combined — so the
+ * component and the tests cannot disagree about how an insight renders.
+ */
+export function renderInsight(insight: Insight, t: TFunction): string {
+    const resolved: InsightParams = { ...insight.params };
+    for (const [name, key] of Object.entries(insight.paramKeys ?? {})) resolved[name] = t(key);
+    // `as string`: with no key typing in place yet, i18next's overloads widen
+    // the return to include its detailed-result object. Every key here resolves
+    // to a plain string, and `engine.test.ts` asserts that in both locales.
+    return t(insight.messageKey, resolved as never) as unknown as string;
 }

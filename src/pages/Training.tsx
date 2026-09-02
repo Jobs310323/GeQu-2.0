@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatDate } from '../lib/format';
 import { NBackTest, SchulteTable, CorsiTest, ArithmeticTest, SwitchingTest, BreathingExercise, StroopTest, ReactionTest, TrailMakingTest, DigitSpanTest, GoNoGoTest, PomodoroTimer } from '../features/cognitive/exercises';
 import { PageHeader } from '../components/PageHeader';
 import { LOWER_IS_BETTER } from '../lib/profile';
@@ -15,6 +17,10 @@ const TAB_TO_TYPE: Record<string, string> = {
 
 /** Last few attempts and the personal best for the exercise currently on screen. */
 function RecentResults({ testResults, type }: { testResults: TestResult[]; type: string | undefined }) {
+    // Above the early return, not below it: a hook after a conditional return
+    // changes the hook count between renders. That exact bug was in `GymHome`
+    // and made creating your first programme throw.
+    const { t } = useTranslation('brain');
     if (!type) return null;
     const list = (testResults ?? [])
         .filter((r) => r.type === type)
@@ -24,15 +30,15 @@ function RecentResults({ testResults, type }: { testResults: TestResult[]; type:
     const lowerIsBetter = LOWER_IS_BETTER.has(type);
     const best = list.reduce<TestResult | null>((b, r) =>
         !b || (lowerIsBetter ? Number(r.value) < Number(b.value) : Number(r.value) > Number(b.value)) ? r : b, null);
-    const fmtDate = (d: string) => new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    const fmtDate = (d: string) => formatDate(d, 'dayMonth');
 
     return (
         <div className="glass-card p-4 rounded-2xl mb-4">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                <span className="text-sm font-medium text-[var(--text-muted)]">Недавние попытки</span>
+                <span className="text-sm font-medium text-[var(--text-muted)]">{t('brain:training.recentAttempts')}</span>
                 {best && (
                     <span className="text-xs text-cyan-400">
-                        Лучший: <b className="tabular-nums">{best.value}</b> · {fmtDate(best.date)}
+                        {t('brain:training.best')}<b className="tabular-nums">{best.value}</b> · {fmtDate(best.date)}
                     </span>
                 )}
             </div>
@@ -48,6 +54,7 @@ function RecentResults({ testResults, type }: { testResults: TestResult[]; type:
 }
 
 export function Training({ setTestResults, testResults, achievements, setAchievements, pomodoro, setPomodoro }: TrainingProps) {
+    const { t } = useTranslation('brain');
     const [tab, setTab] = useState('schulte');
 
     /* Measure / Practise / Regulate.
@@ -60,28 +67,33 @@ export function Training({ setTestResults, testResults, achievements, setAchieve
      *
      * The first two groups come from the engine registry, so adding an exercise
      * there puts it on the page automatically. */
-    const TAB_LABEL: Record<string, string> = { trail: 'Соединения' };
+    // `trail` is the tab id for the `tmt` engine, kept because it is what the
+    // route and the stored results already use.
+    const TAB_LABEL: Record<string, string> = { trail: t('brain:training.tab.trail') };
     const groups: { title: string; hint: string; items: { id: string; label: string }[] }[] = [
         {
-            title: 'Измерение',
-            hint: 'Результаты попадают в профиль',
-            items: assessments().map(e => ({ id: e.id === 'tmt' ? 'trail' : e.id, label: e.label })),
+            title: t('brain:training.group.assess.title'),
+            hint: t('brain:training.group.assess.hint'),
+            items: assessments().map(e => ({ id: e.id === 'tmt' ? 'trail' : e.id, label: t(e.labelKey) })),
         },
         {
-            title: 'Тренировка',
-            hint: 'Практика, а не измерение',
-            items: drills().map(e => ({ id: e.id, label: e.label })),
+            title: t('brain:training.group.train.title'),
+            hint: t('brain:training.group.train.hint'),
+            items: drills().map(e => ({ id: e.id, label: t(e.labelKey) })),
         },
         {
-            title: 'Регуляция',
-            hint: 'Без результата — это не тест',
-            items: [{ id: 'breathing', label: 'Дыхание' }, { id: 'pomodoro', label: 'Pomodoro' }],
+            title: t('brain:training.group.regulate.title'),
+            hint: t('brain:training.group.regulate.hint'),
+            items: [
+                { id: 'breathing', label: t('brain:training.breathing') },
+                { id: 'pomodoro', label: 'Pomodoro' },
+            ],
         },
     ];
 
     return (
         <div>
-            <PageHeader page="training" title="Тренажёры" subtitle="Измерение, тренировка и регуляция" />
+            <PageHeader page="training" title={t('brain:training.title')} subtitle={t('brain:training.subtitle')} />
 
             <div className="space-y-3 mb-6">
                 {groups.map(group => (
@@ -91,11 +103,11 @@ export function Training({ setTestResults, testResults, achievements, setAchieve
                             <span className="t-caption">{group.hint}</span>
                         </div>
                         <div className="glass-card rounded-2xl p-1.5 flex gap-1 flex-wrap">
-                            {group.items.map(t => (
-                                <button key={t.id} type="button" onClick={() => setTab(t.id)}
-                                    aria-pressed={tab === t.id}
-                                    className={`px-3.5 py-1.5 rounded-xl text-sm transition ${tab === t.id ? 'bg-cyan-400/10 text-cyan-400' : 'text-[var(--gq-text-tertiary)] hover:bg-white/5 hover:text-[var(--gq-text-primary)]'}`}>
-                                    {TAB_LABEL[t.id] ?? t.label}
+                            {group.items.map(item => (
+                                <button key={item.id} type="button" onClick={() => setTab(item.id)}
+                                    aria-pressed={tab === item.id}
+                                    className={`px-3.5 py-1.5 rounded-xl text-sm transition ${tab === item.id ? 'bg-cyan-400/10 text-cyan-400' : 'text-[var(--gq-text-tertiary)] hover:bg-white/5 hover:text-[var(--gq-text-primary)]'}`}>
+                                    {TAB_LABEL[item.id] ?? item.label}
                                 </button>
                             ))}
                         </div>
@@ -111,7 +123,7 @@ export function Training({ setTestResults, testResults, achievements, setAchieve
             {tab === 'trail' && <TrailMakingTest setTestResults={setTestResults} />}
             {tab === 'digitspan' && <DigitSpanTest setTestResults={setTestResults} />}
             {tab === 'gonogo' && <GoNoGoTest setTestResults={setTestResults} />}
-            {tab === 'nback' && <NBackTest setTestResults={setTestResults} />} {/* <--- Добавили рендер */}
+            {tab === 'nback' && <NBackTest setTestResults={setTestResults} />}
             {tab === 'corsi' && <CorsiTest setTestResults={setTestResults} />}
             {tab === 'arithmetic' && <ArithmeticTest setTestResults={setTestResults} />}
             {tab === 'switching' && <SwitchingTest setTestResults={setTestResults} />}

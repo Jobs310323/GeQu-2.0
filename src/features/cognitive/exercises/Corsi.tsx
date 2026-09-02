@@ -2,10 +2,12 @@
 // Behaviour is unchanged; only the file boundary moved.
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { recordAttempt } from '../record';
 import type { ExerciseProps } from '../../../types/props';
 
 export function CorsiTest({ setTestResults }: ExerciseProps) {
+    const { t } = useTranslation('brain');
     const [phase, setPhase] = useState<'idle' | 'showing' | 'input' | 'over'>('idle');
     const [sequence, setSequence] = useState<number[]>([]);
     const [entered, setEntered] = useState<number[]>([]);
@@ -61,16 +63,16 @@ export function CorsiTest({ setTestResults }: ExerciseProps) {
 
     return (
         <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
-            <p className="text-gray-400 mb-2 text-center">Запомни порядок вспышек и повтори его, нажимая на квадраты.</p>
+            <p className="text-gray-400 mb-2 text-center">{t('brain:ex.corsi.blurb')}</p>
             <div className="flex gap-6 mb-6 text-sm">
-                <span className="text-gray-400">Длина: <b className="text-cyan-400">{span}</b></span>
-                <span className="text-gray-400">Лучшее: <b className="text-purple-400">{best}</b></span>
+                <span className="text-gray-400">{t('brain:ex.corsi.span')}<b className="text-cyan-400">{span}</b></span>
+                <span className="text-gray-400">{t('brain:ex.corsi.best')}<b className="text-purple-400">{best}</b></span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full max-w-72 aspect-square mb-6">
                 {Array.from({ length: 9 }).map((_, i) => (
                     <button key={i} type="button" onClick={() => tap(i)} disabled={phase !== 'input'}
-                        aria-label={`Ячейка ${i + 1} из 9`}
+                        aria-label={t('brain:ex.corsi.cell', { n: i + 1 })}
                         className={`rounded-xl border transition-all duration-100 ${
                             lit === i ? 'bg-cyan-400 border-cyan-400 scale-95 shadow-lg shadow-cyan-400/50'
                                 : entered.includes(i) && phase === 'input' ? 'bg-purple-400/30 border-purple-400'
@@ -80,15 +82,15 @@ export function CorsiTest({ setTestResults }: ExerciseProps) {
             </div>
 
             {phase === 'idle' && (
-                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Начать</button>
+                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{t('brain:ex.common.start')}</button>
             )}
-            {phase === 'showing' && <p className="text-cyan-400 text-sm animate-pulse">Смотри внимательно…</p>}
-            {phase === 'input' && <p className="text-gray-400 text-sm">Повтори: {entered.length} / {sequence.length}</p>}
+            {phase === 'showing' && <p className="text-cyan-400 text-sm animate-pulse">{t('brain:ex.corsi.watch')}</p>}
+            {phase === 'input' && <p className="text-gray-400 text-sm">{t('brain:ex.corsi.repeat', { done: entered.length, total: sequence.length })}</p>}
             {phase === 'over' && (
                 <div className="text-center">
                     <div className="text-4xl font-bold text-cyan-400 mb-1">{best}</div>
-                    <p className="text-gray-400 mb-4 text-sm">Максимальная длина последовательности</p>
-                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Ещё раз</button>
+                    <p className="text-gray-400 mb-4 text-sm">{t('brain:ex.corsi.resultBlurb')}</p>
+                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{t('brain:ex.common.again')}</button>
                 </div>
             )}
         </div>

@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { muscleLabel } from './vocabulary';
 import { callAIJson, hasGroqKey } from '../../lib/ai';
 import type { ProgramDay } from '../../types/domain';
 import type { ProgramImportProps } from '../../types/props';
@@ -10,34 +13,27 @@ type ParsedExercise = { name: string; muscle: string; sets: number; reps: string
 type ParsedDay = { name: string; exercises: ParsedExercise[] };
 type ParsedProgram = { name: string; days: ParsedDay[] };
 
-const IMPORT_SYSTEM = `Ты — парсер программ тренировок. Тебе дают произвольный текст (от ИИ, из статьи, из заметок) с программой тренировок на русском или английском.
-
-Извлеки структуру и верни СТРОГО один JSON-объект:
-{"name": "название программы", "days": [{"name": "название дня", "exercises": [{"name": "упражнение", "muscle": "мышечная группа", "sets": число, "reps": "диапазон повторений"}]}]}
-
-Правила:
-- "sets" — целое число подходов. Если не указано, ставь 3.
-- "reps" — строка вроде "8-12" или "10". Если не указано, ставь "8-12".
-- "muscle" — одна из: Грудь, Спина, Ноги, Плечи, Руки, Пресс, Всё тело. Определи по упражнению.
-- Названия упражнений и дней переводи/пиши по-русски.
-- Не выдумывай упражнения, которых нет в тексте. Сохрани их порядок.
-- Если дни явно не размечены, сгруппируй разумно в один день "День 1".
-
-Никакого текста вне JSON.`;
+// The parser's system prompt lives in the locale files, like the coach's.
+//
+// Note the muscle rule inside it: the model is told to return the Russian
+// muscle identifiers verbatim even from English input. Those strings are stored
+// values (see `vocabulary.ts`), so an imported programme has to speak the same
+// vocabulary as one entered by hand, or its exercises would never group with
+// anything else on the records screen.
 
 /** Shapes whatever came back into exactly what the gym state expects. */
-function normalize(parsed: ParsedProgram): Program {
+function normalize(parsed: ParsedProgram, t: TFunction): Program {
     const now = Date.now();
     return {
         id: now,
-        name: String(parsed?.name || 'Импортированная программа').slice(0, 80),
+        name: String(parsed?.name || t('gym:import.defaultProgramName')).slice(0, 80),
         days: (Array.isArray(parsed?.days) ? parsed.days : []).map((d, di) => ({
             id: now + di + 1,
-            name: String(d?.name || `День ${di + 1}`).slice(0, 60),
+            name: String(d?.name || t('gym:import.defaultDayName', { n: di + 1 })).slice(0, 60),
             exercises: (Array.isArray(d?.exercises) ? d.exercises : []).map((e, ei) => ({
                 // ProgramEditor keys exercises by id, so imported ones need one too.
                 id: now + (di + 1) * 1000 + ei,
-                name: String(e?.name || 'Упражнение').slice(0, 80),
+                name: String(e?.name || t('gym:import.defaultExerciseName')).slice(0, 80),
                 muscle: String(e?.muscle || '—').slice(0, 30),
                 // Imported programs are treated as strength work: the pasted
                 // formats carry sets and reps but nothing that identifies cardio,
@@ -51,6 +47,7 @@ function normalize(parsed: ParsedProgram): Program {
 }
 
 export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportProps) {
+    const { t } = useTranslation('gym');
     const [text, setText] = useState('');
     const [preview, setPreview] = useState<Program | null>(null);
     const [loading, setLoading] = useState(false);
@@ -58,14 +55,14 @@ export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportPro
 
     const parse = async () => {
         const raw = text.trim();
-        if (!raw) { setError('Вставь текст программы.'); return; }
+        if (!raw) { setError(t('gym:import.empty')); return; }
         setLoading(true); setError(''); setPreview(null);
 
         // Pasted JSON needs no AI round-trip.
         try {
             const direct = JSON.parse(raw);
             if (direct && Array.isArray(direct.days)) {
-                const normalized = normalize(direct);
+                const normalized = normalize(direct, t);
                 if (normalized.days.length) {
                     setPreview(normalized);
                     setLoading(false);
@@ -77,25 +74,26 @@ export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportPro
         }
 
         if (!hasGroqKey()) {
-            setError('Для разбора обычного текста нужен ключ Groq (Настройки). Либо вставь программу в формате JSON.');
+            setError(t('gym:import.needKey'));
             setLoading(false);
             return;
         }
 
         try {
             const parsed = await callAIJson<ParsedProgram>({
-                system: IMPORT_SYSTEM,
-                prompt: `Разбери эту программу тренировок:\n\n${raw.slice(0, 6000)}`,
+                system: t('gym:import.system'),
+                prompt: t('gym:import.userPrompt', { text: raw.slice(0, 6000) }),
                 maxTokens: 2500,
+                t,
             });
-            const normalized = normalize(parsed);
+            const normalized = normalize(parsed, t);
             if (!normalized.days.length) {
-                setError('Не удалось найти упражнения в тексте. Проверь, что программа указана полностью.');
+                setError(t('gym:import.noExercises'));
             } else {
                 setPreview(normalized);
             }
         } catch (e) {
-            setError(errorMessage(e, 'Не удалось разобрать программу.'));
+            setError(errorMessage(e, t('gym:import.failed')));
         } finally {
             setLoading(false);
         }
@@ -117,8 +115,8 @@ export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportPro
 
     return (
         <Modal
-            title="Импорт программы"
-            subtitle="Вставь программу в любом виде — списком, таблицей, текстом от ИИ. Я разберу её сам."
+            title={t('gym:import.title')}
+            subtitle={t('gym:import.subtitle')}
             onClose={onClose}
             size="lg"
         >
@@ -128,24 +126,24 @@ export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportPro
                         <textarea
                             value={text}
                             onChange={e => setText(e.target.value)}
-                            placeholder={'Например:\n\nДень 1 — Грудь и трицепс\nЖим лёжа 4х8-10\nРазводка гантелей 3х12\n\nДень 2 — Спина\nПодтягивания 4х макс\nТяга штанги 4х8'}
+                            placeholder={t('gym:import.placeholder')}
                             className="w-full h-56 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl p-3 text-sm text-white outline-none focus:border-cyan-400 resize-none font-mono"
                         />
                         {error && <div className="mt-3 p-3 rounded-xl border border-red-400/30 text-red-400 text-sm">{error}</div>}
                         <div className="flex gap-3 mt-4">
                             <button onClick={parse} disabled={loading}
                                 className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-lg disabled:opacity-40">
-                                {loading ? 'Разбираю…' : 'Разобрать программу'}
+                                {loading ? t('gym:import.parsing') : t('gym:import.parse')}
                             </button>
                             <button onClick={onClose} className="px-6 py-3 rounded-lg border border-[var(--border)] text-gray-400 hover:text-white">
-                                Отмена
+                                {t('gym:import.cancel')}
                             </button>
                         </div>
                     </>
                 ) : (
                     <>
                         <div className="mb-4 p-3 rounded-xl bg-green-400/10 border border-green-400/30 text-green-400 text-sm">
-                            Разобрано: <b>{preview.days.length}</b> дн., <b>{exerciseCount}</b> упражнений. Проверь и подтверди.
+                            {t('gym:import.parsed', { days: preview.days.length, exercises: exerciseCount })}
                         </div>
 
                         <input
@@ -163,7 +161,7 @@ export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportPro
                                             <div key={i} className="flex justify-between text-sm gap-3">
                                                 <span className="text-gray-200 truncate">{ex.name}</span>
                                                 <span className="text-gray-500 whitespace-nowrap">
-                                                    {ex.muscle} · {ex.sets}×{ex.reps}
+                                                    {muscleLabel(ex.muscle, t)} · {ex.sets}×{ex.reps}
                                                 </span>
                                             </div>
                                         ))}
@@ -175,11 +173,11 @@ export function ProgramImport({ gymData, setGymData, onClose }: ProgramImportPro
                         <div className="flex gap-3">
                             <button onClick={confirm}
                                 className="bg-gradient-to-r from-green-400 to-cyan-400 text-black font-bold px-6 py-3 rounded-lg">
-                                Добавить и сделать активной
+                                {t('gym:import.confirm')}
                             </button>
                             <button onClick={() => setPreview(null)}
                                 className="px-6 py-3 rounded-lg border border-[var(--border)] text-gray-400 hover:text-white">
-                                Назад
+                                {t('gym:import.back')}
                             </button>
                         </div>
                     </>

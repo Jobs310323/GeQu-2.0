@@ -1,15 +1,6 @@
-// Content for the CBT module: the distortions people most often catch
-// themselves in, and short practices that pair with them.
+import type { Distortion, Practice, RecordField } from './types';
 
-export type Distortion = {
-    id: string;
-    name: string;
-    short: string;
-    example: string;
-    question: string; // the question that loosens this particular thought
-};
-
-export const DISTORTIONS: Distortion[] = [
+export const distortions: Distortion[] = [
     {
         id: 'allornothing', name: 'Всё или ничего',
         short: 'Мир делится на идеально и провал, середины не существует.',
@@ -72,15 +63,7 @@ export const DISTORTIONS: Distortion[] = [
     },
 ];
 
-export type Practice = {
-    id: string;
-    title: string;
-    icon: string;
-    why: string;
-    steps: string[];
-};
-
-export const PRACTICES: Practice[] = [
+export const practices: Practice[] = [
     {
         id: 'activation', title: 'Поведенческая активация', icon: '🌱',
         why: 'При спаде хочется ждать настроения, чтобы начать. На деле сначала действие — потом настроение.',
@@ -134,7 +117,7 @@ export const PRACTICES: Practice[] = [
 ];
 
 /** The classic thought-record columns, in the order they're worked through. */
-export const RECORD_FIELDS = [
+export const recordFields: readonly RecordField[] = [
     { key: 'situation', label: 'Ситуация', hint: 'Что произошло? Факты без оценок.' },
     { key: 'thought', label: 'Автоматическая мысль', hint: 'Что пронеслось в голове?' },
     { key: 'emotion', label: 'Эмоция', hint: 'Что почувствовал? Одним-двумя словами.' },

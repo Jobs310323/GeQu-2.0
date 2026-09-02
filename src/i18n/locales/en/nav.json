@@ -1,0 +1,32 @@
+{
+    "sections": {
+        "today": "Today",
+        "plan": "Plan",
+        "track": "Track",
+        "insights": "Insights",
+        "brain": "Brain",
+        "profile": "Profile"
+    },
+    "items": {
+        "today": { "label": "Today" },
+        "checkin": { "label": "Close the day", "hint": "Sleep, focus, mood" },
+        "aiplan": { "label": "Day plan", "hint": "AI drafts the schedule" },
+        "kanban": { "label": "Tasks", "hint": "Kanban board" },
+        "goals": { "label": "Goals", "hint": "Goals and their steps" },
+        "mindmap": { "label": "Mind map", "hint": "MindMap" },
+        "calendar": { "label": "Calendar" },
+        "habits": { "label": "Habits" },
+        "diary": { "label": "Journal" },
+        "gym": { "label": "Body", "hint": "Workouts and programmes" },
+        "snowman": { "label": "Balance", "hint": "Snowman: mind, emotions, body" },
+        "finance": { "label": "Money" },
+        "progress": { "label": "Progress" },
+        "hub": { "label": "Statistics" },
+        "training": { "label": "Exercises", "hint": "Short drills" },
+        "clinical": { "label": "Questionnaires", "hint": "Screening and CBT" },
+        "circles": { "label": "Circles of influence" },
+        "knowledge": { "label": "Knowledge base" },
+        "card": { "label": "My card" },
+        "settings": { "label": "Settings" }
+    }
+}

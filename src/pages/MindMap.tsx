@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     addEdge, Background, Controls, ReactFlow, ReactFlowProvider,
     useEdgesState, useNodesState, useReactFlow,
@@ -64,14 +65,22 @@ function loadInitial(callbacks: Callbacks): { nodes: StoredFlowNode[]; edges: Ed
     };
 }
 
-const VIEW_MODES: { id: MindViewMode; label: string; hint: string }[] = [
-    { id: 'normal', label: 'Обычный', hint: 'Все узлы' },
-    { id: 'strategist', label: 'Стратег', hint: 'Только первые 2 уровня' },
-    { id: 'tactician', label: 'Тактик', hint: 'Только незакрытые листья, чекбоксами' },
-    { id: 'blindspot', label: 'Слепое пятно', hint: 'Только застрявшее (<70%)' },
-];
+const VIEW_MODE_LABEL_KEY: Record<MindViewMode, string> = {
+    normal: 'plan:mindmap.viewMode.normal.label',
+    strategist: 'plan:mindmap.viewMode.strategist.label',
+    tactician: 'plan:mindmap.viewMode.tactician.label',
+    blindspot: 'plan:mindmap.viewMode.blindspot.label',
+};
+const VIEW_MODE_HINT_KEY: Record<MindViewMode, string> = {
+    normal: 'plan:mindmap.viewMode.normal.hint',
+    strategist: 'plan:mindmap.viewMode.strategist.hint',
+    tactician: 'plan:mindmap.viewMode.tactician.hint',
+    blindspot: 'plan:mindmap.viewMode.blindspot.hint',
+};
+const VIEW_MODES: MindViewMode[] = ['normal', 'strategist', 'tactician', 'blindspot'];
 
 function MindMapCanvas() {
+    const { t } = useTranslation('plan');
     const wrapperRef = useRef<HTMLDivElement>(null);
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastPaneClick = useRef(0);
@@ -205,7 +214,7 @@ function MindMapCanvas() {
         lastPaneClick.current = now;
         if (!isDoubleClick) return;
         const flowPos = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-        addNodeAt('Новая мысль', flowPos.x, flowPos.y);
+        addNodeAt(t('plan:mindmap.newNodeText'), flowPos.x, flowPos.y);
     };
 
     const captureToInbox = () => {
@@ -239,16 +248,16 @@ function MindMapCanvas() {
 
     return (
         <div>
-            <PageHeader page="mindmap" title="MindMap" subtitle="Свободная карта мыслей — своя, ни от чего не зависит"
+            <PageHeader page="mindmap" title="MindMap" subtitle={t('plan:mindmap.subtitle')}
                 action={<MindMapHeaderActions viewMode={viewMode} setViewMode={setViewMode}
                     onAnalytics={() => setShowAnalytics(true)}
-                    onExport={() => exportWeekCsv(domainNodes, domainEdges)} />} />
+                    onExport={() => exportWeekCsv(domainNodes, domainEdges, t)} />} />
             <div className="flex gap-4 items-start">
             <div ref={wrapperRef} className="glass-card rounded-2xl relative flex-1" style={{ height: '75vh' }}>
                 {nodes.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                         <p className="text-gray-500 text-center">
-                            Пусто — нажми «+» или дважды кликни по холсту,<br />чтобы создать первую мысль.
+                            {t('plan:mindmap.emptyLine1')}<br />{t('plan:mindmap.emptyLine2')}
                         </p>
                     </div>
                 )}
@@ -277,7 +286,7 @@ function MindMapCanvas() {
                             value={inboxDraft}
                             onChange={e => setInboxDraft(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') captureToInbox(); if (e.key === 'Escape') setInboxOpen(false); }}
-                            placeholder="Быстрая мысль в Inbox…"
+                            placeholder={t('plan:mindmap.inboxPlaceholder')}
                             className="flex-1 bg-transparent outline-none text-sm text-[var(--text-main)] min-w-0"
                         />
                         <button onClick={captureToInbox} className="shrink-0 text-cyan-400 hover:text-cyan-300">
@@ -288,7 +297,7 @@ function MindMapCanvas() {
 
                 <button
                     onClick={() => setInboxOpen(v => !v)}
-                    title="Быстрый захват (Inbox)"
+                    title={t('plan:mindmap.inboxTitle')}
                     className="absolute bottom-6 right-6 z-20 w-12 h-12 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 text-black flex items-center justify-center shadow-lg hover:scale-105 transition"
                 >
                     <Icon name="plus" size={20} />
@@ -307,9 +316,9 @@ function MindMapCanvas() {
             )}
 
             {showAnalytics && (
-                <Modal title="Итог за неделю" onClose={() => setShowAnalytics(false)} size="sm">
+                <Modal title={t('plan:mindmap.analyticsTitle')} onClose={() => setShowAnalytics(false)} size="sm">
                     <ul className="space-y-2 t-small text-[var(--gq-text-primary)]">
-                        {generateWeeklyReport(domainNodes).map((line, i) => <li key={i}>{line}</li>)}
+                        {generateWeeklyReport(domainNodes, t).map((line, i) => <li key={i}>{line}</li>)}
                     </ul>
                 </Modal>
             )}
@@ -321,21 +330,22 @@ function MindMapCanvas() {
 function MindMapHeaderActions({ viewMode, setViewMode, onAnalytics, onExport }: {
     viewMode: MindViewMode; setViewMode: (m: MindViewMode) => void; onAnalytics: () => void; onExport: () => void;
 }) {
+    const { t } = useTranslation('plan');
     return (
         <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 glass-card rounded-full p-1">
                 {VIEW_MODES.map(m => (
-                    <button key={m.id} onClick={() => setViewMode(m.id)} title={m.hint}
-                        className={`px-3 py-1 rounded-full text-xs transition ${viewMode === m.id ? 'bg-cyan-400 text-black' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
-                        {m.label}
+                    <button key={m} onClick={() => setViewMode(m)} title={t(VIEW_MODE_HINT_KEY[m])}
+                        className={`px-3 py-1 rounded-full text-xs transition ${viewMode === m ? 'bg-cyan-400 text-black' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}>
+                        {t(VIEW_MODE_LABEL_KEY[m])}
                     </button>
                 ))}
             </div>
             <button onClick={onAnalytics} className="glass-card rounded-full px-3 py-1.5 text-xs text-[var(--text-main)] flex items-center gap-1.5 hover:text-cyan-400">
-                <Icon name="chart" size={14} /> Итог
+                <Icon name="chart" size={14} /> {t('plan:mindmap.summaryButton')}
             </button>
             <button onClick={onExport} className="glass-card rounded-full px-3 py-1.5 text-xs text-[var(--text-main)] flex items-center gap-1.5 hover:text-cyan-400">
-                <Icon name="download" size={14} /> Экспорт недели
+                <Icon name="download" size={14} /> {t('plan:mindmap.exportButton')}
             </button>
         </div>
     );

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, vi, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
@@ -7,6 +7,7 @@ import { useTasks } from '../../stores/tasks.store';
 import { useHabits } from '../../stores/habits.store';
 import { useCheckins } from '../../stores/checkins.store';
 import { todayKey, addDays } from '../../lib/datetime';
+import { changeLocale } from '../../i18n';
 
 /**
  * Today is the first screen and the one the rest of the product serves, so what
@@ -19,9 +20,16 @@ import { todayKey, addDays } from '../../lib/datetime';
  * A dashboard that shows every metric the system holds has told the user
  * nothing (docs/PRODUCT_PRINCIPLES.md). These assertions are that principle,
  * made executable.
+ *
+ * The locale is pinned to `ru` for the body of the file. Without it the tests
+ * would read whatever `resolveLocale()` picks from the test environment —
+ * `en` under jsdom — and every assertion below would be checking a translation
+ * rather than a rule. The last describe block covers the switch itself.
  */
 
 const renderToday = () => render(<MemoryRouter><Today /></MemoryRouter>);
+
+beforeAll(async () => { await changeLocale('ru'); });
 
 beforeEach(() => {
     useTasks.setState({ kanban: [] });
@@ -130,5 +138,30 @@ describe('habit card', () => {
 
         await user.click(screen.getByRole('button', { name: /отметить/i }));
         expect(useHabits.getState().habits[0]!.history).toContain(todayKey());
+    });
+});
+
+describe('the language switch', () => {
+    // Not a translation test — a wiring test. Today is the reference
+    // implementation every other page copies, so if `changeLocale` fails to
+    // re-render a live component it is caught here once rather than in each
+    // screen migrated after it.
+    it('re-renders the surface in the chosen language', async () => {
+        await changeLocale('en');
+        renderToday();
+        expect(screen.getByText(/day not closed/i)).toBeInTheDocument();
+        expect(screen.queryByText(/день не закрыт/i)).toBeNull();
+
+        await changeLocale('ru');
+    });
+
+    it("leaves the user's own words alone", async () => {
+        await changeLocale('en');
+        useTasks.setState({ kanban: [task({ text: 'позвонить в банк', priority: 'high' })] });
+        renderToday();
+        // A task is the user's text. Nothing about a language switch may touch it.
+        expect(screen.getAllByText('позвонить в банк').length).toBeGreaterThan(0);
+
+        await changeLocale('ru');
     });
 });

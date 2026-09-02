@@ -1,4 +1,5 @@
 import { useCheckins, selectTodayLog } from './checkins.store';
+import { HINDERED_TAG_IDS } from '../features/checkin/vocabulary';
 import { useHabits } from './habits.store';
 import { useTasks } from './tasks.store';
 import { useBody } from './body.store';
@@ -32,8 +33,8 @@ export function useEnergy(): number {
     let energy = todayLog.sleep * 0.4 + todayLog.mood * 0.3 + todayLog.focus * 0.3;
     if (workouts.some(w => toLocalDateKey(w.date) === today)) energy += 0.3;
     if (results.some(t => toLocalDateKey(t.date) === today)) energy += 0.2;
-    if (todayLog.hindered?.includes('Телефон')) energy -= 0.3;
-    if (todayLog.hindered?.includes('Усталость')) energy -= 0.3;
+    if (todayLog.hindered?.includes(HINDERED_TAG_IDS[0])) energy -= 0.3; // "Телефон" — a stored tag id, not display text
+    if (todayLog.hindered?.includes(HINDERED_TAG_IDS[1])) energy -= 0.3; // "Усталость" — a stored tag id, not display text
 
     return Math.max(0, Math.min(10, energy));
 }

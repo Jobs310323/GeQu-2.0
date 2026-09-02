@@ -50,7 +50,7 @@ function recompute(record: DayRecord, today: string, editedRetroactively: boolea
     }
     return {
         ...record, scores, totalHarmony, closedAt, isEdited: true,
-        editHistory: [...record.editHistory, { timestamp: nowInstant(), changes: changeDesc ?? 'Изменена активность' }],
+        editHistory: [...record.editHistory, { timestamp: nowInstant(), changes: changeDesc ?? 'Изменена активность' }], // i18n-allow: internal audit trail, never rendered to the user
     };
 }
 
@@ -59,7 +59,7 @@ export function addActivity(days: DayRecord[], date: string, activity: Activity,
     const existing = findRecord(days, date) ?? emptyRecord(date);
     const wasClosed = isClosedDay(existing, today);
     const updated = recompute({ ...existing, activities: [...existing.activities, activity] }, today,
-        wasClosed, `Добавлена активность «${activity.label}»`);
+        wasClosed, `Добавлена активность «${activity.label}»`); // i18n-allow: internal audit trail, never rendered to the user
     const withoutOld = days.filter(d => d.date !== date);
     return [...withoutOld, updated].sort((a, b) => b.date.localeCompare(a.date));
 }
@@ -69,7 +69,7 @@ export function updateActivity(days: DayRecord[], date: string, activityId: stri
     if (!existing) return days;
     const wasClosed = isClosedDay(existing, today);
     const activities = existing.activities.map(a => a.id === activityId ? { ...a, ...patch, updatedAt: nowInstant() } : a);
-    const updated = recompute({ ...existing, activities }, today, wasClosed, 'Изменена активность');
+    const updated = recompute({ ...existing, activities }, today, wasClosed, 'Изменена активность'); // i18n-allow: internal audit trail, never rendered to the user
     return days.map(d => d.date === date ? updated : d);
 }
 
@@ -79,7 +79,7 @@ export function removeActivity(days: DayRecord[], date: string, activityId: stri
     const wasClosed = isClosedDay(existing, today);
     const removed = existing.activities.find(a => a.id === activityId);
     const activities = existing.activities.filter(a => a.id !== activityId);
-    const updated = recompute({ ...existing, activities }, today, wasClosed, removed ? `Удалена активность «${removed.label}»` : 'Удалена активность');
+    const updated = recompute({ ...existing, activities }, today, wasClosed, removed ? `Удалена активность «${removed.label}»` : 'Удалена активность'); // i18n-allow: internal audit trail, never rendered to the user
     return days.map(d => d.date === date ? updated : d);
 }
 
@@ -118,7 +118,7 @@ export function currentStreak(days: DayRecord[]): number {
     return streak;
 }
 
-export type Forecast = { sphere: Sphere; sphereLabel: string; avg: number; recommendation: string } | null;
+export type Forecast = { sphere: Sphere; avg: number } | null;
 
 /** Simple 7-day-moving-average heuristic: the sphere trailing furthest behind is "at risk". */
 export function forecastTomorrow(days: DayRecord[]): Forecast {
@@ -127,29 +127,16 @@ export function forecastTomorrow(days: DayRecord[]): Forecast {
     const avg = averageBySphere(days, 7);
     const weakest = SPHERES.reduce((min, s) => avg[s.id] < avg[min.id] ? s : min, SPHERES[0]);
     if (avg[weakest.id] >= 7) return null;
-    return {
-        sphere: weakest.id,
-        sphereLabel: weakest.label,
-        avg: avg[weakest.id],
-        recommendation: `Завтра добавь 20 минут ${sphereActivityWord(weakest.id)} практики`,
-    };
+    return { sphere: weakest.id, avg: avg[weakest.id] };
 }
-
-function sphereActivityWord(sphere: Sphere): string {
-    if (sphere === 'intellect') return 'интеллектуальной';
-    if (sphere === 'emotion') return 'эмоциональной';
-    return 'телесной';
-}
-
-const SPHERE_GENITIVE: Record<Sphere, string> = { intellect: 'Интеллекта', emotion: 'Эмоций', body: 'Тела' };
 
 /** True when today's spread between the strongest and weakest sphere is large. */
-export function imbalanceBanner(record: DayRecord | undefined): { sphere: Sphere; sphereLabel: string; sphereGenitive: string; icon: string } | null {
+export function imbalanceBanner(record: DayRecord | undefined): { sphere: Sphere; icon: string } | null {
     if (!record) return null;
     const { scores } = record;
     const entries = SPHERES.map(s => ({ ...s, value: scores[s.id] }));
     const min = entries.reduce((a, b) => b.value < a.value ? b : a);
     const max = entries.reduce((a, b) => b.value > a.value ? b : a);
     if (max.value - min.value <= 3) return null;
-    return { sphere: min.id, sphereLabel: min.label, sphereGenitive: SPHERE_GENITIVE[min.id], icon: min.icon };
+    return { sphere: min.id, icon: min.icon };
 }

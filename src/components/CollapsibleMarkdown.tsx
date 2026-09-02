@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { marked } from 'marked';
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export function CollapsibleMarkdown({ text, collapsedHeight = 160, className = '' }: Props) {
+    const { t } = useTranslation('common');
     const contentRef = useRef<HTMLDivElement>(null);
     const [overflows, setOverflows] = useState(false);
     const [expanded, setExpanded] = useState(false);
@@ -34,7 +36,7 @@ export function CollapsibleMarkdown({ text, collapsedHeight = 160, className = '
             {overflows && (
                 <button type="button" onClick={() => setExpanded(e => !e)}
                     className="mt-1.5 text-xs text-[var(--accent-cyan)] hover:underline">
-                    {expanded ? 'Свернуть' : 'Показать полностью'}
+                    {expanded ? t('common:markdown.collapse') : t('common:markdown.expand')}
                 </button>
             )}
         </div>

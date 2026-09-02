@@ -1,7 +1,7 @@
 import type { DayLog } from '../../types/domain';
 import { toLocalDateKey } from '../../lib/datetime';
 import { baselineFor, effectSize, median, type Baseline } from './baseline';
-import { CLAIM_LABEL, MIN_SAMPLE, confidenceFrom, renderable, type Insight } from './types';
+import { CLAIM_LABEL_KEY, MIN_SAMPLE, confidenceFrom, renderable, renderInsight, type Insight } from './types';
 
 // The insights engine.
 //
@@ -24,12 +24,14 @@ import { CLAIM_LABEL, MIN_SAMPLE, confidenceFrom, renderable, type Insight } fro
 // someone picked.
 
 export type { Insight };
-export { CLAIM_LABEL, MIN_SAMPLE };
+export { CLAIM_LABEL_KEY, MIN_SAMPLE, renderInsight };
 
 type Metric = 'sleep' | 'focus' | 'mood';
 
-const METRIC_LABEL: Record<Metric, string> = {
-    sleep: 'сон', focus: 'фокус', mood: 'настроение',
+const METRIC_KEY: Record<Metric, string> = {
+    sleep: 'insights:metric.sleep',
+    focus: 'insights:metric.focus',
+    mood: 'insights:metric.mood',
 };
 
 /** Logs inside the window, oldest first. */
@@ -65,18 +67,22 @@ export function baselineInsight(logs: DayLog[], metric: Metric, windowDays = 30)
         return finish({
             id: `baseline-${metric}`,
             claim: 'observed',
-            text: `Твой обычный ${METRIC_LABEL[metric]} за ${windowDays} дней — около ${round(base.typical)}. Последняя неделя держится примерно там же.`,
+            messageKey: 'insights:baseline.steady',
+            params: { windowDays, typical: round(base.typical) },
+            paramKeys: { metric: METRIC_KEY[metric] },
             sampleSize: base.sampleSize,
             windowDays,
             baseline: base,
         });
     }
 
-    const direction = base.trend === 'rising' ? 'выше' : 'ниже';
+    const direction = base.trend === 'rising' ? 'above' : 'below';
     return finish({
         id: `baseline-${metric}`,
         claim: 'observed',
-        text: `Твой обычный ${METRIC_LABEL[metric]} — около ${round(base.typical)}. Последняя неделя идёт ${direction}: примерно ${round(base.recent)}.`,
+        messageKey: 'insights:baseline.trend',
+        params: { typical: round(base.typical), recent: round(base.recent) },
+        paramKeys: { metric: METRIC_KEY[metric], direction: `insights:direction.${direction}` },
         sampleSize: base.sampleSize,
         windowDays,
         effectSize: effect,
@@ -116,11 +122,17 @@ export function associationInsight(
     const effect = effectSize(delta, spread);
     if (effect === null) return null;
 
-    const direction = delta > 0 ? 'выше' : 'ниже';
+    const direction = delta > 0 ? 'above' : 'below';
     return finish({
         id: `assoc-${driver}-${outcome}`,
         claim: 'associated',
-        text: `В дни, когда ${METRIC_LABEL[driver]} был выше обычного, ${METRIC_LABEL[outcome]} был в среднем ${direction} на ${round(Math.abs(delta))}. Это совпадение по дням, а не доказанная причина.`,
+        messageKey: 'insights:association',
+        params: { delta: round(Math.abs(delta)) },
+        paramKeys: {
+            driver: METRIC_KEY[driver],
+            outcome: METRIC_KEY[outcome],
+            direction: `insights:direction.${direction}`,
+        },
         sampleSize: high.length + low.length,
         windowDays,
         effectSize: effect,
@@ -141,7 +153,11 @@ export function blockerInsight(logs: DayLog[], windowDays = 30): Insight | null 
     return finish({
         id: 'blocker',
         claim: 'observed',
-        text: `«${top[0]}» ты отмечал как помеху в ${top[1]} из ${inWindow.length} оценённых дней — чаще всего остального.`,
+        messageKey: 'insights:blocker',
+        // `hits`, not `count`: `count` is i18next's plural selector, and this
+        // sentence has no plural forms, so it would silently look for keys that
+        // do not exist.
+        params: { tag: top[0], hits: top[1], days: inWindow.length },
         sampleSize: inWindow.length,
         windowDays,
     });
@@ -156,7 +172,8 @@ export function coverageInsight(logs: DayLog[], windowDays = 30): Insight | null
     return finish({
         id: 'coverage',
         claim: 'observed',
-        text: `За последние ${windowDays} дней ты оценил ${distinctDays}. Всё остальное здесь опирается только на них.`,
+        messageKey: 'insights:coverage',
+        params: { windowDays, ratedDays: distinctDays },
         sampleSize: distinctDays,
         windowDays,
     });

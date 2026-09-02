@@ -6,6 +6,9 @@ import { renderable, confidenceFrom, MIN_SAMPLE, MIN_EFFECT } from './types';
 import { baselineFor, median, mad, trendOf, effectSize, MIN_BASELINE_SAMPLE } from './baseline';
 import type { DayLog } from '../../types/domain';
 import { addDays, todayKey, parseDateKey } from '../../lib/datetime';
+import { i18next } from '../../i18n';
+import { SUPPORTED_LOCALES } from '../../i18n/locale';
+import { renderInsight, type Insight } from './types';
 
 /**
  * What these tests defend is mostly SILENCE.
@@ -19,7 +22,14 @@ import { addDays, todayKey, parseDateKey } from '../../lib/datetime';
  *
  * The second thing defended is the causal boundary. A person's data can show
  * that two things moved together. Nothing here may imply one produced the other.
+ * Since Phase 11 that is checked against the RENDERED sentence in every locale,
+ * not against the detector's key: the boundary belongs to what the user reads,
+ * and a translation is exactly where a stray "improves" would slip back in.
  */
+
+/** The sentence a user in `locale` actually sees for this insight. */
+const say = (insight: Insight, locale: string): string =>
+    renderInsight(insight, i18next.getFixedT(locale));
 
 const log = (over: Partial<DayLog> & { date: string }): DayLog => ({
     date: over.date, sleep: over.sleep ?? 6, focus: over.focus ?? 5, mood: over.mood ?? 5,
@@ -114,17 +124,17 @@ describe('suppression — the main job', () => {
 
     it('renderable is the last gate and catches a detector that forgot', () => {
         expect(renderable({
-            id: 'x', claim: 'observed', text: 'что-то',
+            id: 'x', claim: 'observed', messageKey: 'insights:coverage', params: {},
             sampleSize: MIN_SAMPLE - 1, windowDays: 30, confidence: 'none',
         })).toBe(false);
 
         expect(renderable({
-            id: 'x', claim: 'associated', text: 'что-то',
+            id: 'x', claim: 'associated', messageKey: 'insights:association', params: {},
             sampleSize: 40, windowDays: 30, effectSize: 0.2, confidence: 'moderate',
         })).toBe(false);
 
         expect(renderable({
-            id: 'x', claim: 'observed', text: '   ',
+            id: 'x', claim: 'observed', messageKey: '   ', params: {},
             sampleSize: 40, windowDays: 30, confidence: 'moderate',
         })).toBe(false);
     });
@@ -154,18 +164,24 @@ describe('what it does report', () => {
             ...days(10, () => ({ sleep: 9, focus: 3 })),
             ...days(10, () => ({ sleep: 2, focus: 8 })),
         ];
-        expect(associationInsight(logs, 'sleep', 'focus')!.text).toContain('ниже');
+        const insight = associationInsight(logs, 'sleep', 'focus')!;
+        expect(say(insight, 'ru')).toContain('ниже');
+        expect(say(insight, 'en')).toContain('lower');
     });
 
     it('reports coverage, so the user can judge everything else', () => {
         const insight = coverageInsight(days(12, () => ({})))!;
         expect(insight.claim).toBe('observed');
-        expect(insight.text).toContain('12');
+        expect(insight.params['ratedDays']).toBe(12);
+        for (const locale of SUPPORTED_LOCALES) expect(say(insight, locale)).toContain('12');
     });
 
     it('reports the most frequent blocker once it clears the minimum', () => {
         const logs = days(20, i => ({ hindered: i < 12 ? ['шум'] : ['другое'] }));
-        expect(blockerInsight(logs)!.text).toContain('шум');
+        const insight = blockerInsight(logs)!;
+        expect(insight.params['tag']).toBe('шум');
+        // A user's own tag is their words and is never translated.
+        for (const locale of SUPPORTED_LOCALES) expect(say(insight, locale)).toContain('шум');
     });
 });
 
@@ -175,12 +191,21 @@ describe('the causal boundary', () => {
         ...days(10, () => ({ sleep: 2, focus: 3, mood: 3, hindered: ['шум'] })),
     ];
 
-    it('never uses a causal verb in any insight', () => {
+    it('never uses a causal verb in any insight, in any locale', () => {
         // The single most important assertion in this file. A person reading
         // "sleep improves your focus" may change their medication.
-        const causal = /улучшает|ухудшает|повышает|снижает|вызыва|приводит|из-за|потому что|влия|помогает тебе/i;
+        // Conjugated verbs and causal connectives only. The bare noun "cause"
+        // is deliberately absent: the association sentence ENDS with "not a
+        // proven cause", and a regex that flagged its own disclaimer would push
+        // the next author to delete the disclaimer to get green.
+        const causal: Record<string, RegExp> = {
+            ru: /улучшает|ухудшает|повышает|снижает|вызыва|приводит|из-за|потому что|влия|помогает тебе/i,
+            en: /\b(improves?|worsens?|increases?|reduces?|causes|caused|causing|leads? to|because|due to|affects?|helps you)\b/i,
+        };
         for (const insight of allInsights(logs)) {
-            expect(insight.text, insight.id).not.toMatch(causal);
+            for (const locale of SUPPORTED_LOCALES) {
+                expect(say(insight, locale), `${insight.id} (${locale})`).not.toMatch(causal[locale]!);
+            }
         }
     });
 
@@ -189,7 +214,9 @@ describe('the causal boundary', () => {
     });
 
     it('says out loud that an association is not a cause', () => {
-        expect(associationInsight(logs, 'sleep', 'focus')!.text).toMatch(/не доказанная причина|совпадение/i);
+        const insight = associationInsight(logs, 'sleep', 'focus')!;
+        expect(say(insight, 'ru')).toMatch(/не доказанная причина|совпадение/i);
+        expect(say(insight, 'en')).toMatch(/not a proven cause|co-occurrence/i);
     });
 
     it('never emits an inferred or uncertain claim from the local engine', () => {
@@ -212,6 +239,18 @@ describe('every insight can account for itself', () => {
         for (const i of insights) {
             expect(i.sampleSize, i.id).toBeGreaterThanOrEqual(MIN_SAMPLE);
             expect(i.windowDays, i.id).toBeGreaterThan(0);
+        }
+    });
+
+    it('resolves to a real sentence in every locale', () => {
+        // A missing translation makes i18next echo the key, which would put
+        // `insights:baseline.trend` on the user's screen rather than a sentence.
+        for (const insight of allInsights(logs)) {
+            for (const locale of SUPPORTED_LOCALES) {
+                const sentence = say(insight, locale);
+                expect(sentence, `${insight.id} (${locale})`).not.toBe(insight.messageKey);
+                expect(sentence, `${insight.id} (${locale})`).not.toMatch(/\{\{|\$t\(/);
+            }
         }
     });
 

@@ -26,6 +26,10 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      # Static, so it belongs here rather than in the browser job: it reads the
+      # locale files and the sources, and never needs a build.
+      - run: npm run check:i18n
+      - run: npm run check:emoji
 
   unit:
     name: Unit tests

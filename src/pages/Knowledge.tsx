@@ -1,6 +1,11 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { marked } from 'marked';
-import { CATEGORIES, ARTICLES, ARTICLES_BY_CATEGORY, searchArticles, relatedTo, type Article } from '../lib/knowledge';
+import {
+    knowledgeArticles, knowledgeCategories, knowledgeArticlesByCategory,
+    searchKnowledge, relatedArticles, type Article,
+} from '../lib/knowledge';
+import { getLocale } from '../i18n/locale';
 import { DB } from '../lib/db';
 import { Icon } from '../components/Icons';
 import { PageHeader } from '../components/PageHeader';
@@ -16,12 +21,17 @@ function loadSet(key: string): string[] {
 }
 
 export function Knowledge() {
+    const { t } = useTranslation('brain');
+    const locale = getLocale();
     const navigate = useNavigate();
     const [query, setQuery] = useState('');
     const [category, setCategory] = useState<string | null>(null);
     const [open, setOpen] = useState<Article | null>(null);
     const [saved, setSaved] = useState<string[]>(() => loadSet('kbSaved'));
     const [read, setRead] = useState<string[]>(() => loadSet('kbRead'));
+
+    const articles = useMemo(() => knowledgeArticles(locale), [locale]);
+    const categories = useMemo(() => knowledgeCategories(locale), [locale]);
 
     const persist = (key: string, next: string[], set: (v: string[]) => void) => {
         set(next);
@@ -36,17 +46,17 @@ export function Knowledge() {
         if (!read.includes(a.id)) persist('kbRead', [...read, a.id], setRead);
     };
 
-    const results = useMemo(() => searchArticles(query), [query]);
+    const results = useMemo(() => searchKnowledge(locale, query), [locale, query]);
 
     // ---------- reading view ----------
     if (open) {
-        const cat = CATEGORIES.find(c => c.id === open.category);
-        const related = relatedTo(open);
+        const cat = categories.find(c => c.id === open.category);
+        const related = relatedArticles(locale, open);
         return (
             <div className="max-w-3xl">
                 <button onClick={() => setOpen(null)}
                     className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-cyan-400 mb-4 transition">
-                    <Icon name="chevronLeft" size={14} /> Назад к базе знаний
+                    <Icon name="chevronLeft" size={14} /> {t('brain:knowledge.backToKnowledge')}
                 </button>
 
                 <div className="glass-card p-8 rounded-2xl">
@@ -54,7 +64,12 @@ export function Knowledge() {
                         <span className="px-2.5 py-1 rounded-full bg-cyan-400/10 text-cyan-400 border border-cyan-400/30">
                             {cat?.icon} {cat?.title}
                         </span>
-                        <span className="text-gray-500">{open.minutes} мин чтения</span>
+                        <span className="text-gray-500">{t('brain:knowledge.minutesRead', { count: open.minutes })}</span>
+                        {!open.translated && (
+                            <span className="px-2.5 py-1 rounded-full bg-yellow-400/10 text-yellow-400 border border-yellow-400/30">
+                                {t('brain:knowledge.ruOnly')}
+                            </span>
+                        )}
                         <button onClick={() => toggleSaved(open.id)}
                             className={`ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full border transition ${
                                 saved.includes(open.id)
@@ -62,7 +77,7 @@ export function Knowledge() {
                                     : 'border-[var(--border)] text-gray-500 hover:text-white'
                             }`}>
                             <Icon name="star" size={13} className={saved.includes(open.id) ? 'fill-current' : ''} />
-                            {saved.includes(open.id) ? 'В закладках' : 'В закладки'}
+                            {saved.includes(open.id) ? t('brain:knowledge.saved') : t('brain:knowledge.save')}
                         </button>
                     </div>
 
@@ -80,7 +95,7 @@ export function Knowledge() {
 
                 {related.length > 0 && (
                     <div className="mt-6">
-                        <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">Читать дальше</h2>
+                        <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">{t('brain:knowledge.readMore')}</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {related.map(a => (
                                 <button key={a.id} onClick={() => openArticle(a)}
@@ -97,9 +112,9 @@ export function Knowledge() {
     }
 
     // ---------- list view ----------
-    const listed = category ? ARTICLES_BY_CATEGORY(category) : null;
-    const savedArticles = ARTICLES.filter(a => saved.includes(a.id));
-    const intro = ARTICLES.filter(a => INTRO_IDS.includes(a.id));
+    const listed = category ? knowledgeArticlesByCategory(locale, category) : null;
+    const savedArticles = articles.filter(a => saved.includes(a.id));
+    const intro = articles.filter(a => INTRO_IDS.includes(a.id));
 
     const Card = ({ a }: { a: Article }) => (
         <button onClick={() => openArticle(a)}
@@ -110,16 +125,17 @@ export function Knowledge() {
             </div>
             <p className="text-sm text-gray-400 flex-1 mb-3">{a.summary}</p>
             <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span>{a.minutes} мин</span>
-                {read.includes(a.id) && <span className="text-green-400">✓ прочитано</span>}
+                <span>{t('brain:knowledge.minutes', { count: a.minutes })}</span>
+                {read.includes(a.id) && <span className="text-green-400">✓ {t('brain:knowledge.readDone')}</span>}
+                {!a.translated && <span className="text-yellow-400">{t('brain:knowledge.ruOnly')}</span>}
             </div>
         </button>
     );
 
     return (
         <div className="max-w-5xl">
-            <PageHeader page="knowledge" title="База знаний"
-                subtitle={`${ARTICLES.length} статей о том, как устроен СДВГ и что с этим делать. Каждая — на несколько минут.`} />
+            <PageHeader page="knowledge" title={t('brain:knowledge.title')}
+                subtitle={t('brain:knowledge.subtitle', { count: articles.length })} />
 
             <div className="relative mb-6">
                 <Icon name="search" size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
@@ -127,7 +143,7 @@ export function Knowledge() {
                     type="text"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    placeholder="Поиск по всем статьям…"
+                    placeholder={t('brain:knowledge.searchPlaceholder')}
                     className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-xl pl-11 pr-4 py-3 outline-none focus:border-cyan-400 text-white"
                 />
             </div>
@@ -135,7 +151,7 @@ export function Knowledge() {
             {query.trim() ? (
                 <>
                     <div className="text-sm text-gray-400 mb-3">
-                        {results.length === 0 ? 'Ничего не найдено' : `Найдено: ${results.length}`}
+                        {results.length === 0 ? t('brain:knowledge.noResults') : t('brain:knowledge.foundCount', { count: results.length })}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {results.map(a => <Card key={a.id} a={a} />)}
@@ -145,10 +161,10 @@ export function Knowledge() {
                 <>
                     <button onClick={() => setCategory(null)}
                         className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-cyan-400 mb-4 transition">
-                        <Icon name="chevronLeft" size={14} /> Все разделы
+                        <Icon name="chevronLeft" size={14} /> {t('brain:knowledge.allSections')}
                     </button>
                     <h2 className="text-2xl font-bold mb-4">
-                        {CATEGORIES.find(c => c.id === category)?.icon} {CATEGORIES.find(c => c.id === category)?.title}
+                        {categories.find(c => c.id === category)?.icon} {categories.find(c => c.id === category)?.title}
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {listed!.map(a => <Card key={a.id} a={a} />)}
@@ -161,9 +177,9 @@ export function Knowledge() {
                             <div className="flex items-start gap-3 mb-3">
                                 <Icon name="info" size={16} className="text-cyan-400 mt-0.5 shrink-0" />
                                 <div>
-                                    <h2 className="font-bold mb-1">Про СДВГ — с чего начать</h2>
+                                    <h2 className="font-bold mb-1">{t('brain:knowledge.introHeading')}</h2>
                                     <p className="text-sm text-gray-400">
-                                        Что это такое, как проявляется и на что влияет. Если раньше не читал — начни отсюда.
+                                        {t('brain:knowledge.introBlurb')}
                                     </p>
                                 </div>
                             </div>
@@ -186,7 +202,7 @@ export function Knowledge() {
                     {savedArticles.length > 0 && (
                         <div className="mb-8">
                             <h2 className="flex items-center gap-1.5 text-sm uppercase tracking-wider text-gray-500 mb-3">
-                                <Icon name="star" size={12} className="text-yellow-400 fill-current" /> Закладки
+                                <Icon name="star" size={12} className="text-yellow-400 fill-current" /> {t('brain:knowledge.bookmarks')}
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {savedArticles.map(a => <Card key={a.id} a={a} />)}
@@ -194,10 +210,10 @@ export function Knowledge() {
                         </div>
                     )}
 
-                    <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">Разделы</h2>
+                    <h2 className="text-sm uppercase tracking-wider text-gray-500 mb-3">{t('brain:knowledge.sections')}</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {CATEGORIES.map(c => {
-                            const items = ARTICLES_BY_CATEGORY(c.id);
+                        {categories.map(c => {
+                            const items = knowledgeArticlesByCategory(locale, c.id);
                             const doneCount = items.filter(a => read.includes(a.id)).length;
                             return (
                                 <button key={c.id} onClick={() => setCategory(c.id)}

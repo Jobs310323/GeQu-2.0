@@ -43,13 +43,14 @@ export type CognitiveDomain = 'attention' | 'memory' | 'executive' | 'processing
  */
 export interface CognitiveEngine {
     id: string;
-    label: string;
+    /** Translation key for the exercise's name. */
+    labelKey: string;
     /** Bumped when the task changes in a way that makes old scores incomparable. */
     version: string;
     domain: CognitiveDomain;
     mode: CognitiveMode;
-    /** What the raw score is measured in, for display. */
-    unit: string;
+    /** Translation key for the unit the raw score is measured in. */
+    unitKey: string;
     /** True when a smaller number is a better result (times, latencies). */
     lowerIsBetter: boolean;
     /**
@@ -58,10 +59,11 @@ export interface CognitiveEngine {
      */
     plausibleRange: readonly [min: number, max: number];
     /**
-     * What this exercise cannot tell you. Shown alongside results, because a
-     * measurement without its caveats invites more confidence than it earns.
+     * Translation keys for what this exercise cannot tell you. Shown alongside
+     * results, because a measurement without its caveats invites more
+     * confidence than it earns.
      */
-    limitations: readonly string[];
+    limitationKeys: readonly string[];
 }
 
 /** Conditions of one attempt, recorded because they change the number. */
@@ -97,5 +99,25 @@ export interface ScoredAttempt {
     durationMs?: number;
     deviceContext: DeviceContext;
     confidence: Confidence;
+    /**
+     * The caveats, stored on the record as TRANSLATION KEYS from Phase 11
+     * onward.
+     *
+     * Attempts recorded before that hold the Russian sentences themselves.
+     * Both are kept and rendered by `limitationText`, which translates a key
+     * and shows anything else verbatim — so an old result still displays the
+     * caveats the user actually read when they took it, rather than nothing.
+     */
     limitations: readonly string[];
+}
+
+/**
+ * One caveat, ready to display.
+ *
+ * A key from Phase 11 onward, or the literal sentence stored by an earlier
+ * build. Detecting by the namespace prefix is enough: no caveat the app ever
+ * wrote begins with `brain:`.
+ */
+export function limitationText(value: string, t: (key: string) => string): string {
+    return value.startsWith('brain:') ? t(value) : value;
 }

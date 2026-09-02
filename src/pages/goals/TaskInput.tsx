@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icons';
 
 type Props = {
@@ -8,7 +9,8 @@ type Props = {
     onCancel?: () => void;
 };
 
-export function TaskInput({ addTask, placeholder = 'Добавить шаг...', autoFocus, onCancel }: Props) {
+export function TaskInput({ addTask, placeholder, autoFocus, onCancel }: Props) {
+    const { t } = useTranslation('plan');
     const [text, setText] = useState('');
     const submit = () => { if (text.trim()) { addTask(text.trim()); setText(''); } };
     return (
@@ -23,7 +25,7 @@ export function TaskInput({ addTask, placeholder = 'Добавить шаг...',
                     if (e.key === 'Escape') onCancel?.();
                 }}
                 onBlur={() => { if (!text.trim()) onCancel?.(); }}
-                placeholder={placeholder}
+                placeholder={placeholder ?? t('plan:taskInput.defaultPlaceholder')}
                 className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-2 text-sm outline-none focus:border-purple-400"
             />
             <button onClick={submit} className="flex items-center justify-center bg-purple-400/20 text-purple-400 border border-purple-400 px-3 py-2 rounded-xl">

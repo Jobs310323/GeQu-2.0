@@ -2,16 +2,18 @@
 // Behaviour is unchanged; only the file boundary moved.
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { recordAttempt } from '../record';
 import { randomOf, type NonEmptyArray } from '../../../lib/nonEmpty';
 import type { ExerciseProps } from '../../../types/props';
 
 export function StroopTest({ setTestResults }: ExerciseProps) {
+    const { t } = useTranslation('brain');
     const colors: NonEmptyArray<{ name: string; hex: string }> = [
-        { name: 'КРАСНЫЙ', hex: '#FF5555' },
-        { name: 'ЗЕЛЕНЫЙ', hex: '#50FA7B' },
-        { name: 'СИНИЙ', hex: '#8BE9FD' },
-        { name: 'ЖЕЛТЫЙ', hex: '#F1FA8C' },
+        { name: t('brain:ex.stroop.colour.red'), hex: '#FF5555' },
+        { name: t('brain:ex.stroop.colour.green'), hex: '#50FA7B' },
+        { name: t('brain:ex.stroop.colour.blue'), hex: '#8BE9FD' },
+        { name: t('brain:ex.stroop.colour.yellow'), hex: '#F1FA8C' },
     ];
     const [word, setWord] = useState(colors[0]);
     const [color, setColor] = useState(colors[1] ?? colors[0]);
@@ -60,14 +62,14 @@ export function StroopTest({ setTestResults }: ExerciseProps) {
 
     return (
         <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
-            <p className="text-gray-400 mb-4">Нажимайте на ЦВЕТ слова, а не на его значение.</p>
-            {!isPlaying && time === 30 && <button onClick={startGame} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg mb-6">Начать тест (30 сек)</button>}
+            <p className="text-gray-400 mb-4">{t('brain:ex.stroop.blurb')}</p>
+            {!isPlaying && time === 30 && <button onClick={startGame} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg mb-6">{t('brain:ex.stroop.start')}</button>}
             
             {isPlaying && (
                 <div>
                     <div className="flex gap-8 mb-8 text-2xl">
-                        <div>Очки: <span className="text-cyan-400 font-bold">{score}</span></div>
-                        <div>Время: <span className="text-pink-400 font-bold">{time}s</span></div>
+                        <div>{t('brain:ex.common.score')}<span className="text-cyan-400 font-bold">{score}</span></div>
+                        <div>{t('brain:ex.common.time')}<span className="text-pink-400 font-bold">{time}s</span></div>
                     </div>
                     <div className="text-7xl font-extrabold mb-10 text-center" style={{ color: color.hex }}>{word.name}</div>
                     <div className="flex gap-4 flex-wrap justify-center">
@@ -81,8 +83,8 @@ export function StroopTest({ setTestResults }: ExerciseProps) {
             {!isPlaying && time === 0 && (
                 <div className="text-center">
                     <div className="text-5xl font-bold text-cyan-400 mb-4">{score}</div>
-                    <div className="text-xl text-gray-300 mb-6">Ваш результат</div>
-                    <button onClick={startGame} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Играть снова</button>
+                    <div className="text-xl text-gray-300 mb-6">{t('brain:ex.common.yourResult')}</div>
+                    <button onClick={startGame} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{t('brain:ex.common.playAgain')}</button>
                 </div>
             )}
         </div>

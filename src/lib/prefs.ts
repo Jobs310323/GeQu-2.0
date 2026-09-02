@@ -6,27 +6,43 @@
 
 import { DB } from './db';
 
+// The widget's `id` is a stored value — `prefs.hiddenWidgets` holds it — so it
+// stays an identifier and the label is a key beside it.
 export const DASHBOARD_WIDGETS = [
-    { id: 'overview', label: 'Обзор дня (метрики и шкалы)', icon: '⬢' },
-    { id: 'today', label: 'Сегодня: привычки и задачи', icon: '✅' },
-    { id: 'hyperfocus', label: 'Кнопка гиперфокуса', icon: '🚀' },
-    { id: 'streak', label: 'Серия и ачивки', icon: '🔥' },
-    { id: 'ratings', label: 'Оценка дня (сон/фокус/настроение)', icon: '📊' },
-    { id: 'bodyscan', label: 'Сканирование тела', icon: '🔎' },
-    { id: 'tags', label: 'Что помогло / что мешало', icon: '🏷️' },
-    { id: 'mainEvent', label: 'Главное событие дня', icon: '📝' },
-    { id: 'testTomorrow', label: 'Что проверить завтра', icon: '🔬' },
-    { id: 'gratitude', label: 'Благодарность', icon: '💖' },
-    { id: 'customQuestion', label: 'Свой вопрос', icon: '❓' },
+    { id: 'overview', labelKey: 'profile:settings.widget.overview', icon: '⬢' },
+    { id: 'today', labelKey: 'profile:settings.widget.today', icon: '✅' },
+    { id: 'hyperfocus', labelKey: 'profile:settings.widget.hyperfocus', icon: '🚀' },
+    { id: 'streak', labelKey: 'profile:settings.widget.streak', icon: '🔥' },
+    { id: 'ratings', labelKey: 'profile:settings.widget.ratings', icon: '📊' },
+    { id: 'bodyscan', labelKey: 'profile:settings.widget.bodyscan', icon: '🔎' },
+    { id: 'tags', labelKey: 'profile:settings.widget.tags', icon: '🏷️' },
+    { id: 'mainEvent', labelKey: 'profile:settings.widget.mainEvent', icon: '📝' },
+    { id: 'testTomorrow', labelKey: 'profile:settings.widget.testTomorrow', icon: '🔬' },
+    { id: 'gratitude', labelKey: 'profile:settings.widget.gratitude', icon: '💖' },
+    { id: 'customQuestion', labelKey: 'profile:settings.widget.customQuestion', icon: '❓' },
 ] as const;
 
 export type Prefs = {
     hiddenTabs: string[];
     collapsedGroups: string[];
     hiddenWidgets: string[];
+    /**
+     * ISO-4217 code for how money is displayed.
+     *
+     * Separate from the interface language on purpose: a Russian speaker in
+     * Berlin spends euros, and an English speaker in Moscow spends roubles.
+     * Deriving one from the other gets both wrong for anyone who has moved.
+     */
+    currency: string;
 };
 
-const DEFAULTS: Prefs = { hiddenTabs: [], collapsedGroups: [], hiddenWidgets: [] };
+const DEFAULTS: Prefs = {
+    hiddenTabs: [], collapsedGroups: [], hiddenWidgets: [],
+    // RUB, not a guess from the browser: every stored amount in every existing
+    // install was entered as roubles and displayed with a hardcoded `₽`.
+    // Re-labelling those numbers as dollars would misstate the user's own data.
+    currency: 'RUB',
+};
 
 export function loadPrefs(): Prefs {
     // Read as Partial: a stored copy written by an older build can be missing
@@ -38,6 +54,9 @@ export function loadPrefs(): Prefs {
         hiddenTabs: arr(raw.hiddenTabs),
         collapsedGroups: arr(raw.collapsedGroups),
         hiddenWidgets: arr(raw.hiddenWidgets),
+        currency: typeof raw.currency === 'string' && /^[A-Z]{3}$/.test(raw.currency)
+            ? raw.currency
+            : DEFAULTS.currency,
     };
 }
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/Icons';
 import { useDragReorder } from '../../lib/useDragReorder';
 import { addSubtask, createTask, mapTask, removeTask, sortGoals, sortTasksByTag } from '../../lib/taskTree';
@@ -16,6 +17,7 @@ type GoalsListProps = {
 };
 
 export function GoalsList({ goals, setGoals }: GoalsListProps) {
+    const { t } = useTranslation('plan');
     const [newGoal, setNewGoal] = useState('');
     const [openIds, setOpenIds] = useState<number[]>([]);
     const [copiedAll, setCopiedAll] = useState(false);
@@ -38,42 +40,42 @@ export function GoalsList({ goals, setGoals }: GoalsListProps) {
     const drag = useDragReorder(sortedGoals, setGoals);
 
     const copyAll = async () => {
-        if (await copyText(formatAllGoalsText(sortedGoals))) {
+        if (await copyText(formatAllGoalsText(sortedGoals, t))) {
             setCopiedAll(true);
             setTimeout(() => setCopiedAll(false), 1500);
         }
     };
-    const downloadAll = () => downloadTextFile(`goals-${todayKey()}.txt`, formatAllGoalsText(sortedGoals));
+    const downloadAll = () => downloadTextFile(`goals-${todayKey()}.txt`, formatAllGoalsText(sortedGoals, t));
 
     return (
         <div>
             <div className="glass-card p-5 rounded-2xl mb-6 flex flex-col sm:flex-row gap-3">
-                <input type="text" value={newGoal} onChange={e => setNewGoal(e.target.value)} onKeyDown={e => e.key === 'Enter' && addGoal()} placeholder="Новая большая цель..." className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-cyan-400" />
-                <button onClick={addGoal} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-xl">Добавить цель</button>
+                <input type="text" value={newGoal} onChange={e => setNewGoal(e.target.value)} onKeyDown={e => e.key === 'Enter' && addGoal()} placeholder={t('plan:goals.newPlaceholder')} className="flex-1 bg-[var(--bg-input)] border border-[var(--border)] rounded-xl px-4 py-3 outline-none focus:border-cyan-400" />
+                <button onClick={addGoal} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-3 rounded-xl">{t('plan:goals.addGoal')}</button>
             </div>
 
             {goals.length > 0 && (
                 <div className="flex items-center gap-2 mb-4">
-                    <button onClick={copyAll} title="Скопировать все цели и шаги для промта"
+                    <button onClick={copyAll} title={t('plan:goals.copyAllTitle')}
                         className="flex items-center gap-1.5 text-xs glass-card rounded-full px-3 py-1.5 text-[var(--text-main)] hover:text-cyan-400 transition">
-                        <Icon name={copiedAll ? 'check' : 'clipboard'} size={13} /> {copiedAll ? 'Скопировано' : 'Скопировать всё'}
+                        <Icon name={copiedAll ? 'check' : 'clipboard'} size={13} /> {copiedAll ? t('plan:goals.copied') : t('plan:goals.copyAll')}
                     </button>
-                    <button onClick={downloadAll} title="Скачать все цели и шаги .txt"
+                    <button onClick={downloadAll} title={t('plan:goals.downloadAllTitle')}
                         className="flex items-center gap-1.5 text-xs glass-card rounded-full px-3 py-1.5 text-[var(--text-main)] hover:text-cyan-400 transition">
-                        <Icon name="download" size={13} /> Скачать всё .txt
+                        <Icon name="download" size={13} /> {t('plan:goals.downloadAll')}
                     </button>
                 </div>
             )}
 
             {goals.length === 0 ? (
                 <div className="glass-card p-10 rounded-2xl text-center text-gray-500">
-                    Пока нет целей — добавь первую выше.
+                    {t('plan:goals.empty')}
                 </div>
             ) : (
                 <>
                     {goals.length > 1 && (
                         <p className="text-xs text-[var(--text-muted)] mb-3 flex items-center gap-1.5">
-                            <Icon name="grip" size={13} /> Перетащи за ручку, чтобы поменять порядок · выполненные цели опускаются вниз, остальные группируются по тегу
+                            <Icon name="grip" size={13} /> {t('plan:goals.dragHint')}
                         </p>
                     )}
                     <div className="space-y-3">
@@ -113,6 +115,7 @@ type GoalCardProps = {
 };
 
 function GoalCard({ goal, isOpen, onToggle, onDelete, setTasks, setDescription, setTags, gripProps, itemProps, itemClass }: GoalCardProps) {
+    const { t } = useTranslation('plan');
     const [copied, setCopied] = useState(false);
     const rawTasks = goal.tasks ?? [];
     const doneCount = rawTasks.filter(t => t.done).length;
@@ -127,17 +130,17 @@ function GoalCard({ goal, isOpen, onToggle, onDelete, setTasks, setDescription, 
     const drag = useDragReorder(tasks, setTasks);
 
     const copyGoal = async () => {
-        if (await copyText(formatGoalText(goal))) {
+        if (await copyText(formatGoalText(goal, t))) {
             setCopied(true);
             setTimeout(() => setCopied(false), 1500);
         }
     };
-    const downloadGoal = () => downloadTextFile(`${goal.title.slice(0, 40).replace(/[^\p{L}\p{N}]+/gu, '-')}.txt`, formatGoalText(goal));
+    const downloadGoal = () => downloadTextFile(`${goal.title.slice(0, 40).replace(/[^\p{L}\p{N}]+/gu, '-')}.txt`, formatGoalText(goal, t));
 
     return (
         <div {...itemProps} className={`glass-card rounded-2xl overflow-hidden transition-all duration-300 ${itemClass}`}>
             <div className="flex items-center gap-2 pl-3">
-                <span {...gripProps} title="Перетащить цель"
+                <span {...gripProps} title={t('plan:goals.dragGoalTitle')}
                     className="text-[var(--text-muted)] hover:text-cyan-400 transition shrink-0 py-4">
                     <Icon name="grip" size={16} />
                 </span>
@@ -154,17 +157,17 @@ function GoalCard({ goal, isOpen, onToggle, onDelete, setTasks, setDescription, 
                     <div className="px-5 pb-5">
                         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                             <div className="flex items-center gap-2">
-                                <button onClick={copyGoal} title="Скопировать цель и шаги для промта"
+                                <button onClick={copyGoal} title={t('plan:goals.copyGoalTitle')}
                                     className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-cyan-400 transition">
-                                    <Icon name={copied ? 'check' : 'clipboard'} size={13} /> {copied ? 'Скопировано' : 'Скопировать'}
+                                    <Icon name={copied ? 'check' : 'clipboard'} size={13} /> {copied ? t('plan:goals.copied') : t('plan:goals.copyGoal')}
                                 </button>
-                                <button onClick={downloadGoal} title="Скачать цель и шаги .txt"
+                                <button onClick={downloadGoal} title={t('plan:goals.downloadGoalTitle')}
                                     className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-cyan-400 transition">
-                                    <Icon name="download" size={13} /> Скачать .txt
+                                    <Icon name="download" size={13} /> {t('plan:goals.downloadGoal')}
                                 </button>
                             </div>
                             <button onClick={onDelete} className="flex items-center gap-1.5 text-red-400 hover:text-red-300 text-sm transition">
-                                <Icon name="trash" size={14} /> Удалить цель
+                                <Icon name="trash" size={14} /> {t('plan:goals.deleteGoal')}
                             </button>
                         </div>
                         <TagChips tags={goal.tags ?? []} onChange={setTags} className="mb-4" />

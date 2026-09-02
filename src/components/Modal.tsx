@@ -1,4 +1,5 @@
 import { useEffect, useRef, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { Icon } from './Icons';
 
@@ -53,6 +54,7 @@ const WIDTH = {
  * out with utilities like any other element.
  */
 export function Modal({ title, subtitle, onClose, children, size = 'md', sheet = false, bare = false, align = 'center' }: Props) {
+    const { t } = useTranslation('common');
     const ref = useRef<HTMLDialogElement>(null);
     const opener = useRef<HTMLElement | null>(null);
     const titleId = useId();
@@ -135,7 +137,7 @@ export function Modal({ title, subtitle, onClose, children, size = 'md', sheet =
                         <button
                             type="button"
                             onClick={onClose}
-                            aria-label="Закрыть"
+                            aria-label={t('common:action.close')}
                             className="shrink-0 -m-1.5 p-1.5 rounded-lg text-[var(--gq-text-tertiary)] hover:text-[var(--gq-text-primary)] hover:bg-white/5 transition"
                         >
                             <Icon name="close" size={18} />

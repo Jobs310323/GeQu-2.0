@@ -19,8 +19,15 @@ export type Pomodoro = {
     isRunning: boolean;
 };
 
+// Not translated: this seeds a free-text, user-editable list (like a habit or
+// goal title, not a fixed vocabulary), and it is read at module-evaluation
+// time — before `./i18n`'s side effects have necessarily run, since `App.tsx`
+// is imported ahead of `./i18n` in `main.tsx`. Locale-aware seeding would need
+// a lazy default, which is more machinery than a five-item starter list is
+// worth. A new non-Russian-speaking user gets this list in Russian once, and
+// can freely edit or delete every entry.
 const DEFAULT_DOPAMINE_MENU = [
-    'Попить воды', 'Сделать растяжку', 'Посмотреть в окно 2 мин', 'Поиграть с котом', 'Закрыть глаза на 1 мин',
+    'Попить воды', 'Сделать растяжку', 'Посмотреть в окно 2 мин', 'Поиграть с котом', 'Закрыть глаза на 1 мин', // i18n-allow: seed data, not a fixed vocabulary — see comment above
 ];
 
 const INITIAL_POMODORO: Pomodoro = { workTime: 25, mode: 'work', timeLeft: 25 * 60, isRunning: false };

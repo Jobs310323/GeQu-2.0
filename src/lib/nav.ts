@@ -17,19 +17,25 @@
 
 export type SectionId = 'today' | 'plan' | 'track' | 'insights' | 'brain' | 'profile';
 
+// Labels are translation keys, not text. They are written out per item rather
+// than derived from `id` so that grepping for a key finds the place it is used
+// and `npm run check:i18n` can verify each one exists without knowing anything
+// about this file.
+
 export type NavItem = {
     /** Stable id, also the key used by hidden-tab preferences and legacy links. */
     id: string;
     icon: string;
-    label: string;
+    /** Translation key in the `nav` namespace. */
+    labelKey: string;
     path: string;
     /** Shown in the command palette to disambiguate similar names. */
-    hint?: string;
+    hintKey?: string;
 };
 
 export type NavSection = {
     id: SectionId;
-    title: string;
+    titleKey: string;
     icon: string;
     /** Where the section itself opens. */
     path: string;
@@ -38,58 +44,58 @@ export type NavSection = {
 
 export const SECTIONS: NavSection[] = [
     {
-        id: 'today', title: 'Сегодня', icon: 'sun', path: '/',
+        id: 'today', titleKey: 'nav:sections.today', icon: 'sun', path: '/',
         items: [
-            { id: 'checkin', icon: 'moon', label: 'Закрыть день', path: '/today/checkin', hint: 'Сон, фокус, настроение' },
-            { id: 'aiplan', icon: 'sparkle', label: 'План дня', path: '/today/plan', hint: 'ИИ собирает расписание' },
+            { id: 'checkin', icon: 'moon', labelKey: 'nav:items.checkin.label', path: '/today/checkin', hintKey: 'nav:items.checkin.hint' },
+            { id: 'aiplan', icon: 'sparkle', labelKey: 'nav:items.aiplan.label', path: '/today/plan', hintKey: 'nav:items.aiplan.hint' },
         ],
     },
     {
-        id: 'plan', title: 'Планы', icon: 'target', path: '/plan/tasks',
+        id: 'plan', titleKey: 'nav:sections.plan', icon: 'target', path: '/plan/tasks',
         items: [
-            { id: 'kanban', icon: 'columns', label: 'Задачи', path: '/plan/tasks', hint: 'Канбан-доска' },
-            { id: 'goals', icon: 'flag', label: 'Цели', path: '/plan/goals', hint: 'Цели и шаги' },
-            { id: 'mindmap', icon: 'network', label: 'Карта мыслей', path: '/plan/map', hint: 'MindMap' },
-            { id: 'calendar', icon: 'calendar', label: 'Календарь', path: '/plan/calendar' },
+            { id: 'kanban', icon: 'columns', labelKey: 'nav:items.kanban.label', path: '/plan/tasks', hintKey: 'nav:items.kanban.hint' },
+            { id: 'goals', icon: 'flag', labelKey: 'nav:items.goals.label', path: '/plan/goals', hintKey: 'nav:items.goals.hint' },
+            { id: 'mindmap', icon: 'network', labelKey: 'nav:items.mindmap.label', path: '/plan/map', hintKey: 'nav:items.mindmap.hint' },
+            { id: 'calendar', icon: 'calendar', labelKey: 'nav:items.calendar.label', path: '/plan/calendar' },
         ],
     },
     {
-        id: 'track', title: 'Дневники', icon: 'repeat', path: '/track/habits',
+        id: 'track', titleKey: 'nav:sections.track', icon: 'repeat', path: '/track/habits',
         items: [
-            { id: 'habits', icon: 'repeat', label: 'Привычки', path: '/track/habits' },
-            { id: 'diary', icon: 'book', label: 'Дневник', path: '/track/journal' },
-            { id: 'gym', icon: 'dumbbell', label: 'Тело', path: '/track/body', hint: 'Тренировки и программы' },
-            { id: 'snowman', icon: 'snowman', label: 'Баланс', path: '/track/balance', hint: 'Снеговик: ум, эмоции, тело' },
-            { id: 'finance', icon: 'wallet', label: 'Деньги', path: '/track/finance' },
+            { id: 'habits', icon: 'repeat', labelKey: 'nav:items.habits.label', path: '/track/habits' },
+            { id: 'diary', icon: 'book', labelKey: 'nav:items.diary.label', path: '/track/journal' },
+            { id: 'gym', icon: 'dumbbell', labelKey: 'nav:items.gym.label', path: '/track/body', hintKey: 'nav:items.gym.hint' },
+            { id: 'snowman', icon: 'snowman', labelKey: 'nav:items.snowman.label', path: '/track/balance', hintKey: 'nav:items.snowman.hint' },
+            { id: 'finance', icon: 'wallet', labelKey: 'nav:items.finance.label', path: '/track/finance' },
         ],
     },
     {
-        id: 'insights', title: 'Выводы', icon: 'chart', path: '/insights/progress',
+        id: 'insights', titleKey: 'nav:sections.insights', icon: 'chart', path: '/insights/progress',
         items: [
-            { id: 'progress', icon: 'trophy', label: 'Прогресс', path: '/insights/progress' },
-            { id: 'hub', icon: 'chart', label: 'Статистика', path: '/insights/stats' },
+            { id: 'progress', icon: 'trophy', labelKey: 'nav:items.progress.label', path: '/insights/progress' },
+            { id: 'hub', icon: 'chart', labelKey: 'nav:items.hub.label', path: '/insights/stats' },
         ],
     },
     {
-        id: 'brain', title: 'Мозг', icon: 'flask', path: '/brain/train',
+        id: 'brain', titleKey: 'nav:sections.brain', icon: 'flask', path: '/brain/train',
         items: [
-            { id: 'training', icon: 'target', label: 'Тренажёры', path: '/brain/train', hint: 'Короткие упражнения' },
-            { id: 'clinical', icon: 'clipboard', label: 'Опросники', path: '/brain/assess', hint: 'Скрининг и КПТ' },
-            { id: 'circles', icon: 'circle', label: 'Круги влияния', path: '/brain/reflect' },
-            { id: 'knowledge', icon: 'library', label: 'База знаний', path: '/brain/learn' },
+            { id: 'training', icon: 'target', labelKey: 'nav:items.training.label', path: '/brain/train', hintKey: 'nav:items.training.hint' },
+            { id: 'clinical', icon: 'clipboard', labelKey: 'nav:items.clinical.label', path: '/brain/assess', hintKey: 'nav:items.clinical.hint' },
+            { id: 'circles', icon: 'circle', labelKey: 'nav:items.circles.label', path: '/brain/reflect' },
+            { id: 'knowledge', icon: 'library', labelKey: 'nav:items.knowledge.label', path: '/brain/learn' },
         ],
     },
     {
-        id: 'profile', title: 'Профиль', icon: 'idcard', path: '/profile',
+        id: 'profile', titleKey: 'nav:sections.profile', icon: 'idcard', path: '/profile',
         items: [
-            { id: 'card', icon: 'idcard', label: 'Моя карточка', path: '/profile' },
-            { id: 'settings', icon: 'settings', label: 'Настройки', path: '/profile/settings' },
+            { id: 'card', icon: 'idcard', labelKey: 'nav:items.card.label', path: '/profile' },
+            { id: 'settings', icon: 'settings', labelKey: 'nav:items.settings.label', path: '/profile/settings' },
         ],
     },
 ];
 
 /** The Today surface itself, which is the section root rather than an item. */
-export const TODAY_ITEM: NavItem = { id: 'today', icon: 'sun', label: 'Сегодня', path: '/' };
+export const TODAY_ITEM: NavItem = { id: 'today', icon: 'sun', labelKey: 'nav:items.today.label', path: '/' };
 
 export const ALL_ITEMS: NavItem[] = [TODAY_ITEM, ...SECTIONS.flatMap(s => s.items)];
 

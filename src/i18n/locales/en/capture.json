@@ -1,0 +1,24 @@
+{
+    "title": "Quick capture",
+    "placeholder": "What do you want to record, or where do you want to go?",
+    "inputLabel": "Command or text to record",
+    "resultsLabel": "Results",
+    "empty": "Nothing found",
+    "group": { "create": "Create", "goto": "Go to" },
+    "actions": {
+        "task": { "label": "New task", "hint": "Add to the board" },
+        "habit": { "label": "New habit", "hint": "Tick it every day" },
+        "journal": { "label": "Journal entry", "hint": "A thought or an observation" },
+        "expense": { "label": "Expense", "hint": "An amount — 450, say" },
+        "checkin": { "label": "Close the day", "hint": "Sleep, focus, mood" },
+        "workout": { "label": "Workout", "hint": "Start a gym session" }
+    },
+    "aliases": {
+        "task": ["task", "todo"],
+        "habit": ["habit"],
+        "journal": ["journal", "note", "thought"],
+        "expense": ["expense", "spend", "spent"],
+        "checkin": ["checkin", "day", "close"],
+        "workout": ["workout", "gym"]
+    }
+}

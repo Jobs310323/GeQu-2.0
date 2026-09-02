@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatNumber } from '../lib/format';
+import { tagLabel } from '../features/checkin/vocabulary';
 import { StateChart, TestChart, SERIES } from '../features/charts';
-import { LOWER_IS_BETTER, TEST_LABELS } from '../lib/profile';
+import { LOWER_IS_BETTER, testLabel } from '../lib/profile';
 import { Icon } from '../components/Icons';
 import type { DynamicsProps } from '../types/props';
 import type { TestResult } from '../types/domain';
@@ -22,18 +25,25 @@ type Insight = {
     text: string;
     /** The headline number, pre-formatted. */
     highlight: string;
-    /** The takeaway. Association only — never a causal claim. */
+    /**
+     * The takeaway. Association only — never a causal claim.
+     *
+     * The comment predates Phase 11, and the strings under it did not honour
+     * it: this page shipped "the gym noticeably lifts your mood" and "sleep is
+     * the most controllable lever for focus" — two causal claims read straight
+     * off a correlation, of exactly the kind `features/insights/engine.ts`
+     * exists to prevent and its test forbids. Translating them would have
+     * carried the claim into a second language, so they were rewritten in both
+     * rather than mirrored.
+     */
     verdict: string;
 };
 
-const PERIODS = [
-    { id: 7, label: '7 дней' },
-    { id: 30, label: '30 дней' },
-    { id: 90, label: '3 месяца' },
-    { id: 0, label: 'Всё время' },
-];
+const PERIODS = [7, 30, 90, 0] as const;
 
 const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+/** A difference with an explicit sign, formatted for the reader's locale. */
+const signed = (n: number) => `${n > 0 ? '+' : ''}${formatNumber(n, 1)}`;
 const round = (n: number, d = 1) => Number(n.toFixed(d));
 const finite = <T,>(arr: T[], key: keyof T) => arr.map(l => Number(l[key])).filter(n => Number.isFinite(n));
 
@@ -45,6 +55,7 @@ function within<T extends { date: string }>(items: T[], days: number) {
 
 /** Headline number plus its change against the preceding, equal-length window. */
 function MetricTile({ label, value, delta, color }: { label: string; value: number | string; delta: number | null; color: string }) {
+    const { t } = useTranslation('insights');
     // NaN is the "no previous period to compare against" signal, so a delta is
     // only shown when it is both finite and a real movement.
     const hasDelta = delta !== null && Number.isFinite(delta) && delta !== 0;
@@ -58,7 +69,7 @@ function MetricTile({ label, value, delta, color }: { label: string; value: numb
             {hasDelta && (
                 <div className={`flex items-center gap-1 text-xs mt-1 tabular-nums ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     <Icon name={delta > 0 ? 'trendUp' : 'trendDown'} size={12} />
-                    {Math.abs(delta)} к прошлому периоду
+                    {t('insights:dynamics.vsPrevious', { delta: formatNumber(Math.abs(delta), 1) })}
                 </div>
             )}
         </div>
@@ -66,13 +77,14 @@ function MetricTile({ label, value, delta, color }: { label: string; value: numb
 }
 
 /** The three day metrics charted over the selected window, in fixed order. */
-const TILES: { key: DayMetric; label: string; color: string }[] = [
-    { key: 'sleep', label: 'Сон', color: SERIES[0] },
-    { key: 'focus', label: 'Фокус', color: SERIES[1] },
-    { key: 'mood', label: 'Настроение', color: SERIES[2] },
+const TILES: { key: DayMetric; color: string }[] = [
+    { key: 'sleep', color: SERIES[0] },
+    { key: 'focus', color: SERIES[1] },
+    { key: 'mood', color: SERIES[2] },
 ];
 
 export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
+    const { t } = useTranslation(['insights', 'today']);
     const [days, setDays] = useState(30);
     const [testType, setTestType] = useState<string | null>(null);
 
@@ -93,10 +105,15 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
         });
     }, [sortedLogs, days]);
 
-    const tiles = TILES.map(t => {
-        const now = round(avg(finite(periodLogs, t.key)));
-        const before = round(avg(finite(prevLogs, t.key)));
-        return { ...t, value: now, delta: before ? round(now - before) : NaN };
+    const tiles = TILES.map(tile => {
+        const now = round(avg(finite(periodLogs, tile.key)));
+        const before = round(avg(finite(prevLogs, tile.key)));
+        return {
+            ...tile,
+            label: t(`insights:dynamics.metric.${tile.key}`),
+            value: now,
+            delta: before ? round(now - before) : NaN,
+        };
     });
 
     // Only offer test types that actually have data in this window.
@@ -107,12 +124,12 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
         return Object.entries(byType)
             .map(([type, list]) => ({
                 type,
-                label: TEST_LABELS[type] ?? type,
+                label: testLabel(type, t),
                 lowerIsBetter: LOWER_IS_BETTER.has(type),
                 list: [...list].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
             }))
             .sort((a, b) => b.list.length - a.list.length);
-    }, [testResults, days]);
+    }, [testResults, days, t]);
 
     const activeTest = testsInPeriod.find(t => t.type === testType) ?? testsInPeriod[0] ?? null;
 
@@ -143,10 +160,16 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
         if (sleepHigh.length && sleepLow.length) {
             const d = round(avg(sleepHigh) - avg(sleepLow));
             out.push({
-                icon: 'moon', title: 'Сон → Фокус',
-                text: `При сне ≥ 7 фокус в среднем ${round(avg(sleepHigh))}, при сне ≤ 4 — ${round(avg(sleepLow))}.`,
-                highlight: `Разница: ${d > 0 ? '+' : ''}${d} балла`,
-                verdict: d > 0 ? 'Сон — самый управляемый рычаг для фокуса.' : 'Связь неочевидна — данных пока мало.',
+                icon: 'moon',
+                title: t('insights:dynamics.sleepFocus.title'),
+                text: t('insights:dynamics.sleepFocus.text', {
+                    high: formatNumber(round(avg(sleepHigh)), 1),
+                    low: formatNumber(round(avg(sleepLow)), 1),
+                }),
+                highlight: t('insights:dynamics.sleepFocus.highlight', { delta: signed(d) }),
+                verdict: d > 0
+                    ? t('insights:dynamics.sleepFocus.verdict')
+                    : t('insights:dynamics.sleepFocus.verdictWeak'),
             });
         }
 
@@ -156,10 +179,16 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
         if (withGym.length && noGym.length) {
             const d = round(avg(withGym) - avg(noGym));
             out.push({
-                icon: 'dumbbell', title: 'Тренировки → Настроение',
-                text: `В дни с тренировкой настроение ${round(avg(withGym))}, без неё — ${round(avg(noGym))}.`,
-                highlight: `Разница: ${d > 0 ? '+' : ''}${d} балла`,
-                verdict: d > 0 ? 'Зал заметно поднимает настроение.' : 'Пока без выигрыша — посмотри на восстановление.',
+                icon: 'dumbbell',
+                title: t('insights:dynamics.gymMood.title'),
+                text: t('insights:dynamics.gymMood.text', {
+                    withGym: formatNumber(round(avg(withGym)), 1),
+                    noGym: formatNumber(round(avg(noGym)), 1),
+                }),
+                highlight: t('insights:dynamics.gymMood.highlight', { delta: signed(d) }),
+                verdict: d > 0
+                    ? t('insights:dynamics.gymMood.verdict')
+                    : t('insights:dynamics.gymMood.verdictWeak'),
             });
         }
 
@@ -175,10 +204,11 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
             .sort((a, b) => b.drop - a.drop)[0];
         if (worst && worst.drop > 0.3) {
             out.push({
-                icon: 'alertTriangle', title: 'Что дороже всего стоит',
-                text: `В дни с тегом «${worst.tag}» (${worst.n} раз) фокус ниже среднего по периоду.`,
-                highlight: `−${worst.drop} балла к фокусу`,
-                verdict: `Убрать «${worst.tag}» — самый быстрый выигрыш.`,
+                icon: 'alertTriangle',
+                title: t('insights:dynamics.worstTag.title'),
+                text: t('insights:dynamics.worstTag.text', { tag: tagLabel(worst.tag, t), count: worst.n }),
+                highlight: t('insights:dynamics.worstTag.highlight', { drop: formatNumber(worst.drop, 1) }),
+                verdict: t('insights:dynamics.worstTag.verdict', { tag: tagLabel(worst.tag, t) }),
             });
         }
 
@@ -189,18 +219,18 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
         <div>
             <div className="flex flex-wrap gap-1 w-fit bg-[var(--bg-input)] p-1 rounded-xl border border-[var(--border)] mb-6">
                 {PERIODS.map(p => (
-                    <button key={p.id} onClick={() => setDays(p.id)}
+                    <button key={p} onClick={() => setDays(p)}
                         className={`px-3 py-1.5 rounded-lg text-sm transition ${
-                            days === p.id ? 'bg-cyan-400/15 text-cyan-400 font-bold' : 'text-gray-400 hover:text-white'
+                            days === p ? 'bg-cyan-400/15 text-cyan-400 font-bold' : 'text-gray-400 hover:text-white'
                         }`}>
-                        {p.label}
+                        {t(`insights:dynamics.period.${p}`)}
                     </button>
                 ))}
             </div>
 
             {periodLogs.length === 0 ? (
                 <div className="glass-card p-10 rounded-2xl text-center text-gray-500">
-                    За выбранный период нет записей. Закрой день на Дашборде или выбери период пошире.
+                    {t('insights:dynamics.empty')}
                 </div>
             ) : (
                 <>
@@ -210,8 +240,8 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
 
                     <div className="glass-card p-6 rounded-2xl mb-6">
                         <div className="flex items-baseline justify-between mb-4">
-                            <h2 className="text-xl font-bold">Состояние по дням</h2>
-                            <span className="text-xs text-gray-500">{periodLogs.length} записей</span>
+                            <h2 className="text-xl font-bold">{t('insights:dynamics.byDay')}</h2>
+                            <span className="text-xs text-gray-500">{t('insights:dynamics.entryCount', { count: periodLogs.length })}</span>
                         </div>
                         <div style={{ height: 300 }}><StateChart logs={periodLogs} /></div>
                     </div>
@@ -220,7 +250,7 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
                         <div className="mb-6">
                             <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
                                 <Icon name="search" size={18} className="text-cyan-400" />
-                                Закономерности
+                                {t('insights:dynamics.patterns')}
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {insights.map((ins, i) => (
@@ -239,23 +269,23 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
                     )}
 
                     <div className="glass-card p-6 rounded-2xl">
-                        <h2 className="text-xl font-bold mb-4">Когнитивные тесты</h2>
+                        <h2 className="text-xl font-bold mb-4">{t('insights:dynamics.cognitive')}</h2>
 
                         {testsInPeriod.length === 0 ? (
                             <p className="text-gray-500 text-sm py-6 text-center">
-                                За этот период тестов нет. Загляни в раздел «Тренажёры».
+                                {t('insights:dynamics.noTests')}
                             </p>
                         ) : (
                             <>
                                 <div className="flex flex-wrap gap-2 mb-5">
-                                    {testsInPeriod.map(t => (
-                                        <button key={t.type} onClick={() => setTestType(t.type)}
+                                    {testsInPeriod.map(test => (
+                                        <button key={test.type} onClick={() => setTestType(test.type)}
                                             className={`px-3 py-1.5 rounded-lg text-sm border transition ${
-                                                activeTest?.type === t.type
+                                                activeTest?.type === test.type
                                                     ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/40'
                                                     : 'text-gray-400 border-[var(--border)] hover:text-white'
                                             }`}>
-                                            {t.label} <span className="opacity-60">· {t.list.length}</span>
+                                            {test.label} <span className="opacity-60">· {test.list.length}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -263,15 +293,15 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
                                 {testStats && (
                                     <div className="grid grid-cols-3 gap-3 mb-5">
                                         <div className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
-                                            <div className="text-xs text-gray-400">Лучший</div>
+                                            <div className="text-xs text-gray-400">{t('insights:dynamics.best')}</div>
                                             <div className="text-xl font-bold text-white tabular-nums">{testStats.best}</div>
                                         </div>
                                         <div className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
-                                            <div className="text-xs text-gray-400">Средний</div>
+                                            <div className="text-xs text-gray-400">{t('insights:dynamics.average')}</div>
                                             <div className="text-xl font-bold text-white tabular-nums">{testStats.average}</div>
                                         </div>
                                         <div className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border)]">
-                                            <div className="text-xs text-gray-400">Динамика</div>
+                                            <div className="text-xs text-gray-400">{t('insights:dynamics.trend')}</div>
                                             <div className={`text-xl font-bold tabular-nums ${
                                                 testStats.improvedPct === null ? 'text-gray-500'
                                                     : testStats.improvedPct > 0 ? 'text-green-400'
@@ -288,7 +318,7 @@ export function Dynamics({ logs, testResults, gymData }: DynamicsProps) {
                                     <>
                                         <div className="text-sm text-gray-400 mb-2">
                                             {activeTest.label}
-                                            {activeTest.lowerIsBetter && <span className="text-xs text-gray-500"> · меньше — лучше</span>}
+                                            {activeTest.lowerIsBetter && <span className="text-xs text-gray-500">{t('insights:dynamics.lowerIsBetter')}</span>}
                                         </div>
                                         <div style={{ height: 280 }}>
                                             <TestChart results={activeTest.list} label={activeTest.label} lowerIsBetter={activeTest.lowerIsBetter} />

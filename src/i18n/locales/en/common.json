@@ -1,0 +1,160 @@
+{
+    "action": {
+        "close": "Close",
+        "retry": "Try again",
+        "home": "Go home",
+        "reload": "Reload"
+    },
+    "loading": "Loading…",
+    "nav": {
+        "main": "Main navigation",
+        "expand": "Expand menu",
+        "collapse": "Collapse menu",
+        "more": "More",
+        "sections": "Sections",
+        "skipToContent": "Skip to main content",
+        "showMore": "{{count}} more",
+        "openProfile": "Open profile",
+        "profileWithLevel": "Profile · level {{level}}"
+    },
+    "profile": {
+        "level": "Level {{level}}",
+        "energy": "Energy"
+    },
+    "theme": {
+        "toLight": "Switch to the light theme",
+        "toDark": "Switch to the dark theme"
+    },
+    "dopamine": {
+        "title": "Drive generator",
+        "subtitle": "Fate decides what you need more right now: a task or a reset.",
+        "energy": "Energy {{value}} — ",
+        "moreTasks": "tasks come up more often",
+        "even": "tasks and breaks equally",
+        "moreBreaks": "breaks come up more often",
+        "emptyPool": "The list is empty. Just breathe for a minute.",
+        "task": "A work task",
+        "break": "A legitimate break",
+        "spin": "Spin the wheel",
+        "spinning": "Spinning…",
+        "spinAgain": "Spin again ({{count}})",
+        "limitReached": "Out of spins. Go and do it.",
+        "go": "Let's go!",
+        "configure": "Set up the break menu",
+        "breakPlaceholder": "For example: play the guitar"
+    },
+    "sync": {
+        "syncing": "Syncing…",
+        "offline": "Offline — changes saved on this device",
+        "error": "Couldn't sync"
+    },
+    "error": {
+        "featureFailed": "\"{{feature}}\" didn't open",
+        "generic": "Something went wrong",
+        "body": "The rest of the app still works — come back to this later, or go somewhere else. Your data is saved on this device and is untouched.",
+        "details": "Error details",
+        "routeChunkTitle": "Couldn't load this section",
+        "routeChunkDetail": "Looks like there's no connection — or the app updated while this tab was open. Reloading usually fixes it.",
+        "routeGenericTitle": "This section didn't open",
+        "routeGenericDetail": "The rest of the app still works. You can go home and try again.",
+        "notFoundTitle": "Page not found",
+        "notFoundBody": "There's no such section. The link may be out of date."
+    },
+    "ai": {
+        "invalidKey": "Invalid Groq key — check it in Settings.",
+        "rateLimited": "Too many requests to Groq. Wait a minute and try again.",
+        "errorWithDetail": "Groq error ({{status}}): {{detail}}",
+        "errorGeneric": "Groq error ({{status}}).",
+        "offline": "No network connection — AI is unavailable offline.",
+        "noKey": "No Groq key set. Add one in Settings → the \"AI (Groq)\" section.",
+        "emptyResponse": "Empty response from the AI.",
+        "unexpectedFormat": "The AI returned an unexpected format. Try again."
+    },
+    "markdown": {
+        "collapse": "Collapse",
+        "expand": "Show all"
+    },
+    "tag": {
+        "remove": "Remove tag",
+        "add": "Add tag",
+        "placeholder": "tag…",
+        "short": "tag"
+    },
+    "auth": {
+        "signIn": "Sign in",
+        "signUp": "Sign up"
+    },
+    "language": {
+        "heading": "Language and formats",
+        "label": "Interface language",
+        "hint": "Your own entries — tasks, journal, tags — are never translated.",
+        "currency": "Currency",
+        "currencyHint": "How amounts are displayed. It does not convert anything: the numbers you have entered stay exactly as they are."
+    },
+    "hyperfocus": {
+        "setupHeading": "Getting ready to hyperfocus",
+        "setupBlurb": "Pick ONE task. Everything else will be locked out.",
+        "ownTask": "My own task",
+        "start": "Start ({{count}} min)",
+        "cancel": "Cancel",
+        "label": "Hyperfocus",
+        "currentTask": "Current task:",
+        "interrupt": "Break the cycle",
+        "doneHeading": "Cycle complete.",
+        "doneBlurb": "What did you get done in {{count}} minutes?",
+        "reflectionPlaceholder": "Describe the result…",
+        "saveAndExit": "Save and leave",
+        "brokenHeading": "Cycle broken",
+        "brokenBlurb": "What pulled you away? This goes into the analytics.",
+        "justClose": "Just close",
+        "journalEntry": "[Hyperfocus] {{minutes}} min — Did: {{what}}"
+    },
+    "onboarding": {
+        "goalsHeading": "What should GeQu help with?",
+        "goalsBlurb": "You can change this at any time — nothing gets deleted.",
+        "depthHeading": "How much do you want to track?",
+        "depthBlurb": "The extra sections just get hidden from the menu.",
+        "back": "← Back",
+        "skip": "Skip and show everything",
+        "goal": {
+            "focus": {
+                "label": "Focus",
+                "hint": "Fewer distractions, longer on a task"
+            },
+            "productivity": {
+                "label": "Productivity",
+                "hint": "Tasks, goals, planning the day"
+            },
+            "adhd": {
+                "label": "ADHD",
+                "hint": "Structure, reminders, questionnaires"
+            },
+            "health": {
+                "label": "Health",
+                "hint": "Sleep, body, training, mood"
+            },
+            "self": {
+                "label": "Understanding myself",
+                "hint": "Journal, patterns, insights"
+            },
+            "all": {
+                "label": "All of it",
+                "hint": "Show me the full set"
+            }
+        },
+        "depth": {
+            "minimal": {
+                "label": "Minimal",
+                "hint": "Only what is needed, nothing more"
+            },
+            "balanced": {
+                "label": "Middling",
+                "hint": "The main sections, the rest if you want them"
+            },
+            "detailed": {
+                "label": "Thorough",
+                "hint": "Every tool, right away"
+            }
+        }
+    }
+}

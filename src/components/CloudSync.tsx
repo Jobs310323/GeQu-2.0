@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@clerk/clerk-react';
 import { onDbChange } from '../lib/db';
 import {
@@ -137,10 +138,10 @@ export function CloudSync() {
     return <SyncChip status={status} />;
 }
 
-const CHIP: Record<Exclude<SyncStatus, 'idle' | 'synced'>, { text: string; tone: string }> = {
-    syncing: { text: 'Синхронизация…', tone: 'text-[var(--gq-text-tertiary)]' },
-    offline: { text: 'Офлайн — изменения сохранены локально', tone: 'text-warning' },
-    error: { text: 'Не удалось синхронизировать', tone: 'text-danger' },
+const CHIP: Record<Exclude<SyncStatus, 'idle' | 'synced'>, { key: string; tone: string }> = {
+    syncing: { key: 'common:sync.syncing', tone: 'text-[var(--gq-text-tertiary)]' },
+    offline: { key: 'common:sync.offline', tone: 'text-warning' },
+    error: { key: 'common:sync.error', tone: 'text-danger' },
 };
 
 /**
@@ -149,14 +150,15 @@ const CHIP: Record<Exclude<SyncStatus, 'idle' | 'synced'>, { text: string; tone:
  * usable, so nothing here should block or alarm.
  */
 function SyncChip({ status }: { status: Exclude<SyncStatus, 'idle' | 'synced'> }) {
-    const { text, tone } = CHIP[status];
+    const { t } = useTranslation('common');
+    const { key, tone } = CHIP[status];
     return (
         <output
             aria-live="polite"
             className={`fixed bottom-20 md:bottom-4 left-1/2 -translate-x-1/2 z-sticky
                 glass-card rounded-full px-3.5 py-1.5 t-caption ${tone} pointer-events-none`}
         >
-            {text}
+            {t(key)}
         </output>
     );
 }
