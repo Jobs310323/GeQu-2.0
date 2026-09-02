@@ -22,6 +22,7 @@ import enInsights from './locales/en/insights.json';
 import enTrack from './locales/en/track.json';
 import enGym from './locales/en/gym.json';
 import enProfile from './locales/en/profile.json';
+import enBrain from './locales/en/brain.json';
 import ruCommon from './locales/ru/common.json';
 import ruNav from './locales/ru/nav.json';
 import ruToday from './locales/ru/today.json';
@@ -30,12 +31,13 @@ import ruInsights from './locales/ru/insights.json';
 import ruTrack from './locales/ru/track.json';
 import ruGym from './locales/ru/gym.json';
 import ruProfile from './locales/ru/profile.json';
+import ruBrain from './locales/ru/brain.json';
 
-export const NAMESPACES = ['common', 'nav', 'today', 'capture', 'insights', 'track', 'gym', 'profile'] as const;
+export const NAMESPACES = ['common', 'nav', 'today', 'capture', 'insights', 'track', 'gym', 'profile', 'brain'] as const;
 
 export const resources = {
-    en: { common: enCommon, nav: enNav, today: enToday, capture: enCapture, insights: enInsights, track: enTrack, gym: enGym, profile: enProfile },
-    ru: { common: ruCommon, nav: ruNav, today: ruToday, capture: ruCapture, insights: ruInsights, track: ruTrack, gym: ruGym, profile: ruProfile },
+    en: { common: enCommon, nav: enNav, today: enToday, capture: enCapture, insights: enInsights, track: enTrack, gym: enGym, profile: enProfile, brain: enBrain },
+    ru: { common: ruCommon, nav: ruNav, today: ruToday, capture: ruCapture, insights: ruInsights, track: ruTrack, gym: ruGym, profile: ruProfile, brain: ruBrain },
 } as const;
 
 const locale = resolveLocale();

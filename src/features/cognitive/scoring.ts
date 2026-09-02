@@ -116,7 +116,7 @@ export function scoreAttempt(
         ...(opts.durationMs === undefined ? {} : { durationMs: opts.durationMs }),
         deviceContext: opts.context ?? readDeviceContext(),
         confidence: confidenceFor(history.length),
-        limitations: engine.limitations,
+        limitations: engine.limitationKeys,
     };
 }
 

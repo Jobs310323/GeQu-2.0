@@ -2,15 +2,17 @@
 // Behaviour is unchanged; only the file boundary moved.
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type BreathPhase = 'idle' | 'inhale' | 'hold1' | 'exhale' | 'hold2' | 'finished';
 
 export function BreathingExercise() {
+    const { t } = useTranslation('brain');
     const [phase, setPhase] = useState<BreathPhase>('idle');
     const [timeLeft, setTimeLeft] = useState(0);
     const [cycles, setCycles] = useState(0);
     const targetCycles = 4;
-    const secondsPerSide = 4; // квадратное дыхание 4-4-4-4
+    const secondsPerSide = 4; // box breathing: 4-4-4-4
 
     useEffect(() => {
         if (phase === 'idle' || phase === 'finished') return;
@@ -42,12 +44,12 @@ export function BreathingExercise() {
         br: { left: SIDE, top: SIDE },
     };
     const config: Record<BreathPhase, { to: keyof typeof corners; label: string; accent: string }> = {
-        idle:     { to: 'bl', label: 'Готов?',   accent: 'var(--text-muted)' },
-        inhale:   { to: 'tl', label: 'Вдох',     accent: 'var(--accent-cyan)' },
-        hold1:    { to: 'tr', label: 'Задержи',  accent: 'var(--accent-purple)' },
-        exhale:   { to: 'br', label: 'Выдох',    accent: 'var(--accent-pink)' },
-        hold2:    { to: 'bl', label: 'Задержи',  accent: 'var(--accent-purple)' },
-        finished: { to: 'bl', label: 'Готово!',  accent: '#22c55e' },
+        idle:     { to: 'bl', label: t('brain:ex.breathing.phase.idle'),     accent: 'var(--text-muted)' },
+        inhale:   { to: 'tl', label: t('brain:ex.breathing.phase.inhale'),   accent: 'var(--accent-cyan)' },
+        hold1:    { to: 'tr', label: t('brain:ex.breathing.phase.hold'),     accent: 'var(--accent-purple)' },
+        exhale:   { to: 'br', label: t('brain:ex.breathing.phase.exhale'),   accent: 'var(--accent-pink)' },
+        hold2:    { to: 'bl', label: t('brain:ex.breathing.phase.hold'),     accent: 'var(--accent-purple)' },
+        finished: { to: 'bl', label: t('brain:ex.breathing.phase.finished'), accent: '#22c55e' },
     };
     const active = config[phase];
     const dot = corners[active.to];
@@ -63,8 +65,8 @@ export function BreathingExercise() {
 
     return (
         <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center justify-center min-h-[60vh]">
-            <h3 className="text-2xl font-bold text-white mb-2">Квадратное дыхание (4-4-4-4)</h3>
-            <p className="text-gray-400 mb-10 text-sm text-center">Веди дыхание по сторонам квадрата: вдох, задержка, выдох, задержка. Цикл: {cycles}/{targetCycles}</p>
+            <h3 className="text-2xl font-bold text-white mb-2">{t('brain:ex.breathing.heading')}</h3>
+            <p className="text-gray-400 mb-10 text-sm text-center">{t('brain:ex.breathing.blurb', { done: cycles, total: targetCycles })}</p>
 
             <div className="relative mb-10" style={{ width: SIDE, height: SIDE }}>
                 {/* Square edges (light up on the active side) */}
@@ -95,13 +97,13 @@ export function BreathingExercise() {
 
             {phase === 'finished' ? (
                 <div className="text-center">
-                    <p className="text-gray-300 mb-4">Сессия завершена. Ты молодец! 🌿</p>
-                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Начать заново</button>
+                    <p className="text-gray-300 mb-4">{t('brain:ex.breathing.sessionDone')}</p>
+                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{t('brain:ex.common.restart')}</button>
                 </div>
             ) : phase === 'idle' ? (
-                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Начать дыхание</button>
+                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{t('brain:ex.breathing.startBreathing')}</button>
             ) : (
-                <button onClick={() => setPhase('finished')} className="text-gray-500 hover:text-red-400 text-sm underline">Прервать сессию</button>
+                <button onClick={() => setPhase('finished')} className="text-gray-500 hover:text-red-400 text-sm underline">{t('brain:ex.breathing.stop')}</button>
             )}
         </div>
     );

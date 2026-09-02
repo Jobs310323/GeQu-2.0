@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { i18next } from '../../i18n';
+import { SUPPORTED_LOCALES } from '../../i18n/locale';
 import {
     normalize, personalPercentile, confidenceFor, scoreAttempt, historyFor,
     MIN_ATTEMPTS_FOR_PERCENTILE, MIN_ATTEMPTS_FOR_CONFIDENCE, ATTEMPTS_FOR_MODERATE_CONFIDENCE,
@@ -27,10 +29,18 @@ describe('registry', () => {
         expect(e.version).toMatch(/^\d+\.\d+\.\d+$/);
         const [lo, hi] = e.plausibleRange;
         expect(hi).toBeGreaterThan(lo);
-        expect(e.limitations.length).toBeGreaterThan(0);
+        expect(e.limitationKeys.length).toBeGreaterThan(0);
         // A caveat vague enough to apply to anything teaches users to skip the
-        // ones that matter.
-        for (const l of e.limitations) expect(l.length).toBeGreaterThan(30);
+        // ones that matter, so the length check moved to the rendered sentence
+        // rather than the key — and now runs for both locales.
+        for (const locale of SUPPORTED_LOCALES) {
+            const tr = i18next.getFixedT(locale);
+            for (const key of e.limitationKeys) {
+                const sentence = tr(key) as unknown as string;
+                expect(sentence, `${key} (${locale})`).not.toBe(key);
+                expect(sentence.length, `${key} (${locale})`).toBeGreaterThan(30);
+            }
+        }
     });
 
     it('splits into assessments and drills with nothing left over', () => {
@@ -147,7 +157,7 @@ describe('scoreAttempt', () => {
     });
 
     it('attaches the exercise limitations to every result', () => {
-        expect(scoreAttempt(schulte, 35, []).limitations).toEqual(schulte.limitations);
+        expect(scoreAttempt(schulte, 35, []).limitations).toEqual(schulte.limitationKeys);
     });
 
     it('records the pointer type, which materially changes reaction scores', () => {

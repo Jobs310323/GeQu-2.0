@@ -2,12 +2,17 @@
 // Behaviour is unchanged; only the file boundary moved.
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatNumber } from '../../../lib/format';
 import { recordAttempt } from '../record';
 import type { ExerciseProps } from '../../../types/props';
 import type { GridCell } from './types';
 
 export function TrailMakingTest({ setTestResults }: ExerciseProps) {
-    const targets = ['1','А','2','Б','3','В','4','Г','5','Д','6','Е','7','Ж','8','З'];
+    const { t } = useTranslation('brain');
+    // The alternating sequence is the task itself, so it is per-locale: an
+    // English speaker cannot run a trail-making test through Cyrillic letters.
+    const targets = t('brain:ex.trail.targets', { returnObjects: true }) as unknown as string[];
     const [grid, setGrid] = useState<GridCell<string>[]>([]);
     const [nextIndex, setNextIndex] = useState(0);
     const [time, setTime] = useState(0);
@@ -57,18 +62,18 @@ export function TrailMakingTest({ setTestResults }: ExerciseProps) {
 
     return (
         <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
-            <p className="text-gray-400 mb-4 text-center">Кликайте по очереди: 1 → А → 2 → Б → 3 и т.д.</p>
+            <p className="text-gray-400 mb-4 text-center">{t('brain:ex.trail.blurb')}</p>
             <div className="text-3xl font-bold text-cyan-400 mb-6 tabular-nums">{(time / 1000).toFixed(1)}s</div>
             
             {!isRunning && !isFinished && (
-                <button onClick={initGame} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg mb-6">Начать тест</button>
+                <button onClick={initGame} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg mb-6">{t('brain:ex.trail.start')}</button>
             )}
             
             {isFinished && (
                 <div className="text-center mb-6">
-                    <div className="text-4xl font-bold text-green-400 mb-2">Готово!</div>
-                    <div className="text-xl text-gray-300">Ваше время: {(time / 1000).toFixed(1)} сек</div>
-                    <button onClick={initGame} className="mt-4 bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-2 rounded-lg">Заново</button>
+                    <div className="text-4xl font-bold text-green-400 mb-2">{t('brain:ex.trail.done')}</div>
+                    <div className="text-xl text-gray-300">{t('brain:ex.trail.yourTime', { seconds: formatNumber(time / 1000, 1) })}</div>
+                    <button onClick={initGame} className="mt-4 bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-6 py-2 rounded-lg">{t('brain:ex.trail.restart')}</button>
                 </div>
             )}
 

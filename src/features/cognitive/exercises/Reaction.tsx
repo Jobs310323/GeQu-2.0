@@ -2,11 +2,14 @@
 // Behaviour is unchanged; only the file boundary moved.
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { REACTION_ACHIEVEMENTS, achievementName } from '../achievements';
 import { recordAttempt } from '../record';
 import { Icon } from '../../../components/Icons';
 import type { ScoredExerciseProps } from '../../../types/props';
 
 export function ReactionTest({ setTestResults, achievements, setAchievements }: ScoredExerciseProps) {
+    const { t } = useTranslation('brain');
     const [state, setState] = useState<'idle' | 'waiting' | 'ready' | 'result' | 'tooSoon'>('idle');
     const [time, setTime] = useState(0);
     const [best, setBest] = useState<number | null>(null);
@@ -19,7 +22,7 @@ export function ReactionTest({ setTestResults, achievements, setAchievements }: 
     const addAchievement = (name: string) => {
         if (Array.isArray(achievements) && !achievements.includes(name)) {
             setAchievements(prev => [...prev, name]);
-            setToast(`Ачивка: «${name}»!`);
+            setToast(t('brain:ex.reaction.achievementToast', { name: achievementName(name, t) }));
             setTimeout(() => setToast(''), 4000);
         }
     };
@@ -46,26 +49,28 @@ export function ReactionTest({ setTestResults, achievements, setAchievements }: 
             setState('result');
             recordAttempt(setTestResults, 'reaction', rt);
             if (best === null || rt < best) setBest(rt);
-            if (rt < 200) addAchievement('Сверхреакция (<200 мс)');
-            else if (rt < 250) addAchievement('Молния (<250 мс)');
-            else if (rt < 300) addAchievement('Быстрая рука (<300 мс)');
+            if (rt < 200) addAchievement(REACTION_ACHIEVEMENTS.superhuman);
+            else if (rt < 250) addAchievement(REACTION_ACHIEVEMENTS.lightning);
+            else if (rt < 300) addAchievement(REACTION_ACHIEVEMENTS.quickHand);
         }
     };
 
-    const rating = time < 200 ? 'Невероятно! ⚡' : time < 250 ? 'Молниеносно' : time < 300 ? 'Отлично' : time < 400 ? 'Хорошо' : 'Есть куда расти';
+    const rating = t(`brain:ex.reaction.rating.${
+        time < 200 ? 'incredible' : time < 250 ? 'lightning' : time < 300 ? 'great' : time < 400 ? 'good' : 'room'
+    }`);
 
     const bgClass = state === 'ready' ? 'bg-green-500' : state === 'waiting' ? 'bg-red-500/90' : state === 'tooSoon' ? 'bg-orange-500/80' : 'bg-[var(--bg-card)]';
 
     return (
         <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
-            <p className="text-gray-400 mb-4 text-center">Дождись зелёного цвета и кликни как можно быстрее.</p>
-            {best !== null && <div className="text-sm text-gray-400 mb-4">Лучший результат за сессию: <span className="text-cyan-400 font-bold">{best} мс</span></div>}
+            <p className="text-gray-400 mb-4 text-center">{t('brain:ex.reaction.blurb')}</p>
+            {best !== null && <div className="text-sm text-gray-400 mb-4">{t('brain:ex.reaction.bestThisSession')}<span className="text-cyan-400 font-bold">{best} {t('brain:ex.reaction.ms')}</span></div>}
 
             {/* A real button, so the test can be taken with the keyboard. These
                 measure reaction time, not mouse skill — forcing a pointer
                 excludes exactly the users the tool is meant to help. */}
             <button type="button" onClick={handleClick}
-                aria-label="Область реакции — нажми, когда станет зелёной"
+                aria-label={t('brain:ex.reaction.area')}
                 className={`relative w-full max-w-md h-64 flex items-center justify-center rounded-2xl cursor-pointer border-2 border-[var(--border)] overflow-hidden transition-colors duration-150 ${bgClass}`}>
                 {/* waiting: pulsing dots */}
                 {state === 'waiting' && (
@@ -75,17 +80,17 @@ export function ReactionTest({ setTestResults, achievements, setAchievements }: 
                                 <span key={i} className="w-3 h-3 rounded-full bg-white/80 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
                             ))}
                         </div>
-                        <span className="text-2xl font-bold text-white">Ждите зелёного…</span>
+                        <span className="text-2xl font-bold text-white">{t('brain:ex.reaction.waitGreen')}</span>
                     </div>
                 )}
                 {state === 'ready' && (
-                    <span key="go" style={{ animation: 'popIn 0.15s ease-out' }} className="text-5xl font-extrabold text-white">КЛИК!</span>
+                    <span key="go" style={{ animation: 'popIn 0.15s ease-out' }} className="text-5xl font-extrabold text-white">{t('brain:ex.reaction.click')}</span>
                 )}
-                {state === 'idle' && <span className="text-3xl font-bold text-white text-center px-4">Нажмите, чтобы начать</span>}
-                {state === 'tooSoon' && <span className="text-2xl font-bold text-white text-center px-4">Рано! Дождись зелёного 🙂</span>}
+                {state === 'idle' && <span className="text-3xl font-bold text-white text-center px-4">{t('brain:ex.reaction.pressToStart')}</span>}
+                {state === 'tooSoon' && <span className="text-2xl font-bold text-white text-center px-4">{t('brain:ex.reaction.tooSoon')}</span>}
                 {state === 'result' && (
                     <div key={time} className="text-center" style={{ animation: 'popIn 0.25s ease-out' }}>
-                        <div className="text-6xl font-extrabold text-white tabular-nums">{time}<span className="text-2xl"> мс</span></div>
+                        <div className="text-6xl font-extrabold text-white tabular-nums">{time}<span className="text-2xl"> {t('brain:ex.reaction.ms')}</span></div>
                         <div className="text-lg text-white/90 mt-2">{rating}</div>
                     </div>
                 )}
@@ -93,7 +98,7 @@ export function ReactionTest({ setTestResults, achievements, setAchievements }: 
 
             {state === 'result' && (
                 <button onClick={startTest} className="mt-8 bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">
-                    Попробовать ещё раз
+                    {t('brain:ex.common.tryAgain')}
                 </button>
             )}
 

@@ -2,11 +2,13 @@
 // Behaviour is unchanged; only the file boundary moved.
 
 import { useState, useEffect } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { recordAttempt } from '../record';
 import { Icon } from '../../../components/Icons';
 import type { ExerciseProps } from '../../../types/props';
 
 export function NBackTest({ setTestResults }: ExerciseProps) {
+    const { t } = useTranslation('brain');
     const [phase, setPhase] = useState<'config' | 'playing' | 'finished'>('config');
     const [nLevel, setNLevel] = useState(2);
     const [currentIdx, setCurrentIdx] = useState(0);
@@ -40,7 +42,7 @@ export function NBackTest({ setTestResults }: ExerciseProps) {
         setPhase('playing');
     };
 
-    // Игровой цикл
+    // The trial loop.
     useEffect(() => {
         if (phase !== 'playing') return;
         
@@ -63,7 +65,7 @@ export function NBackTest({ setTestResults }: ExerciseProps) {
             const accuracy = matches > 0 ? Math.max(0, ((hits - falseAlarms) / matches) * 100) : 0;
 
             setFinalAccuracy(accuracy);
-            recordAttempt(setTestResults, 'nback', accuracy); // Твоя функция сохранения
+            recordAttempt(setTestResults, 'nback', accuracy);
             setPhase('finished');
             return;
         }
@@ -90,7 +92,7 @@ export function NBackTest({ setTestResults }: ExerciseProps) {
         });
     };
 
-    // Пробел для ответа
+    // Space bar answers.
     useEffect(() => {
         const handleKey = (e: KeyboardEvent) => {
             if (e.code === 'Space' && phase === 'playing') {
@@ -105,13 +107,13 @@ export function NBackTest({ setTestResults }: ExerciseProps) {
     if (phase === 'finished') {
         return (
             <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
-                <h3 className="text-2xl font-bold text-white mb-4">Тест завершен!</h3>
+                <h3 className="text-2xl font-bold text-white mb-4">{t('brain:ex.nBack.done')}</h3>
                 <p className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 mb-2">
                     {finalAccuracy.toFixed(1)}%
                 </p>
-                <p className="text-gray-400 mb-6 text-center">Точность рабочей памяти. Результат сохранен.</p>
+                <p className="text-gray-400 mb-6 text-center">{t('brain:ex.nBack.blurb')}</p>
                 <button onClick={() => setPhase('config')} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">
-                    Пройти еще раз
+                    {t('brain:ex.nBack.runAgain')}
                 </button>
             </div>
         );
@@ -121,11 +123,11 @@ export function NBackTest({ setTestResults }: ExerciseProps) {
         return (
             <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
                 <div className="w-full max-w-md flex justify-between items-center mb-6">
-                    <span className="text-gray-400 text-sm">Уровень: <span className="text-white font-bold">{nLevel}-Back</span></span>
-                    <span className="text-gray-400 text-sm">Прогресс: <span className="text-white font-bold">{currentIdx} / {totalTrials}</span></span>
+                    <span className="text-gray-400 text-sm">{t('brain:ex.nBack.level')}<span className="text-white font-bold">{nLevel}-Back</span></span>
+                    <span className="text-gray-400 text-sm">{t('brain:ex.nBack.progress')}<span className="text-white font-bold">{currentIdx} / {totalTrials}</span></span>
                 </div>
                 
-                {/* Сетка 3x3 */}
+                {/* The 3x3 grid. */}
                 <div className="grid grid-cols-3 gap-3 w-64 h-64 mb-8">
                     {Array.from({ length: 9 }).map((_, i) => (
                         <div key={i} className={`rounded-xl border border-[var(--border)] transition-all duration-150 ${activeCell === i ? 'bg-cyan-400 scale-95 shadow-lg shadow-cyan-400/50' : 'bg-[var(--bg-input)]'}`}></div>
@@ -136,18 +138,21 @@ export function NBackTest({ setTestResults }: ExerciseProps) {
                     onClick={handleMatch}
                     className={`w-full max-w-md px-8 py-4 rounded-xl font-bold transition-all duration-150 flex items-center justify-center gap-2 ${hasAnswered ? 'bg-green-500/20 text-green-400 border border-green-500/30 scale-95' : 'bg-purple-400/10 text-purple-400 border border-purple-400/20 hover:bg-purple-400/20'}`}
                 >
-                    {hasAnswered ? <><Icon name="check" size={16} /> Отмечено</> : 'Совпадение! (или Space)'}
+                    {hasAnswered ? <><Icon name="check" size={16} /> {t('brain:ex.nBack.marked')}</> : t('brain:ex.nBack.match')}
                 </button>
             </div>
         );
     }
 
-    // Экран настроек (phase === 'config')
+    // The setup screen (phase === 'config').
     return (
         <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
-            <h3 className="text-2xl font-bold text-white mb-4">N-Back Тренировка</h3>
+            <h3 className="text-2xl font-bold text-white mb-4">{t('brain:ex.nBack.heading')}</h3>
             <p className="text-gray-400 mb-6 text-center max-w-md text-sm">
-                На экране будут появляться квадраты. Нажимайте кнопку, если квадрат появился в той же позиции, что и <span className="text-cyan-400 font-bold">N шагов назад</span>.
+                <Trans
+                    i18nKey="brain:ex.nBack.intro"
+                    components={[<span key="0" />, <span key="1" className="text-cyan-400 font-bold" />]}
+                />
             </p>
             
             <div className="flex gap-3 mb-8">
@@ -160,7 +165,7 @@ export function NBackTest({ setTestResults }: ExerciseProps) {
             </div>
 
             <button onClick={() => startTest(nLevel)} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">
-                Начать тест
+                {t('brain:ex.nBack.startTest')}
             </button>
         </div>
     );

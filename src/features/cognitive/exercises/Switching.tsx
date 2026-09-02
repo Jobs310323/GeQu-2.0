@@ -2,10 +2,12 @@
 // Behaviour is unchanged; only the file boundary moved.
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { recordAttempt } from '../record';
 import type { ExerciseProps } from '../../../types/props';
 
 export function SwitchingTest({ setTestResults }: ExerciseProps) {
+    const { t } = useTranslation('brain');
     const [playing, setPlaying] = useState(false);
     const [time, setTime] = useState(45);
     const [score, setScore] = useState(0);
@@ -49,22 +51,22 @@ export function SwitchingTest({ setTestResults }: ExerciseProps) {
 
     return (
         <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
-            <p className="text-gray-400 mb-6 text-center">Правило меняется на ходу — следи за подсказкой сверху.</p>
+            <p className="text-gray-400 mb-6 text-center">{t('brain:ex.switching.blurb')}</p>
 
             {!playing && time === 45 && (
-                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Начать (45 сек)</button>
+                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{t('brain:ex.switching.start')}</button>
             )}
 
             {playing && card && (
                 <>
                     <div className="flex gap-8 mb-4 text-lg">
-                        <span>Очки: <b className="text-cyan-400">{score}</b></span>
-                        <span>Время: <b className="text-pink-400">{time}s</b></span>
+                        <span>{t('brain:ex.common.score')}<b className="text-cyan-400">{score}</b></span>
+                        <span>{t('brain:ex.common.time')}<b className="text-pink-400">{time}s</b></span>
                     </div>
 
                     <div key={rule} style={{ animation: 'popIn 0.2s ease-out' }}
                         className="mb-6 px-5 py-2 rounded-xl bg-purple-400/15 border border-purple-400/40 text-purple-400 font-bold">
-                        {rule === 'parity' ? 'Правило: число ЧЁТНОЕ?' : 'Правило: цвет ТЁПЛЫЙ?'}
+                        {rule === 'parity' ? t('brain:ex.switching.ruleParity') : t('brain:ex.switching.ruleColour')}
                     </div>
 
                     <div className={`w-40 h-40 rounded-2xl flex items-center justify-center text-7xl font-extrabold mb-8 ${
@@ -75,9 +77,9 @@ export function SwitchingTest({ setTestResults }: ExerciseProps) {
 
                     <div className="flex gap-4">
                         <button onClick={() => answer(true)}
-                            className="px-10 py-3 rounded-xl border border-green-400/50 text-green-400 hover:bg-green-400/10 font-bold transition">Да</button>
+                            className="px-10 py-3 rounded-xl border border-green-400/50 text-green-400 hover:bg-green-400/10 font-bold transition">{t('brain:ex.switching.yes')}</button>
                         <button onClick={() => answer(false)}
-                            className="px-10 py-3 rounded-xl border border-red-400/50 text-red-400 hover:bg-red-400/10 font-bold transition">Нет</button>
+                            className="px-10 py-3 rounded-xl border border-red-400/50 text-red-400 hover:bg-red-400/10 font-bold transition">{t('brain:ex.switching.no')}</button>
                     </div>
                 </>
             )}
@@ -85,8 +87,8 @@ export function SwitchingTest({ setTestResults }: ExerciseProps) {
             {!playing && time === 0 && (
                 <div className="text-center">
                     <div className="text-5xl font-bold text-cyan-400 mb-2">{score}</div>
-                    <p className="text-gray-400 mb-6">Очков за 45 секунд</p>
-                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Играть снова</button>
+                    <p className="text-gray-400 mb-6">{t('brain:ex.switching.resultBlurb')}</p>
+                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{t('brain:ex.common.playAgain')}</button>
                 </div>
             )}
         </div>

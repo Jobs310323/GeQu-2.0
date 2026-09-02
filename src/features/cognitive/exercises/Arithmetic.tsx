@@ -2,11 +2,13 @@
 // Behaviour is unchanged; only the file boundary moved.
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { recordAttempt } from '../record';
 import type { ExerciseProps } from '../../../types/props';
 import type { FormEvent } from 'react';
 
 export function ArithmeticTest({ setTestResults }: ExerciseProps) {
+    const { t } = useTranslation('brain');
     const [playing, setPlaying] = useState(false);
     const [time, setTime] = useState(60);
     const [score, setScore] = useState(0);
@@ -56,17 +58,17 @@ export function ArithmeticTest({ setTestResults }: ExerciseProps) {
 
     return (
         <div className="glass-card p-4 sm:p-8 rounded-2xl flex flex-col items-center">
-            <p className="text-gray-400 mb-6 text-center">Считай в уме как можно быстрее. За ошибку —1 балл.</p>
+            <p className="text-gray-400 mb-6 text-center">{t('brain:ex.arithmetic.blurb')}</p>
 
             {!playing && time === 60 && (
-                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Начать (60 сек)</button>
+                <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{t('brain:ex.arithmetic.start')}</button>
             )}
 
             {playing && task && (
                 <>
                     <div className="flex gap-8 mb-6 text-xl">
-                        <span>Очки: <b className="text-cyan-400">{score}</b></span>
-                        <span>Время: <b className="text-pink-400">{time}s</b></span>
+                        <span>{t('brain:ex.common.score')}<b className="text-cyan-400">{score}</b></span>
+                        <span>{t('brain:ex.common.time')}<b className="text-pink-400">{time}s</b></span>
                     </div>
                     <div className={`text-6xl font-extrabold mb-6 transition-colors ${
                         flash === 'ok' ? 'text-green-400' : flash === 'bad' ? 'text-red-400' : 'text-white'
@@ -77,15 +79,15 @@ export function ArithmeticTest({ setTestResults }: ExerciseProps) {
                         <input autoFocus type="number" value={input} onChange={e => setInput(e.target.value)}
                             className="bg-[var(--bg-input)] border-2 border-[var(--border)] rounded-xl px-6 py-3 text-3xl text-center w-48 outline-none focus:border-cyan-400 text-white" />
                     </form>
-                    <p className="text-xs text-gray-500 mt-3">Enter — ответить</p>
+                    <p className="text-xs text-gray-500 mt-3">{t('brain:ex.arithmetic.enterHint')}</p>
                 </>
             )}
 
             {!playing && time === 0 && (
                 <div className="text-center">
                     <div className="text-5xl font-bold text-cyan-400 mb-2">{score}</div>
-                    <p className="text-gray-400 mb-6">Правильных ответов за минуту</p>
-                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">Играть снова</button>
+                    <p className="text-gray-400 mb-6">{t('brain:ex.arithmetic.resultBlurb')}</p>
+                    <button onClick={start} className="bg-gradient-to-r from-cyan-400 to-purple-400 text-black font-bold px-8 py-3 rounded-lg">{t('brain:ex.common.playAgain')}</button>
                 </div>
             )}
         </div>
