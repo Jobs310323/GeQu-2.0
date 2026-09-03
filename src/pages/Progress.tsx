@@ -4,16 +4,14 @@ import { computeXp, levelFromXp, chapterFor, evaluateAchievements, xpToReach } f
 import { PageHeader } from '../components/PageHeader';
 import { Icon } from '../components/Icons';
 import { Dynamics } from './Dynamics';
-import { SnowmanAnalytics } from '../features/snowman/SnowmanAnalytics';
 import type { ProgressProps } from '../types/props';
 
 const TABS = [
     { id: 'progress', label: 'Прогресс' },
     { id: 'dynamics', label: 'Динамика' },
-    { id: 'snowman', label: 'Снеговик' },
 ];
 
-export function Progress({ logs, habits, kanban, gymData, testResults, diary, snowmanDays }: ProgressProps) {
+export function Progress({ logs, habits, kanban, gymData, testResults, diary }: ProgressProps) {
     const [tab, setTab] = useState('progress');
     const data = { logs, habits, kanban, gymData, testResults };
     const { total, breakdown } = computeXp(data);
@@ -39,8 +37,6 @@ export function Progress({ logs, habits, kanban, gymData, testResults, diary, sn
 
             {tab === 'dynamics' ? (
                 <Dynamics logs={logs} testResults={testResults} gymData={gymData} />
-            ) : tab === 'snowman' ? (
-                <SnowmanAnalytics days={snowmanDays ?? []} />
             ) : (
                 <>
                     <div className="mb-6">

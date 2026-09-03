@@ -41,7 +41,6 @@ export const router = createBrowserRouter([
             { path: 'track/habits', element: <R.HabitsRoute /> },
             { path: 'track/journal', element: <R.DiaryRoute /> },
             { path: 'track/body', element: <R.GymRoute /> },
-            { path: 'track/balance', element: <R.SnowmanRoute /> },
             { path: 'track/finance', element: <R.FinanceRoute /> },
             { path: 'track', element: <Navigate to="/track/habits" replace /> },
 
@@ -51,7 +50,6 @@ export const router = createBrowserRouter([
 
             { path: 'brain/train', element: <R.TrainingRoute /> },
             { path: 'brain/assess', element: <R.ClinicalRoute /> },
-            { path: 'brain/reflect', element: <R.CirclesRoute /> },
             { path: 'brain/learn', element: <R.KnowledgeRoute /> },
             { path: 'brain', element: <Navigate to="/brain/train" replace /> },
 

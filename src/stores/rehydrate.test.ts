@@ -95,7 +95,7 @@ describe('rehydrating', () => {
         // to undefined would break every component reading it.
         rehydrateStores();
         expect(useTasks.getState().kanban).toEqual([]);
-        expect(useCognitive.getState().circles).toEqual([]);
+        expect(useCognitive.getState().results).toEqual([]);
         expect(useAppUi.getState().theme).toBeDefined();
     });
 

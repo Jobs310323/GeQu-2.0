@@ -164,16 +164,6 @@ export interface CbtRecord {
     outcome?: string | undefined;
 }
 
-// --- circles of control ----------------------------------------------------
-
-export type CircleRing = 'inner' | 'middle' | 'outer';
-
-export interface CircleItem {
-    id: number;
-    text: string;
-    circle: CircleRing;
-}
-
 // --- gym -------------------------------------------------------------------
 
 export type ExerciseKind = 'strength' | 'cardio';
@@ -277,7 +267,6 @@ export type UnlockedAchievements = string[];
 
 export type { Goal, Task as GoalStep } from './goals';
 export type { FinanceData, FinanceEntry, Category, Debt, Subscription } from '../features/finance/types';
-export type { ActivityLabel, DayRecord } from '../features/snowman/types';
 
 /** Everything the app persists per user, in one place. */
 export interface GequData {
@@ -289,7 +278,6 @@ export interface GequData {
     tests: TestResult[];
     clinical: ClinicalResult[];
     cbt: CbtRecord[];
-    circles: CircleItem[];
     reminders: Reminder[];
     gym: GymData;
 }

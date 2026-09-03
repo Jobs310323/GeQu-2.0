@@ -7,7 +7,7 @@ import { computeXp, levelFromXp, evaluateAchievements, type GameData } from './x
 import { streakLength, startOfLocalDay } from './datetime';
 import type {
     DayLog, DiaryEntry, Habit, KanbanTask, TestResult, ClinicalResult, CbtRecord,
-    CircleItem, GymData,
+    GymData,
 } from '../types/domain';
 import type { Goal } from '../types/goals';
 import type { FinanceData, FinanceEntry } from '../features/finance/types';
@@ -63,7 +63,6 @@ export interface ProfileInput {
     clinicalResults?: ClinicalResult[];
     cbtRecords?: CbtRecord[];
     finance?: FinanceData | null;
-    circles?: CircleItem[];
 }
 
 export function buildProfile(d: ProfileInput) {
@@ -201,15 +200,6 @@ export function buildProfile(d: ProfileInput) {
         monthlySubscriptions: Math.round((fin.subscriptions ?? []).reduce((s: number, x) => s + (Number(x.amount) || 0), 0)),
     } : null;
 
-    // --- circles of control/influence/concern ---
-    const circleItems = d.circles ?? [];
-    const circles = circleItems.length ? {
-        inControl: circleItems.filter((c) => c.circle === 'inner').length,
-        canInfluence: circleItems.filter((c) => c.circle === 'middle').length,
-        beyondControl: circleItems.filter((c) => c.circle === 'outer').length,
-        examples: circleItems.slice(0, 6).map((c) => ({ circle: c.circle, text: String(c.text ?? '').slice(0, 120) })),
-    } : null;
-
     // --- gamification ---
     const gameData: GameData = {
         logs, habits: d.habits ?? [], kanban, gymData: d.gymData ?? {}, testResults: d.testResults ?? [],
@@ -260,7 +250,6 @@ export function buildProfile(d: ProfileInput) {
         clinical,
         cbt: cbtSummary,
         finance,
-        circles,
         journal: {
             entries: (d.diary ?? []).length,
             gratitudeEntries: logs.reduce((s: number, l) => s + (l.gratitude?.length ?? 0), 0),

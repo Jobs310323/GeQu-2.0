@@ -47,7 +47,7 @@ function asDate(value: Date | string | number): Date {
  * that locale's data).
  *
  * A value that is *already* a calendar date is returned untouched. This matters:
- * habit history, reminders and Snowman day records store bare `YYYY-MM-DD`, and
+ * habit history and reminders store bare `YYYY-MM-DD`, and
  * `new Date('2026-08-28')` parses as UTC midnight — which in any timezone behind
  * UTC is the evening of the 27th, so round-tripping one through a Date would
  * walk it a day backwards every time.
@@ -148,8 +148,8 @@ export function recentDateKeys(count: number): DateKey[] {
  * survives until the day is actually missed) in `values`.
  *
  * `values` may hold instants or date keys; both are normalised to local dates.
- * This is the one streak implementation — it previously existed three times,
- * in `helpers`, `profile` and `snowman/logic`, each with its own UTC handling.
+ * This is the one streak implementation — it previously existed in several
+ * places, each with its own UTC handling.
  */
 export function streakLength(values: Array<Date | string | number>): number {
     const days = [...new Set(values.map(toLocalDateKey))].filter(Boolean).sort().reverse();

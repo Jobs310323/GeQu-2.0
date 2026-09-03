@@ -12,11 +12,10 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type {
     DayLog, DiaryEntry, Habit, KanbanTask, TestResult, ClinicalResult, CbtRecord,
-    CircleItem, Reminder, GymData, HyperfocusSession, UnlockedAchievements,
+    Reminder, GymData, HyperfocusSession, UnlockedAchievements,
 } from './domain';
 import type { Goal } from './goals';
 import type { FinanceData } from '../features/finance/types';
-import type { ActivityLabel, DayRecord } from '../features/snowman/types';
 import type { Prefs } from '../lib/prefs';
 import type { LevelInfo } from '../lib/xp';
 import type { Pomodoro, Theme } from '../stores/app-ui.store';
@@ -91,7 +90,6 @@ export interface ProgressProps {
     gymData: GymData;
     testResults: TestResult[];
     diary: DiaryEntry[];
-    snowmanDays: DayRecord[];
 }
 
 export interface AiPlanProps {
@@ -116,7 +114,6 @@ export interface UserCardProps {
     clinicalResults: ClinicalResult[];
     cbtRecords: CbtRecord[];
     finance: FinanceData;
-    circles: CircleItem[];
 }
 
 export interface CalendarProps {
@@ -139,11 +136,6 @@ export interface CbtProps {
     setCbtRecords: Setter<CbtRecord[]>;
 }
 
-export interface CirclesProps {
-    circles: CircleItem[];
-    setCircles: Setter<CircleItem[]>;
-}
-
 export interface FinanceProps {
     finance: FinanceData;
     setFinance: Setter<FinanceData>;
@@ -160,13 +152,6 @@ export interface ProgramImportProps {
     gymData: GymData;
     setGymData: Setter<GymData>;
     onClose: () => void;
-}
-
-export interface SnowmanProps {
-    labels: ActivityLabel[];
-    setLabels: Setter<ActivityLabel[]>;
-    days: DayRecord[];
-    setDays: Setter<DayRecord[]>;
 }
 
 export interface DynamicsProps {

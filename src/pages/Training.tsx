@@ -87,14 +87,14 @@ export function Training({ setTestResults, testResults, achievements, setAchieve
                 {groups.map(group => (
                     <div key={group.title}>
                         <div className="flex items-baseline gap-2 mb-1.5 px-1">
-                            <h2 className="t-label">{group.title}</h2>
+                            <h2 className="t-label text-cyan-400">{group.title}</h2>
                             <span className="t-caption">{group.hint}</span>
                         </div>
                         <div className="glass-card rounded-2xl p-1.5 flex gap-1 flex-wrap">
                             {group.items.map(t => (
                                 <button key={t.id} type="button" onClick={() => setTab(t.id)}
                                     aria-pressed={tab === t.id}
-                                    className={`px-3.5 py-1.5 rounded-xl text-sm transition ${tab === t.id ? 'bg-cyan-400/10 text-cyan-400' : 'text-[var(--gq-text-tertiary)] hover:bg-white/5 hover:text-[var(--gq-text-primary)]'}`}>
+                                    className={`px-3.5 py-1.5 rounded-xl text-sm font-medium border transition ${tab === t.id ? 'bg-cyan-400/10 text-cyan-400 border-cyan-400/30' : 'border-[var(--gq-border-default)] text-[var(--gq-text-secondary)] hover:bg-white/5 hover:text-[var(--gq-text-primary)]'}`}>
                                     {TAB_LABEL[t.id] ?? t.label}
                                 </button>
                             ))}

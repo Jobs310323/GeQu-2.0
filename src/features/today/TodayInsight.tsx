@@ -56,17 +56,26 @@ export function TodayInsight() {
                     </p>
                 </div>
             ) : (
-                <div className="glass-card rounded-2xl p-4">
-                    <p className="t-small text-[var(--gq-text-tertiary)] leading-relaxed">
-                        Пока мало данных для выводов — нужно хотя бы {MIN_SAMPLE} оценённых дней с каждой стороны
-                        сравнения.
-                    </p>
+                <div className="space-y-3">
+                    <div className="glass-card rounded-2xl p-4">
+                        <p className="t-small text-[var(--gq-text-tertiary)] leading-relaxed">
+                            Пока мало данных для выводов — нужно хотя бы {MIN_SAMPLE} оценённых дней с каждой стороны
+                            сравнения.
+                        </p>
+                    </div>
                     <Link
                         to="/today/checkin"
-                        className="inline-flex items-center gap-1.5 t-caption text-cyan-400 hover:underline mt-2"
+                        className="glass-card rounded-2xl p-4 flex items-center gap-3 hover:bg-white/5 transition group"
                     >
-                        <Icon name="moon" size={12} />
-                        Оценить сегодняшний день
+                        <span className="w-9 h-9 rounded-xl bg-cyan-400/10 text-cyan-400 flex items-center justify-center shrink-0">
+                            <Icon name="moon" size={16} />
+                        </span>
+                        <span className="flex-1 t-small font-medium">Закрыть сегодняшний день</span>
+                        <Icon
+                            name="chevronRight"
+                            size={16}
+                            className="text-[var(--gq-text-tertiary)] shrink-0 group-hover:text-cyan-400 transition"
+                        />
                     </Link>
                 </div>
             )}
