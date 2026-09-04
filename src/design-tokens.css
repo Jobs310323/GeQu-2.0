@@ -1,0 +1,100 @@
+/* Design tokens — the single source of truth for GeQu's color/surface language.
+   Split out of index.css so the design-system package (design-system/) can
+   @import this exact file rather than keeping a second copy that drifts.
+   Edit here; index.css @imports it and nothing else needs to change. */
+
+/* Neutral tokens: surfaces/text shared by every page, dark- and light-safe. */
+:root {
+    --bg-main: #05050a;
+    --bg-card: rgba(20, 16, 34, 0.66);
+    --bg-input: rgba(255, 255, 255, 0.035);
+    --text-main: #e8e6f5;
+    --text-muted: #9a97c9;
+    --border: rgba(255, 255, 255, 0.075);
+    --accent-cyan: #7c6cf6;
+    --accent-purple: #c86ce0;
+    --accent-pink: #e05d8f;
+    --accent-red: #e0566e;
+}
+
+:root.light {
+    --bg-main: #f1ecfb;
+    --bg-card: rgba(255, 255, 255, 0.82);
+    --bg-input: rgba(30, 15, 70, 0.045);
+    --text-main: #221f3a;
+    --text-muted: #615c81;
+    --border: rgba(30, 15, 70, 0.1);
+    --accent-cyan: #5b4bd4;
+    --accent-purple: #a244bd;
+    --accent-red: #c23a52;
+    --accent-pink: #c21e63;
+}
+
+/* ---------------------------------------------------------------
+   Checkin/Card redesign tokens — a faithful port of the GeQu-Checkin-MyCard
+   prototype (claude.ai/design). Every value below is the prototype's own,
+   carried over 1:1 and only renamed with a `--gq-` prefix so the rest of the
+   app keeps its restrained `--accent-*` palette untouched.
+
+   The prototype switches themes with `[data-theme="light"]`; this app sets
+   `document.documentElement.className = theme` (App.tsx), so the light block
+   hangs off `:root.light` instead.
+   --------------------------------------------------------------- */
+:root {
+    --gq-bg-grad: radial-gradient(ellipse 80% 60% at 50% -10%, #1a1230 0%, #05050a 55%);
+    --gq-blob1: rgba(124, 108, 246, 0.35);
+    --gq-blob2: rgba(200, 108, 224, 0.28);
+    --gq-text: #e8e6f5;
+    --gq-text-2: #c9c8e0;
+    --gq-text-muted: #9a97c9;
+    --gq-glass-bg: rgba(255, 255, 255, 0.035);
+    --gq-glass-border: rgba(255, 255, 255, 0.07);
+    --gq-glass-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.6);
+    --gq-input-bg: #0c0c16;
+    --gq-input-text: #f1f0fb;
+    --gq-input-ph: #6b6a86;
+    --gq-chip-bg: rgba(255, 255, 255, 0.03);
+    --gq-chip-border: rgba(255, 255, 255, 0.08);
+    --gq-chip-text: #c9c8e0;
+    --gq-chip-hover: rgba(255, 255, 255, 0.07);
+    --gq-heading-grad: linear-gradient(120deg, #fff, #c9c4ff);
+    --gq-divider: rgba(255, 255, 255, 0.06);
+    --gq-row-hover: rgba(255, 255, 255, 0.04);
+    --gq-track-off: rgba(255, 255, 255, 0.1);
+    --gq-good: #4fd1a5;
+    --gq-warn: #e0a95d;
+    --gq-bad: #e05d8f;
+    --gq-good-strong: #4fd1a5;
+    --gq-warn-strong: #e0a95d;
+    --gq-bad-strong: #e05d8f;
+    --gq-grad-a: #7c6cf6;
+    --gq-grad-b: #c86ce0;
+}
+:root.light {
+    --gq-bg-grad: linear-gradient(160deg, #eae5f7 0%, #f1ecfb 45%, #e9eef9 100%);
+    --gq-blob1: rgba(124, 108, 246, 0.16);
+    --gq-blob2: rgba(200, 108, 224, 0.13);
+    --gq-text: #221f3a;
+    --gq-text-2: #4a4566;
+    --gq-text-muted: #615c81;
+    --gq-glass-bg: rgba(255, 255, 255, 0.78);
+    --gq-glass-border: rgba(30, 15, 70, 0.1);
+    --gq-glass-shadow: 0 20px 50px -28px rgba(60, 40, 120, 0.32);
+    --gq-input-bg: #ffffff;
+    --gq-input-text: #221f3a;
+    --gq-input-ph: #7d7796;
+    --gq-chip-bg: rgba(255, 255, 255, 0.85);
+    --gq-chip-border: rgba(30, 15, 70, 0.12);
+    --gq-chip-text: #3c3760;
+    --gq-chip-hover: rgba(30, 15, 70, 0.06);
+    --gq-heading-grad: linear-gradient(120deg, #241d4a, #7c6cf6);
+    --gq-divider: rgba(30, 15, 70, 0.1);
+    --gq-row-hover: rgba(30, 15, 70, 0.05);
+    --gq-track-off: rgba(30, 15, 70, 0.14);
+    --gq-good: #059669;
+    --gq-warn: #d97706;
+    --gq-bad: #e0266f;
+    --gq-good-strong: #047857;
+    --gq-warn-strong: #c2650a;
+    --gq-bad-strong: #c21e63;
+}

@@ -8,32 +8,13 @@
    that only the redesigned screens use (page gradient, blobs, chips, glass
    radii). `--bg-main` is the flat colour the page gradient bottoms out in, so
    full-screen overlays that paint it (AuthGate, HyperfocusOverlay) still match
-   the page behind them. */
-:root {
-    --bg-main: #05050a;
-    --bg-card: rgba(20, 16, 34, 0.66);
-    --bg-input: rgba(255, 255, 255, 0.035);
-    --text-main: #e8e6f5;
-    --text-muted: #9a97c9;
-    --border: rgba(255, 255, 255, 0.075);
-    --accent-cyan: #7c6cf6;
-    --accent-purple: #c86ce0;
-    --accent-pink: #e05d8f;
-    --accent-red: #e0566e;
-}
+   the page behind them.
 
-:root.light {
-    --bg-main: #f1ecfb;
-    --bg-card: rgba(255, 255, 255, 0.82);
-    --bg-input: rgba(30, 15, 70, 0.045);
-    --text-main: #221f3a;
-    --text-muted: #615c81;
-    --border: rgba(30, 15, 70, 0.1);
-    --accent-cyan: #5b4bd4;
-    --accent-purple: #a244bd;
-    --accent-red: #c23a52;
-    --accent-pink: #c21e63;
-}
+   Moved to design-tokens.css so design-system/ (the standalone component
+   package) can @import the exact same file instead of keeping a second,
+   driftable copy. Edit tokens there — this import is the only place that
+   changes here. */
+@import './design-tokens.css';
 
 body {
     background: var(--gq-bg-grad);
@@ -98,16 +79,9 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* The card surface used by every page that predates the checkin/card redesign.
-   Pointing it at the `--gq-glass-*` tokens is what makes those pages read as the
-   same material as the redesigned ones — one rule, seventeen pages. Call sites
-   set their own radius, so none is imposed here. */
-.glass-card {
-    background: var(--gq-glass-bg);
-    border: 1px solid var(--gq-glass-border);
-    backdrop-filter: blur(20px);
-    box-shadow: var(--gq-glass-shadow);
-}
+/* .glass-card moved into gq-components.css (imported below) alongside the
+   rest of the --gq-* component language — same reason as the token move
+   above: design-system/ imports that one file instead of a second copy. */
 @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 .note-card { animation: popIn 0.3s ease-out; }
 /* Was a neon pink halo; kept as a restrained ring so the streak still reads
@@ -142,275 +116,9 @@ input[type="checkbox"] { accent-color: var(--accent-cyan); }
 @keyframes pulseOutline { 0%,100% { outline-color: var(--accent-red); } 50% { outline-color: rgba(181,128,128,0.35); } }
 .node-overdue { outline: 2px solid var(--accent-red); outline-offset: 2px; animation: pulseOutline 1.5s ease-in-out infinite; }
 
-/* ---------------------------------------------------------------
-   Checkin/Card redesign — a faithful port of the GeQu-Checkin-MyCard
-   prototype (claude.ai/design). Every value below is the prototype's
-   own, carried over 1:1 and only renamed with a `--gq-` prefix so the
-   rest of the app keeps its restrained `--accent-*` palette untouched.
-
-   The prototype switches themes with `[data-theme="light"]`; this app
-   sets `document.documentElement.className = theme` (App.tsx), so the
-   light block hangs off `:root.light` instead.
-   --------------------------------------------------------------- */
-:root {
-    --gq-bg-grad: radial-gradient(ellipse 80% 60% at 50% -10%, #1a1230 0%, #05050a 55%);
-    --gq-blob1: rgba(124, 108, 246, 0.35);
-    --gq-blob2: rgba(200, 108, 224, 0.28);
-    --gq-text: #e8e6f5;
-    --gq-text-2: #c9c8e0;
-    --gq-text-muted: #9a97c9;
-    --gq-glass-bg: rgba(255, 255, 255, 0.035);
-    --gq-glass-border: rgba(255, 255, 255, 0.07);
-    --gq-glass-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.6);
-    --gq-input-bg: #0c0c16;
-    --gq-input-text: #f1f0fb;
-    --gq-input-ph: #6b6a86;
-    --gq-chip-bg: rgba(255, 255, 255, 0.03);
-    --gq-chip-border: rgba(255, 255, 255, 0.08);
-    --gq-chip-text: #c9c8e0;
-    --gq-chip-hover: rgba(255, 255, 255, 0.07);
-    --gq-heading-grad: linear-gradient(120deg, #fff, #c9c4ff);
-    --gq-divider: rgba(255, 255, 255, 0.06);
-    --gq-row-hover: rgba(255, 255, 255, 0.04);
-    --gq-track-off: rgba(255, 255, 255, 0.1);
-    --gq-good: #4fd1a5;
-    --gq-warn: #e0a95d;
-    --gq-bad: #e05d8f;
-    --gq-good-strong: #4fd1a5;
-    --gq-warn-strong: #e0a95d;
-    --gq-bad-strong: #e05d8f;
-    --gq-grad-a: #7c6cf6;
-    --gq-grad-b: #c86ce0;
-}
-:root.light {
-    --gq-bg-grad: linear-gradient(160deg, #eae5f7 0%, #f1ecfb 45%, #e9eef9 100%);
-    --gq-blob1: rgba(124, 108, 246, 0.16);
-    --gq-blob2: rgba(200, 108, 224, 0.13);
-    --gq-text: #221f3a;
-    --gq-text-2: #4a4566;
-    --gq-text-muted: #615c81;
-    --gq-glass-bg: rgba(255, 255, 255, 0.78);
-    --gq-glass-border: rgba(30, 15, 70, 0.1);
-    --gq-glass-shadow: 0 20px 50px -28px rgba(60, 40, 120, 0.32);
-    --gq-input-bg: #ffffff;
-    --gq-input-text: #221f3a;
-    --gq-input-ph: #7d7796;
-    --gq-chip-bg: rgba(255, 255, 255, 0.85);
-    --gq-chip-border: rgba(30, 15, 70, 0.12);
-    --gq-chip-text: #3c3760;
-    --gq-chip-hover: rgba(30, 15, 70, 0.06);
-    --gq-heading-grad: linear-gradient(120deg, #241d4a, #7c6cf6);
-    --gq-divider: rgba(30, 15, 70, 0.1);
-    --gq-row-hover: rgba(30, 15, 70, 0.05);
-    --gq-track-off: rgba(30, 15, 70, 0.14);
-    --gq-good: #059669;
-    --gq-warn: #d97706;
-    --gq-bad: #e0266f;
-    --gq-good-strong: #047857;
-    --gq-warn-strong: #c2650a;
-    --gq-bad-strong: #c21e63;
-}
-
-/* Page shell. `<main>` in App.tsx pads its content by 24px (`p-6`), so the
-   shell cancels that padding and re-applies the prototype's own inside —
-   otherwise the gradient would sit in an inset rectangle with the app
-   background showing around it. The -1.5rem/+3rem pair is the one place that
-   knows about `<main>`'s padding; keep them in sync if that changes.
-   `overflow-x: clip` and not `hidden`: the blobs hang past both edges, and
-   `hidden` would turn this into a scroll container nested inside `<main>`'s
-   own scroller. */
-.gq-page {
-    position: relative;
-    margin: -1.5rem;
-    min-height: calc(100% + 3rem);
-    background: var(--gq-bg-grad);
-    color: var(--gq-text);
-    overflow-x: clip;
-    transition: background 0.4s;
-}
-.gq-page-inner {
-    position: relative; z-index: 1;
-    max-width: 1100px; margin: 0 auto; padding: 40px 32px 64px;
-}
-@media (max-width: 640px) { .gq-page-inner { padding: 24px 16px 64px; } }
-
-/* Headings and big numerals are Manrope in the prototype; body copy is Inter,
-   which `body` already asks for. Both are loaded from index.html. */
-.gq-display { font-family: 'Manrope', system-ui, sans-serif; }
-
-@keyframes gqDrift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(60px, -40px) scale(1.15); } }
-@keyframes gqDrift2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-50px, 50px) scale(1.1); } }
-@keyframes gqFadeUp { from { opacity: 0; } to { opacity: 1; } }
-.gq-fade { animation: gqFadeUp 0.35s ease both; }
-
-.gq-blob1, .gq-blob2 {
-    position: absolute; border-radius: 50%; filter: blur(40px); pointer-events: none; z-index: 0;
-}
-.gq-blob1 { top: -100px; left: -80px; width: 480px; height: 480px; background: radial-gradient(circle, var(--gq-blob1), transparent 70%); animation: gqDrift1 14s ease-in-out infinite; }
-.gq-blob2 { top: 200px; right: -120px; width: 420px; height: 420px; background: radial-gradient(circle, var(--gq-blob2), transparent 70%); animation: gqDrift2 16s ease-in-out infinite; }
-
-.gq-heading {
-    background: var(--gq-heading-grad);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-.gq-muted { color: var(--gq-text-muted); }
-.gq-divider { border-color: var(--gq-divider); }
-.gq-row { border-bottom: 1px solid var(--gq-divider); }
-.gq-row:hover { background: var(--gq-row-hover); }
-
-/* No `position`/`z-index` here even though the prototype has them: `.gq-page-inner`
-   already lifts the whole content column above the blobs, and a rule declared
-   after `@tailwind utilities` would silently beat an `absolute`/`z-50` utility
-   at equal specificity (the sidebar's hover panel is one such user). */
-.gq-glass {
-    background: var(--gq-glass-bg); border: 1px solid var(--gq-glass-border);
-    backdrop-filter: blur(20px); border-radius: 22px;
-    box-shadow: var(--gq-glass-shadow);
-}
-.gq-tab {
-    border: none; background: transparent; color: var(--gq-text-muted);
-    font-size: 14px; font-weight: 600; padding: 10px 6px; cursor: pointer;
-    position: relative; display: flex; align-items: center; gap: 7px;
-}
-.gq-tab.active { color: var(--gq-text); }
-.gq-tab.active::after {
-    content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
-    background: linear-gradient(90deg, var(--gq-grad-a), var(--gq-grad-b)); border-radius: 2px;
-}
-/* The prototype has `transition: all 0.15s` here. It cannot come across: every
-   one of the chip's animatable properties is driven by a custom property that
-   changes on <html> when the theme flips, and Chrome does not invalidate a
-   transition driven that way — chips stayed painted in the dark palette on a
-   light page, indefinitely. Same reason `body` skips a background transition
-   (see the note near the top of this file). */
-.gq-chip {
-    border: 1px solid var(--gq-chip-border); background: var(--gq-chip-bg); color: var(--gq-chip-text);
-    border-radius: 99px; padding: 6px 13px; font-size: 12px; cursor: pointer;
-    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-}
-.gq-chip:hover { background: var(--gq-chip-hover); }
-.gq-chip:disabled { cursor: default; }
-/* The prototype hardcodes the active tint; `color-mix` off the token keeps it
-   correct in light mode too, where --gq-good/bad are much darker. */
-.gq-chip.active-good { background: color-mix(in srgb, var(--gq-good) 20%, transparent); border-color: var(--gq-good); color: var(--gq-good); font-weight: 700; }
-.gq-chip.active-bad { background: color-mix(in srgb, var(--gq-bad) 20%, transparent); border-color: var(--gq-bad); color: var(--gq-bad); font-weight: 700; }
-/* ---------------------------------------------------------------
-   Sidebar. Same material as the tab strip: transparent by default, a violet
-   wash plus a matching hairline when active, `color-mix` off the token so the
-   light theme gets its darker violet for free.
-
-   None of these carry a `transition` on colour: every value comes from a custom
-   property that changes on <html> at the theme flip, and Chrome does not
-   invalidate a transition driven that way (see the note on `.gq-chip`). The one
-   transition here is on `grid-template-rows`, a plain value — that one is safe.
-   --------------------------------------------------------------- */
-.gq-nav { border: 1px solid transparent; color: var(--gq-text-muted); }
-.gq-nav:hover { background: var(--gq-row-hover); color: var(--gq-text); }
-.gq-nav.active {
-    color: var(--gq-text);
-    background: color-mix(in srgb, var(--gq-grad-a) 15%, transparent);
-    border-color: color-mix(in srgb, var(--gq-grad-a) 42%, transparent);
-}
-
-/* Group header: the six rows the sidebar shows at rest. */
-.gq-group-head {
-    width: 100%; display: flex; align-items: center; gap: 8px;
-    padding: 7px 8px; border-radius: 10px; cursor: pointer;
-    font-size: 12.5px; font-weight: 600; letter-spacing: 0.01em;
-    background: transparent;
-}
-/* The group holding the current page stays legible while closed, without
-   claiming the full active treatment its own item already has. */
-.gq-group-head.holds { color: var(--gq-text); }
-.gq-caret { opacity: 0.5; transform: rotate(-90deg); transition: transform 0.18s ease; }
-.gq-caret.open { transform: none; }
-.gq-group-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--gq-text-muted); }
-
-/* 0fr → 1fr animates to whatever the panel's content measures, with no
-   max-height guess that taller groups could grow out of. */
-.gq-acc { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.18s ease; }
-.gq-acc[data-open='true'] { grid-template-rows: 1fr; }
-@media (prefers-reduced-motion: reduce) { .gq-acc, .gq-caret { transition: none; } }
-
-/* Items hang off a hairline so the group they belong to stays readable as one
-   block even while the eye is somewhere else on the page. */
-.gq-sub { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 4px 15px; padding-left: 9px; border-left: 1px solid var(--gq-divider); }
-.gq-item {
-    width: 100%; display: flex; align-items: center; gap: 8px;
-    padding: 5px 8px; border-radius: 8px; cursor: pointer; font-size: 13px;
-    background: transparent;
-}
-
-/* Rail mode: one glyph per group, items fly out beside it. */
-.gq-glyph {
-    position: relative; width: 36px; height: 32px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center; cursor: pointer;
-    background: transparent;
-}
-.gq-flyout {
-    position: absolute; left: 100%; top: -6px; margin-left: 8px; z-index: 60;
-    min-width: 178px; padding: 8px; border-radius: 16px;
-}
-/* Something is waiting in a closed group — a dot, not a number: the count is
-   already on the item inside, and this only has to say "look here". */
-.gq-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gq-grad-a); flex: none; }
-.gq-glyph .gq-dot { position: absolute; top: 5px; right: 5px; }
-.gq-pill { font-size: 10px; line-height: 1; padding: 3px 6px; border-radius: 99px; font-weight: 700; flex: none; }
-
-/* The primary action. Reads as a button, not as another list row. */
-.gq-primary {
-    width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px;
-    padding: 8px 0; border-radius: 12px; cursor: pointer; font-size: 13px; font-weight: 600;
-    color: var(--gq-text-2); background: var(--gq-chip-bg); border: 1px solid var(--gq-glass-border);
-}
-.gq-primary:hover { background: var(--gq-chip-hover); color: var(--gq-text); }
-.gq-primary.active {
-    color: #fff; border-color: transparent;
-    background: linear-gradient(145deg, var(--gq-grad-a), var(--gq-grad-b));
-    box-shadow: 0 6px 16px -8px var(--gq-grad-a);
-}
-
-/* Level pip and any other small "this is the accent" disc. */
-.gq-badge { background: linear-gradient(145deg, var(--gq-grad-a), var(--gq-grad-b)); color: #fff; }
-/* Progress/energy troughs. `black/30` was invisible on the light gradient. */
-.gq-track { background: var(--gq-track-off); }
-
-.gq-btn {
-    border: none; border-radius: 14px; padding: 11px 18px;
-    background: linear-gradient(145deg, var(--gq-grad-a), var(--gq-grad-b)); color: #fff;
-    font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;
-}
-.gq-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.gq-icon-btn {
-    border: none; background: var(--gq-chip-bg); border-radius: 10px; width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--gq-text-2);
-}
-.gq-stat {
-    background: var(--gq-glass-bg); border: 1px solid var(--gq-glass-border);
-    border-radius: 16px; padding: 14px 16px;
-}
-.gq-input {
-    font-size: 14px; border: 1px solid var(--gq-glass-border); border-radius: 14px; padding: 11px 14px;
-    background: var(--gq-input-bg); color: var(--gq-input-text); width: 100%; box-sizing: border-box;
-}
-.gq-input::placeholder { color: var(--gq-input-ph); }
-.gq-input:focus { outline: none; border-color: rgba(124, 108, 246, 0.5); }
-input[type="range"].gq-slider {
-    -webkit-appearance: none; appearance: none; width: 100%; height: 16px;
-    background: transparent; outline: none; accent-color: var(--gq-grad-a); display: block; margin: 0;
-}
-input[type="range"].gq-slider::-webkit-slider-runnable-track { -webkit-appearance: none; height: 16px; background: transparent; }
-input[type="range"].gq-slider::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
-    background: linear-gradient(145deg, var(--gq-grad-a), var(--gq-grad-b)); border: none; cursor: pointer;
-    box-shadow: 0 2px 6px rgba(124, 108, 246, 0.5); margin-top: 0;
-}
-input[type="range"].gq-slider::-moz-range-track { height: 16px; background: transparent; }
-input[type="range"].gq-slider::-moz-range-thumb {
-    width: 16px; height: 16px; border-radius: 50%;
-    background: linear-gradient(145deg, var(--gq-grad-a), var(--gq-grad-b)); border: none; cursor: pointer;
-    box-shadow: 0 2px 6px rgba(124, 108, 246, 0.5);
-}
+/* Checkin/Card redesign component CSS (--gq-page, --gq-btn, --gq-nav, …) now
+   lives in gq-components.css, imported here — see the note there. */
+@import './gq-components.css';
 
 .markdown-content h1 { font-size: 1.5rem; font-weight: bold; margin-bottom: 0.5rem; }
 .markdown-content h2 { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; }

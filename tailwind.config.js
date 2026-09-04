@@ -14,7 +14,9 @@
 //            to-purple-400`, the app's stock button, becomes the design's own
 //            gradient without touching a single call site
 //   green/emerald → --gq-good, yellow/orange → --gq-warn, pink → --gq-bad
-const accents = {
+// Exported (not just used below) so design-system/tailwind.config.js can
+// import the exact same object instead of keeping a second copy that drifts.
+export const accents = {
   cyan: { 400: '#7c6cf6', 500: '#6a58ec' },
   purple: { 400: '#c86ce0', 500: '#b757d1' },
   pink: { 400: '#e05d8f', 500: '#cf4a7d' },

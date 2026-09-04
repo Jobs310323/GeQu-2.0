@@ -1,0 +1,14 @@
+/* Same two files the app itself imports (src/index.css) — tokens first,
+   then the component classes that consume them. Relative path crosses out
+   of this package into the app's src/, deliberately: single source of
+   truth, no copy to drift. See the notes in those files for why each rule
+   exists. @import must precede every other statement (incl. @tailwind), so
+   these come first. */
+@import '../../src/design-tokens.css';
+@import '../../src/gq-components.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { color: var(--text-main); }
