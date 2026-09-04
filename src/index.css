@@ -182,6 +182,40 @@ body {
     input, textarea, button, select { color: var(--gq-text-primary); font-family: inherit; }
     input[type="range"] { accent-color: rgb(var(--gq-purple-400-rgb)); }
     input[type="checkbox"], input[type="radio"] { accent-color: rgb(var(--gq-cyan-400-rgb)); }
+
+    /* Compact day-rating sliders (Dashboard's "Оценка дня"). The native
+       control's default thumb/track vary wildly by browser and read as
+       oversized next to the rest of the form's small type scale. */
+    input[type="range"].gq-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 4px;
+        border-radius: 999px;
+        background: var(--gq-border-default);
+    }
+    input[type="range"].gq-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: rgb(var(--gq-cyan-400-rgb));
+        cursor: pointer;
+        margin-top: -5px;
+    }
+    input[type="range"].gq-slider::-moz-range-track {
+        height: 4px;
+        border-radius: 999px;
+        background: var(--gq-border-default);
+    }
+    input[type="range"].gq-slider::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        border: none;
+        border-radius: 50%;
+        background: rgb(var(--gq-cyan-400-rgb));
+        cursor: pointer;
+    }
     ::placeholder { color: var(--gq-text-subtle); opacity: 1; }
 
     /* ===========================================================================

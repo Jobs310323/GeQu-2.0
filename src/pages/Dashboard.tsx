@@ -188,11 +188,11 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
 
     const Slider = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
         <div>
-            <div className="flex justify-between text-sm text-gray-400 mb-1.5">
+            <div className="flex justify-between text-xs text-gray-400 mb-1">
                 <span>{label}</span><span className="text-cyan-400 font-bold">{value}/10</span>
             </div>
             <input type="range" min="0" max="10" value={value}
-                onChange={e => onChange(Number(e.target.value))} className="w-full accent-cyan-400" />
+                onChange={e => onChange(Number(e.target.value))} className="gq-slider" />
         </div>
     );
 
@@ -324,14 +324,16 @@ export function Dashboard({ logs, setLogs, achievements, setHyperfocus, kanban, 
             </div>
 
             {/* ---- The day-closing form ------------------------------------ */}
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                 {show('ratings') && (
                     <Section icon="chart" title="Оценка дня" open={isOpen('ratings')} onToggle={() => toggle('ratings')}
                         filled summary={`сон ${sleep} · фокус ${focus} · настроение ${mood}`}>
-                        <div className="space-y-3 mt-3">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-3">
                             <Slider label="Сон" value={sleep} onChange={setSleep} />
                             <Slider label="Фокус" value={focus} onChange={setFocus} />
-                            <Slider label="Настроение" value={mood} onChange={setMood} />
+                            <div className="col-span-2">
+                                <Slider label="Настроение" value={mood} onChange={setMood} />
+                            </div>
                         </div>
                     </Section>
                 )}
