@@ -1,10 +1,9 @@
 // Working with arrays the code knows are non-empty.
 //
 // `noUncheckedIndexedAccess` types every `arr[i]` as `T | undefined`, which is
-// right for data-driven arrays and noise for fixed constants like the three
-// Snowman spheres or the four Stroop colours. Declaring those as a non-empty
-// tuple lets the compiler keep the guarantee instead of each call site
-// asserting it away with `!`.
+// right for data-driven arrays and noise for fixed constants like the four
+// Stroop colours. Declaring those as a non-empty tuple lets the compiler keep
+// the guarantee instead of each call site asserting it away with `!`.
 
 /** An array the type system knows has at least one element. */
 export type NonEmptyArray<T> = [T, ...T[]];

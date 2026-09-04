@@ -8,8 +8,8 @@ import {
 /**
  * These tests exist because of a real bug: `new Date().toISOString().split('T')[0]`
  * appeared at 35 sites and yields the *UTC* date, so every user not on UTC filed
- * entries under the wrong day for part of every day. Check-ins, habits, streaks
- * and Snowman records were all affected.
+ * entries under the wrong day for part of every day. Check-ins, habits and
+ * streaks were all affected.
  *
  * So the cases below are not generic date exercises — each one reproduces a way
  * that bug manifested, and would fail again if the UTC shortcut came back.
@@ -34,8 +34,8 @@ describe('toLocalDateKey', () => {
     it('returns a bare date key untouched', () => {
         // Round-tripping through Date would break this: `new Date('2026-08-28')`
         // parses as UTC midnight, which is the 27th anywhere behind UTC. Habit
-        // history and Snowman records store bare keys, so they would walk one
-        // day backwards on every read.
+        // history stores bare keys, so it would walk one day backwards on every
+        // read.
         expect(toLocalDateKey('2026-08-28')).toBe('2026-08-28');
     });
 

@@ -67,7 +67,7 @@ describe('the bug this module exists to fix', () => {
 });
 
 describe('append-only keys', () => {
-    it.each(['gequ_diary', 'gequ_logs', 'gequ_tests', 'gequ_clinical', 'gequ_cbt', 'gequ_snowmanDays'])(
+    it.each(['gequ_diary', 'gequ_logs', 'gequ_tests', 'gequ_clinical', 'gequ_cbt'])(
         '%s never loses a record from either side',
         key => {
             const local = snap({ [key]: [{ id: 1 }, { id: 2 }] });
@@ -185,8 +185,8 @@ describe('policy table', () => {
         // bug in miniature, so the table must stay in step with the stores.
         for (const key of [
             'gequ_kanban', 'gequ_goals', 'gequ_habits', 'gequ_reminders', 'gequ_logs',
-            'gequ_diary', 'gequ_tests', 'gequ_clinical', 'gequ_cbt', 'gequ_circles',
-            'gequ_snowmanLabels', 'gequ_snowmanDays', 'gequ_finance', 'gequ_gym',
+            'gequ_diary', 'gequ_tests', 'gequ_clinical', 'gequ_cbt',
+            'gequ_finance', 'gequ_gym',
         ]) {
             expect(POLICY[key], `${key} has no policy`).toBeDefined();
             expect(POLICY[key]).not.toBe('last-write-wins');

@@ -59,15 +59,12 @@ export const POLICY: Record<string, MergePolicy> = {
     gequ_tests: 'append-only',
     gequ_clinical: 'append-only',
     gequ_cbt: 'append-only',
-    gequ_snowmanDays: 'append-only',
 
     // Live working items — union, fresher copy wins a collision.
     gequ_kanban: 'merge-by-id',
     gequ_goals: 'merge-by-id',
     gequ_habits: 'merge-by-id',
     gequ_reminders: 'merge-by-id',
-    gequ_circles: 'merge-by-id',
-    gequ_snowmanLabels: 'merge-by-id',
 
     // Objects wrapping collections.
     gequ_finance: 'deep-merge',

@@ -41,7 +41,7 @@ const CARD_SYSTEM = `Ты — внимательный аналитик в пр�
 
 Массивы — по 2–4 пункта. Всё по-русски. Никакого текста вне JSON.`;
 
-const REPORT_SYSTEM = `Ты — внимательный аналитик в приложении GeQu. Пользователь — человек с СДВГ. Он ведёт дневник и трекер состояния, закрывает задачи и цели, ходит в зал (силовые и кардио), проходит когнитивные и скрининговые тесты, ведёт дневник мыслей КПТ, следит за финансами и разбирает круги контроля.
+const REPORT_SYSTEM = `Ты — внимательный аналитик в приложении GeQu. Пользователь — человек с СДВГ. Он ведёт дневник и трекер состояния, закрывает задачи и цели, ходит в зал (силовые и кардио), проходит когнитивные и скрининговые тесты, ведёт дневник мыслей КПТ и следит за финансами.
 
 Тебе дают JSON со всей агрегированной статистикой по нему. Числа уже посчитаны — НЕ пересчитывай и не выдумывай новых.
 
@@ -96,7 +96,7 @@ function Section({ title, items, icon, tone }: { title: string; items?: string[]
 }
 
 export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData, testResults,
-                           clinicalResults, cbtRecords, finance, circles }: UserCardProps) {
+                           clinicalResults, cbtRecords, finance }: UserCardProps) {
     const [card, setCard] = useState<AiCard | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -107,7 +107,7 @@ export function UserCard({ logs, setLogs, diary, habits, kanban, goals, gymData,
     const [reportAt, setReportAt] = useState('');
 
     const profile = buildProfile({ logs, diary, habits, kanban, goals, gymData, testResults,
-        clinicalResults, cbtRecords, finance, circles });
+        clinicalResults, cbtRecords, finance });
     const enough = hasEnoughData(profile);
 
     const deleteLog = (id: number) => setLogs((logs ?? []).filter((l) => l.id !== id));

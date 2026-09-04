@@ -13,7 +13,7 @@ import { useEnergy, useLevelInfo } from '../stores/derived';
 import type {
     DashboardProps, KanbanProps, HabitsProps, GoalsProps, DiaryProps, TrainingProps,
     SettingsProps, UnifiedStatsProps, ProgressProps, AiPlanProps, UserCardProps,
-    CalendarProps, ClinicalTestsProps, CirclesProps, FinanceProps, GymProps, SnowmanProps,
+    CalendarProps, ClinicalTestsProps, FinanceProps, GymProps,
 } from '../types/props';
 
 // Every page is a separate chunk. These adapters are the only place that knows
@@ -44,10 +44,8 @@ const AiPlan = load<AiPlanProps>('AiPlan', () => import('../pages/AiPlan'));
 const UserCard = load<UserCardProps>('UserCard', () => import('../pages/UserCard'));
 const CalendarPage = load<CalendarProps>('CalendarPage', () => import('../pages/CalendarPage'));
 const ClinicalTests = load<ClinicalTestsProps>('ClinicalTests', () => import('../pages/ClinicalTests'));
-const CirclesOfInfluence = load<CirclesProps>('CirclesOfInfluence', () => import('../pages/CirclesOfInfluence'));
 const Finance = load<FinanceProps>('Finance', () => import('../pages/Finance'));
 const GymApp = load<GymProps>('GymApp', () => import('../features/gym/Gym'));
-const Snowman = load<SnowmanProps>('Snowman', () => import('../features/snowman/Snowman'));
 
 export function CheckinRoute() {
     const logs = useCheckins(s => s.logs);
@@ -147,11 +145,10 @@ export function ProgressRoute() {
     const gymData = useBody(s => s.gym);
     const testResults = useCognitive(s => s.results);
     const diary = useJournal(s => s.entries);
-    const snowmanDays = useBody(s => s.snowmanDays);
     return (
         <Progress
             logs={logs} habits={habits} kanban={kanban} gymData={gymData}
-            testResults={testResults} diary={diary} snowmanDays={snowmanDays}
+            testResults={testResults} diary={diary}
         />
     );
 }
@@ -184,13 +181,12 @@ export function UserCardRoute() {
     const clinicalResults = useCognitive(s => s.clinical);
     const cbtRecords = useCognitive(s => s.cbt);
     const finance = useFinance(s => s.finance);
-    const circles = useCognitive(s => s.circles);
     return (
         <UserCard
             logs={logs} setLogs={setLogs} diary={diary} habits={habits} kanban={kanban}
             goals={goals} gymData={gymData} testResults={testResults}
             clinicalResults={clinicalResults} cbtRecords={cbtRecords}
-            finance={finance} circles={circles}
+            finance={finance}
         />
     );
 }
@@ -222,12 +218,6 @@ export function ClinicalRoute() {
     );
 }
 
-export function CirclesRoute() {
-    const circles = useCognitive(s => s.circles);
-    const setCircles = useCognitive(s => s.setCircles);
-    return <CirclesOfInfluence circles={circles} setCircles={setCircles} />;
-}
-
 export function FinanceRoute() {
     const finance = useFinance(s => s.finance);
     const setFinance = useFinance(s => s.setFinance);
@@ -239,12 +229,4 @@ export function GymRoute() {
     const setGymData = useBody(s => s.setGym);
     const logs = useCheckins(s => s.logs);
     return <GymApp gymData={gymData} setGymData={setGymData} logs={logs} />;
-}
-
-export function SnowmanRoute() {
-    const labels = useBody(s => s.snowmanLabels);
-    const setLabels = useBody(s => s.setSnowmanLabels);
-    const days = useBody(s => s.snowmanDays);
-    const setDays = useBody(s => s.setSnowmanDays);
-    return <Snowman labels={labels} setLabels={setLabels} days={days} setDays={setDays} />;
 }

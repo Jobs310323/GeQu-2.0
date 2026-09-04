@@ -10,10 +10,9 @@ import { useHabits } from './habits.store';
 import { useJournal } from './journal.store';
 import { useTasks } from './tasks.store';
 
-import type { DayLog, Habit, DiaryEntry, Reminder, TestResult, ClinicalResult, CbtRecord, CircleItem, GymData, KanbanTask, UnlockedAchievements } from '../types/domain';
+import type { DayLog, Habit, DiaryEntry, Reminder, TestResult, ClinicalResult, CbtRecord, GymData, KanbanTask, UnlockedAchievements } from '../types/domain';
 import type { Goal } from '../types/goals';
 import type { FinanceData } from '../features/finance/types';
-import type { ActivityLabel, DayRecord } from '../features/snowman/types';
 import type { Theme } from './app-ui.store';
 
 /**
@@ -52,13 +51,10 @@ export function rehydrateStores(): void {
         achievements: hydrate<UnlockedAchievements>('ach', []),
         clinical: hydrate<ClinicalResult[]>('clinical', []),
         cbt: hydrate<CbtRecord[]>('cbt', []),
-        circles: hydrate<CircleItem[]>('circles', []),
     });
 
     useBody.setState({
         gym: hydrate<GymData>('gym', useBody.getState().gym),
-        snowmanLabels: hydrate<ActivityLabel[]>('snowmanLabels', []),
-        snowmanDays: hydrate<DayRecord[]>('snowmanDays', []),
     });
 
     useFinance.setState({ finance: hydrate<FinanceData>('finance', useFinance.getState().finance) });
@@ -77,7 +73,7 @@ export function rehydrateStores(): void {
  */
 export const REHYDRATED_KEYS = [
     'kanban', 'goals', 'logs', 'habits', 'diary', 'reminders',
-    'tests', 'ach', 'clinical', 'cbt', 'circles',
-    'gym', 'snowmanLabels', 'snowmanDays', 'finance',
+    'tests', 'ach', 'clinical', 'cbt',
+    'gym', 'finance',
     'theme', 'dopamineMenu', 'prefs',
 ] as const;

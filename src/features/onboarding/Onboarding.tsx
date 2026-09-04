@@ -42,8 +42,8 @@ const KEEP: Record<Focus, string[]> = {
     focus: ['kanban', 'habits', 'training'],
     productivity: ['kanban', 'goals', 'calendar', 'mindmap'],
     adhd: ['kanban', 'habits', 'clinical', 'training', 'knowledge'],
-    health: ['habits', 'gym', 'snowman', 'progress'],
-    self: ['diary', 'habits', 'progress', 'circles'],
+    health: ['habits', 'gym', 'progress'],
+    self: ['diary', 'habits', 'progress'],
     all: [],
 };
 
