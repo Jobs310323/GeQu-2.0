@@ -1,0 +1,9 @@
+{
+  "projectId": "c3ead483-759b-49c5-8211-4c62547298c8",
+  "shape": "package",
+  "pkg": "@gequ/design-system",
+  "buildCmd": "npm run build",
+  "cssEntry": "dist/design-system.css",
+  "runtimeFontPrefixes": ["Manrope"],
+  "readmeHeader": ".design-sync/conventions.md"
+}

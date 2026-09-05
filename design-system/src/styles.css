@@ -11,4 +11,8 @@
 @tailwind components;
 @tailwind utilities;
 
-body { color: var(--text-main); }
+/* Matches the app's own `body` rule (src/index.css) — several tokens (e.g.
+   TagChips' pale `purple-400/10` wash) are tuned against this dark page
+   background, not white. Without it, previews and any design built with
+   this system on a plain white canvas mis-render low-opacity surfaces. */
+body { background: var(--gq-bg-grad); background-attachment: fixed; color: var(--text-main); }

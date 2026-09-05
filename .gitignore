@@ -29,3 +29,10 @@ dist-ssr
 *.sln
 *.sw?
 .env*
+
+# design-sync (claude.ai/design) scratch state
+design-system/.ds-sync/
+design-system/ds-bundle/
+design-system/.design-sync/.cache/
+design-system/.design-sync/learnings/
+design-system/.design-sync/node_modules
